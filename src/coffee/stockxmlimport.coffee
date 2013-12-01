@@ -39,12 +39,9 @@ exports.StockXmlImport.prototype.createOrUpdate = (stocks, callback) ->
     for es in existingStocks
       sku2id[es.sku] = es.id
       sku2quantity[es.sku] = es.quantityOnStock
-    console.log sku2id
-    console.log sku2quantity
     for s in stocks
       if sku2id[s.sku]
         diff = s.quantityOnStock - sku2quantity[s.sku]
-        console.log diff
         if diff is 0
           @returnResult true, 'Stock update not neccessary', callback
           return
@@ -58,7 +55,6 @@ exports.StockXmlImport.prototype.createOrUpdate = (stocks, callback) ->
           d.actions[0].action = 'addQuantity'
         else
           d.actions[0].action = 'removeQuantity'
-        console.log d
         @rest.POST "/inventory/#{es.id}", JSON.stringify(d), (error, response, body) =>
           if response.statusCode is 200
             @returnResult true, 'Stock updated', callback
