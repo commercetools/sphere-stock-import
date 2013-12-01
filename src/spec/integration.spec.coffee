@@ -1,6 +1,9 @@
 Config = require '../config'
 StockXmlImport = require('../lib/stockxmlimport').StockXmlImport
 
+# Increase timeout
+jasmine.getEnv().defaultTimeoutInterval = 20000
+
 describe 'process', ->
   beforeEach (done) ->
     @import = new StockXmlImport Config
