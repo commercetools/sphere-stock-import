@@ -1,0 +1,5 @@
+node_modules
+build
+lib
+test
+config.js
