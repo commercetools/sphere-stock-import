@@ -49,7 +49,7 @@ exports.StockXmlImport.prototype.createOrUpdate = (stocks, callback) ->
           version: es.version
           actions: [
             action: 'TODO'
-            quantity: diff
+            quantity: Math.abs diff
           ]
         if diff > 0
           d.actions[0].action = 'addQuantity'
