@@ -76,6 +76,8 @@ module.exports = (grunt)->
         failOnError: true
       jasmine:
         command: "jasmine-node --captureExceptions test"
+      run:
+        command: "node lib/run.js stock.xml"
 
   # load plugins that provide the tasks defined in the config
   grunt.loadNpmTasks "grunt-coffeelint"
