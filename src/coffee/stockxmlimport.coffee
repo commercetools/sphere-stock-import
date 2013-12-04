@@ -2,7 +2,7 @@ _ = require('underscore')._
 {parseString} = require 'xml2js'
 Config = require '../config'
 Rest = require('sphere-node-connect').Rest
-Q = require('q')
+Q = require 'q'
 
 exports.StockXmlImport = (options) ->
   @_options = options
