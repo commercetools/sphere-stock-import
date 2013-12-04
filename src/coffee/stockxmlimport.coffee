@@ -3,6 +3,7 @@ _ = require('underscore')._
 Config = require '../config'
 Rest = require('sphere-node-connect').Rest
 Q = require 'q'
+ProgressBar = require 'progress'
 
 exports.StockXmlImport = (options) ->
   @_options = options
@@ -35,15 +36,15 @@ exports.StockXmlImport.prototype.createOrUpdate = (stocks, callback) ->
       return
     existingStocks = JSON.parse(body).results
     sku2entry = {}
-    sku2quantity = {}
     for es in existingStocks
       sku2entry[es.sku] = es
     posts = []
+    bar = new ProgressBar 'Updating stock [:bar] :percent done', { width: 50, total: stocks.length }
     for s in stocks
       if sku2entry[s.sku]
-        posts.push @update(s, sku2entry[s.sku])
+        posts.push @update(s, sku2entry[s.sku], bar)
       else
-        posts.push @create(s)
+        posts.push @create(s, bar)
     Q.all(posts).then (v) =>
       if v.length is 1
         v = v[0]
@@ -53,12 +54,13 @@ exports.StockXmlImport.prototype.createOrUpdate = (stocks, callback) ->
     .fail (v) =>
       @returnResult false, v, callback
 
-exports.StockXmlImport.prototype.update = (s, es) ->
+exports.StockXmlImport.prototype.update = (s, es, bar) ->
   deferred = Q.defer()
 
   diff = s.quantityOnStock - es.quantityOnStock
   if diff is 0
     deferred.resolve 'Stock update not neccessary'
+    bar.tick()
     return deferred.promise
   d =
     version: es.version
@@ -69,29 +71,28 @@ exports.StockXmlImport.prototype.update = (s, es) ->
     d.actions[0].action = 'removeQuantity'
 
   @rest.POST "/inventory/#{es.id}", JSON.stringify(d), (error, response, body) =>
+    bar.tick()
     if error
       deferred.reject 'Error on updating new stock.' + error
     else
       if response.statusCode is 200
-        process.stdout.write "u"
         deferred.resolve 'Stock updated'
       else
         @deferred.reject 'Problem on updating existing stock.' + body
   deferred.promise
 
-exports.StockXmlImport.prototype.create = (stock) ->
+exports.StockXmlImport.prototype.create = (stock, bar) ->
   deferred = Q.defer()
   @rest.POST '/inventory', JSON.stringify(stock), (error, response, body) =>
+    bar.tick()
     if error
       deferred.reject 'Error on creating new stock.' + error
     else
       if response.statusCode is 201
         deferred.resolve 'New stock created'
-        process.stdout.write "c"
       else
         deferred.reject 'Problem on creating new stock.' + body
   deferred.promise
-
 
 exports.StockXmlImport.prototype.getAndFix = (raw) ->
   #TODO: decode base64 - make configurable for testing
