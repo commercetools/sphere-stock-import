@@ -29,43 +29,69 @@ exports.StockXmlImport.prototype.returnResult = (positiveFeedback, msg, callback
   callback d
 
 exports.StockXmlImport.prototype.createOrUpdate = (stocks, callback) ->
-  @rest.GET "/inventory", (error, response, body) =>
+  @rest.GET "/inventory?limit=0", (error, response, body) =>
     if response.statusCode is not 200
       @returnResult false, 'Can not fetch stock information.', callback
       return
     existingStocks = JSON.parse(body).results
-    sku2id = {}
+    sku2entry = {}
     sku2quantity = {}
     for es in existingStocks
-      sku2id[es.sku] = es.id
-      sku2quantity[es.sku] = es.quantityOnStock
+      sku2entry[es.sku] = es
+    posts = []
     for s in stocks
-      if sku2id[s.sku]
-        diff = s.quantityOnStock - sku2quantity[s.sku]
-        if diff is 0
-          @returnResult true, 'Stock update not neccessary', callback
-          return
-        d =
-          version: es.version
-          actions: [
-            action: 'TODO'
-            quantity: Math.abs diff
-          ]
-        if diff > 0
-          d.actions[0].action = 'addQuantity'
-        else
-          d.actions[0].action = 'removeQuantity'
-        @rest.POST "/inventory/#{es.id}", JSON.stringify(d), (error, response, body) =>
-          if response.statusCode is 200
-            @returnResult true, 'Stock updated', callback
-          else
-            @returnResult false, 'Problem on updating existing stock.' + body, callback
+      if sku2entry[s.sku]
+        posts.push @update(s, sku2entry[s.sku])
       else
-        @rest.POST '/inventory', JSON.stringify(s), (error, response, body) =>
-          if response.statusCode is 201
-            @returnResult true, 'New stock created', callback
-          else
-            @returnResult false, 'Problem on creating new stock.' + body, callback
+        posts.push @create(s)
+    Q.all(posts).then (v) =>
+      if v.length is 1
+        v = v[0]
+      else
+        v = "#{v.length} Done"
+      @returnResult true, v, callback
+    .fail (v) =>
+      @returnResult false, v, callback
+
+exports.StockXmlImport.prototype.update = (s, es) ->
+  deferred = Q.defer()
+
+  diff = s.quantityOnStock - es.quantityOnStock
+  if diff is 0
+    deferred.resolve 'Stock update not neccessary'
+    return deferred.promise
+  d =
+    version: es.version
+    actions: [ quantity: Math.abs diff ]
+  if diff > 0
+    d.actions[0].action = 'addQuantity'
+  else
+    d.actions[0].action = 'removeQuantity'
+
+  @rest.POST "/inventory/#{es.id}", JSON.stringify(d), (error, response, body) =>
+    if error
+      deferred.reject 'Error on updating new stock.' + error
+    else
+      if response.statusCode is 200
+        process.stdout.write "u"
+        deferred.resolve 'Stock updated'
+      else
+        @deferred.reject 'Problem on updating existing stock.' + body
+  deferred.promise
+
+exports.StockXmlImport.prototype.create = (stock) ->
+  deferred = Q.defer()
+  @rest.POST '/inventory', JSON.stringify(stock), (error, response, body) =>
+    if error
+      deferred.reject 'Error on creating new stock.' + error
+    else
+      if response.statusCode is 201
+        deferred.resolve 'New stock created'
+        process.stdout.write "c"
+      else
+        deferred.reject 'Problem on creating new stock.' + body
+  deferred.promise
+
 
 exports.StockXmlImport.prototype.getAndFix = (raw) ->
   #TODO: decode base64 - make configurable for testing

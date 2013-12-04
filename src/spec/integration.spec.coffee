@@ -1,5 +1,6 @@
 Config = require '../config'
 StockXmlImport = require('../lib/stockxmlimport').StockXmlImport
+Q = require('q')
 
 # Increase timeout
 jasmine.getEnv().defaultTimeoutInterval = 20000
@@ -7,14 +8,32 @@ jasmine.getEnv().defaultTimeoutInterval = 20000
 describe 'process', ->
   beforeEach (done) ->
     @import = new StockXmlImport Config
-    @import.rest.GET "/inventory", (error, response, body) =>
+
+    del = (id) =>
+      deferred = Q.defer()
+      @import.rest.DELETE "/inventory/#{id}", (error, response, body) =>
+        if error
+          deferred.reject error
+        else
+          if response.statusCode is 200 or statusCode is 404
+            deferred.resolve true
+          else
+            deferred.reject body
+      deferred.promise
+
+    @import.rest.GET "/inventory?limit=0", (error, response, body) =>
       stocks = JSON.parse(body).results
       if stocks.length is 0
         done()
+      console.log "Cleaning up stock entries: " + stocks.length
+      dels = []
       for s in stocks
-        @import.rest.DELETE "/inventory/#{s.id}", (error, response, body) =>
-          expect(response.statusCode).toMatch /[24]0[04]/
-          done()
+        dels.push del(s.id)
+
+      Q.allSettled(dels).then (v) =>
+        done()
+      .fail (err) =>
+        throw new Error "Problems on deleting old entires in beforeEach"
 
   it 'one new stock', (done) ->
     rawXml = '
