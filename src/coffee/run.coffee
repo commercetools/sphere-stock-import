@@ -18,4 +18,5 @@ fs.readFile fileName, "utf8", (err, content) =>
     attachments:
       "input.xml": content
   stockxmlimport.process d, (result) =>
-    console.log result
+    if not result.message.status
+      console.log result
