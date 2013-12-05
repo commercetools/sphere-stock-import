@@ -1,13 +1,15 @@
 _ = require('underscore')._
 {parseString} = require 'xml2js'
 Config = require '../config'
-Rest = require('sphere-node-connect').Rest
+InventorySync = require('sphere-node-sync').InventorySync
+
 Q = require 'q'
 ProgressBar = require 'progress'
 
 exports.StockXmlImport = (options) ->
   @_options = options
-  @rest = new Rest Config
+  @sync = new InventorySync Config
+  @rest = @sync._rest
   @
 
 exports.StockXmlImport.prototype.process = (data, callback) ->
@@ -56,27 +58,15 @@ exports.StockXmlImport.prototype.createOrUpdate = (stocks, callback) ->
 
 exports.StockXmlImport.prototype.update = (s, es, bar) ->
   deferred = Q.defer()
-
-  diff = s.quantityOnStock - es.quantityOnStock
-  if diff is 0
-    deferred.resolve 'Stock update not neccessary'
-    bar.tick()
-    return deferred.promise
-  d =
-    version: es.version
-    actions: [ quantity: Math.abs diff ]
-  if diff > 0
-    d.actions[0].action = 'addQuantity'
-  else
-    d.actions[0].action = 'removeQuantity'
-
-  @rest.POST "/inventory/#{es.id}", JSON.stringify(d), (error, response, body) =>
+  @sync.buildActions(s, es).update (error, response, body) =>
     bar.tick()
     if error
-      deferred.reject 'Error on updating new stock.' + error
+      deferred.reject 'Error on updating stock.' + error
     else
       if response.statusCode is 200
         deferred.resolve 'Stock updated'
+      else if response.statusCode is 304
+        deferred.resolve 'Stock update not neccessary'
       else
         @deferred.reject 'Problem on updating existing stock.' + body
   deferred.promise
