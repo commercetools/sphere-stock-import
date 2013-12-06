@@ -1,5 +1,5 @@
 _ = require('underscore')._
-{parseString} = require 'xml2js'
+xmlHelpers = require '../lib/xmlhelpers.js'
 Config = require '../config'
 InventorySync = require('sphere-node-sync').InventorySync
 
@@ -17,8 +17,10 @@ exports.StockXmlImport.prototype.process = (data, callback) ->
   throw new Error 'Callback must be a function' unless _.isFunction callback
 
   if data.attachments
-    for k,v of data.attachments
-      @transform @getAndFix(v), (stocks) =>
+    for k,attachment of data.attachments
+      xmlHelpers.xmlTransform xmlHelpers.xmlEncodeAndFix(attachment), (err, result) =>
+        @returnResult false, "Error on parsing XML of '#{k}':" + err, callback if err
+        stocks = @mapStock result.root
         @createOrUpdate stocks, callback
   else
     @returnResult false, 'No XML data attachments found.', callback
@@ -84,24 +86,11 @@ exports.StockXmlImport.prototype.create = (stock, bar) ->
         deferred.reject 'Problem on creating new stock.' + body
   deferred.promise
 
-exports.StockXmlImport.prototype.getAndFix = (raw) ->
-  encoded = new Buffer raw, 'base64'
-  "<?xml?><root>#{encoded}</root>"
-
-exports.StockXmlImport.prototype.transform = (xml, callback) ->
-  parseString xml, (err, result) =>
-    @returnResult false, 'Error on parsing XML:' + err, callback if err
-    @mapStock result.root, callback
-
 exports.StockXmlImport.prototype.mapStock = (xmljs, callback) ->
   stocks = []
   for k,row of xmljs.row
     d =
-      sku: @val row, 'code'
-      quantityOnStock: parseInt(@val row, 'quantity')
+      sku: xmlHelpers.xmlVal row, 'code'
+      quantityOnStock: parseInt(xmlHelpers.xmlVal row, 'quantity')
     stocks.push d
-  callback(stocks)
-
-exports.StockXmlImport.prototype.val = (row, name, fallback) ->
-  return row[name][0] if row[name]
-  fallback
+  stocks

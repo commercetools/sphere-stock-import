@@ -1,4 +1,5 @@
 Config = require '../config'
+xmlHelpers = require '../lib/xmlhelpers.js'
 StockXmlImport = require('../lib/stockxmlimport').StockXmlImport
 
 describe 'StockXmlImport', ->
@@ -40,7 +41,8 @@ describe 'transform', ->
 </row>'
 
     base64 = new Buffer(rawXml).toString('base64')
-    @import.transform @import.getAndFix(base64), (stocks) ->
+    xmlHelpers.xmlTransform xmlHelpers.xmlEncodeAndFix(base64), (err, result) =>
+      stocks = @import.mapStock result.root
       expect(stocks.length).toBe 1
       s = stocks[0]
       expect(s.sku).toBe '123'
