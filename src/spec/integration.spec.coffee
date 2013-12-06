@@ -43,7 +43,7 @@ describe 'process', ->
 </row>'
     d =
       attachments:
-        stock: rawXml
+        stock: new Buffer(rawXml).toString('base64')
     @import.process d, (msg) =>
       expect(msg.message.status).toBe true
       expect(msg.message.msg).toBe 'New stock created'
@@ -70,10 +70,10 @@ describe 'process', ->
 </row>'
     d =
       attachments:
-        stock: rawXml
+        stock: new Buffer(rawXml).toString('base64')
     d2 =
       attachments:
-        stock: rawXml.replace '7', '19'
+        stock: new Buffer(rawXml.replace('7', '19')).toString('base64')
     @import.process d, (msg) =>
       expect(msg.message.status).toBe true
       expect(msg.message.msg).toBe 'New stock created'
@@ -100,10 +100,10 @@ describe 'process', ->
 </row>'
     d =
       attachments:
-        stock: rawXml
+        stock: new Buffer(rawXml).toString('base64')
     d2 =
       attachments:
-        stock: rawXml.replace '77', '13'
+        stock: new Buffer(rawXml.replace('77', '13')).toString('base64')
     @import.process d, (msg) =>
       expect(msg.message.status).toBe true
       expect(msg.message.msg).toBe 'New stock created'

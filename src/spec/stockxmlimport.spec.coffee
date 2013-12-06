@@ -39,7 +39,8 @@ describe 'transform', ->
   <quantity>2</quantity>
 </row>'
 
-    @import.transform @import.getAndFix(rawXml), (stocks) ->
+    base64 = new Buffer(rawXml).toString('base64')
+    @import.transform @import.getAndFix(base64), (stocks) ->
       expect(stocks.length).toBe 1
       s = stocks[0]
       expect(s.sku).toBe '123'

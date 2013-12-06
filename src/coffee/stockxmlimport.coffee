@@ -85,8 +85,8 @@ exports.StockXmlImport.prototype.create = (stock, bar) ->
   deferred.promise
 
 exports.StockXmlImport.prototype.getAndFix = (raw) ->
-  #TODO: decode base64 - make configurable for testing
-  "<?xml?><root>#{raw}</root>"
+  encoded = new Buffer raw, 'base64'
+  "<?xml?><root>#{encoded}</root>"
 
 exports.StockXmlImport.prototype.transform = (xml, callback) ->
   parseString xml, (err, result) =>
