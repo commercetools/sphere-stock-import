@@ -13,20 +13,20 @@ describe 'StockXmlImport', ->
     expect(@import._options).toBe 'foo'
 
 
-describe 'process', ->
+describe 'run', ->
   beforeEach ->
     @import = new StockXmlImport()
 
   it 'should throw error if no JSON object is passed', ->
-    expect(@import.process).toThrow new Error('JSON Object required')
+    expect(@import.run).toThrow new Error('String required')
 
   it 'should throw error if no JSON object is passed', ->
-    expect(=> @import.process({})).toThrow new Error('Callback must be a function')
+    expect(=> @import.run("")).toThrow new Error('Callback must be a function')
 
   it 'should call the given callback and return messge', (done) ->
-    @import.process {}, (data)->
-      expect(data.message.status).toBe false
-      expect(data.message.msg).toBe 'No XML data attachments found.'
+    @import.run "", (data)->
+      expect(data.message.status).toBe true
+      expect(data.message.msg).toBe '0 Done'
       done()
 
 describe 'transform', ->
@@ -40,8 +40,8 @@ describe 'transform', ->
   <quantity>2</quantity>
 </row>'
 
-    base64 = new Buffer(rawXml).toString('base64')
-    xmlHelpers.xmlTransform xmlHelpers.xmlEncodeAndFix(base64), (err, result) =>
+    xml = xmlHelpers.xmlFix(rawXml)
+    xmlHelpers.xmlTransform xml, (err, result) =>
       stocks = @import.mapStock result.root
       expect(stocks.length).toBe 1
       s = stocks[0]

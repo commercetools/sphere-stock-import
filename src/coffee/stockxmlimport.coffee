@@ -12,18 +12,22 @@ exports.StockXmlImport = (options) ->
   @rest = @sync._rest
   @
 
-exports.StockXmlImport.prototype.process = (data, callback) ->
-  throw new Error 'JSON Object required' unless _.isObject data
+exports.StockXmlImport.prototype.elasticio = (msg, cfg, cb, snapshot) ->
+  if msg.attachments
+    for k,attachment of msg.attachments
+      xmlString = new Buffer(attachment, 'base64').toString()
+      @run xmlString, cb
+  else
+    @returnResult false, 'No attachments found in elastic.io msg.', cb
+
+exports.StockXmlImport.prototype.run = (xmlString, callback) ->
+  throw new Error 'String required' unless _.isString xmlString
   throw new Error 'Callback must be a function' unless _.isFunction callback
 
-  if data.attachments
-    for k,attachment of data.attachments
-      xmlHelpers.xmlTransform xmlHelpers.xmlEncodeAndFix(attachment), (err, result) =>
-        @returnResult false, "Error on parsing XML of '#{k}':" + err, callback if err
-        stocks = @mapStock result.root
-        @createOrUpdate stocks, callback
-  else
-    @returnResult false, 'No XML data attachments found.', callback
+  xmlHelpers.xmlTransform xmlHelpers.xmlFix(xmlString), (err, result) =>
+    @returnResult false, "Error on parsing XML of '#{k}':" + err, callback if err
+    stocks = @mapStock result.root
+    @createOrUpdate stocks, callback
 
 exports.StockXmlImport.prototype.returnResult = (positiveFeedback, msg, callback) ->
   d =

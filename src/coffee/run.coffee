@@ -14,9 +14,6 @@ fs.readFile fileName, "utf8", (err, content) =>
   if err
     console.error "Problems on reading file: " + error
     process.exit 1
-  d =
-    attachments:
-      "input.xml": content
-  stockxmlimport.process d, (result) =>
+  stockxmlimport.run content, (result) =>
     if not result.message.status
       console.log result

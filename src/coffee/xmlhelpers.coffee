@@ -1,7 +1,6 @@
 {parseString} = require 'xml2js'
 
-exports.xmlEncodeAndFix = (raw) ->
-  xml = new Buffer(raw, 'base64').toString()
+exports.xmlFix = (xml) ->
   if not xml.match /<root>.*<\/root>/
     xml = "<root>#{xml}</root>"
   if not xml.match /\?xml/

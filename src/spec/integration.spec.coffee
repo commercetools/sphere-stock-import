@@ -5,7 +5,7 @@ Q = require('q')
 # Increase timeout
 jasmine.getEnv().defaultTimeoutInterval = 20000
 
-describe 'process', ->
+describe '#run', ->
   beforeEach (done) ->
     @import = new StockXmlImport Config
 
@@ -41,10 +41,7 @@ describe 'process', ->
   <code>123</code>
   <quantity>2</quantity>
 </row>'
-    d =
-      attachments:
-        stock: new Buffer(rawXml).toString('base64')
-    @import.process d, (msg) =>
+    @import.run rawXml, (msg) =>
       expect(msg.message.status).toBe true
       expect(msg.message.msg).toBe 'New stock created'
       @import.rest.GET "/inventory", (error, response, body) =>
@@ -52,7 +49,7 @@ describe 'process', ->
         expect(stocks.length).toBe 1
         expect(stocks[0].sku).toBe '123'
         expect(stocks[0].quantityOnStock).toBe 2
-        @import.process d, (msg) =>
+        @import.run rawXml, (msg) =>
           expect(msg.message.status).toBe true
           expect(msg.message.msg).toBe 'Stock update not neccessary'
           @import.rest.GET "/inventory", (error, response, body) =>
@@ -68,13 +65,8 @@ describe 'process', ->
   <code>234</code>
   <quantity>7</quantity>
 </row>'
-    d =
-      attachments:
-        stock: new Buffer(rawXml).toString('base64')
-    d2 =
-      attachments:
-        stock: new Buffer(rawXml.replace('7', '19')).toString('base64')
-    @import.process d, (msg) =>
+    rawXmlChanged = rawXml.replace('7', '19')
+    @import.run rawXml, (msg) =>
       expect(msg.message.status).toBe true
       expect(msg.message.msg).toBe 'New stock created'
       @import.rest.GET "/inventory", (error, response, body) =>
@@ -82,7 +74,7 @@ describe 'process', ->
         expect(stocks.length).toBe 1
         expect(stocks[0].sku).toBe '234'
         expect(stocks[0].quantityOnStock).toBe 7
-        @import.process d2, (msg) =>
+        @import.run rawXmlChanged, (msg) =>
           expect(msg.message.status).toBe true
           expect(msg.message.msg).toBe 'Stock updated'
           @import.rest.GET "/inventory", (error, response, body) =>
@@ -98,13 +90,8 @@ describe 'process', ->
   <code>1234567890</code>
   <quantity>77</quantity>
 </row>'
-    d =
-      attachments:
-        stock: new Buffer(rawXml).toString('base64')
-    d2 =
-      attachments:
-        stock: new Buffer(rawXml.replace('77', '13')).toString('base64')
-    @import.process d, (msg) =>
+    rawXmlChanged = rawXml.replace('77', '13')
+    @import.run rawXml, (msg) =>
       expect(msg.message.status).toBe true
       expect(msg.message.msg).toBe 'New stock created'
       @import.rest.GET "/inventory", (error, response, body) =>
@@ -112,7 +99,7 @@ describe 'process', ->
         expect(stocks.length).toBe 1
         expect(stocks[0].sku).toBe '1234567890'
         expect(stocks[0].quantityOnStock).toBe 77
-        @import.process d2, (msg) =>
+        @import.run rawXmlChanged, (msg) =>
           expect(msg.message.status).toBe true
           expect(msg.message.msg).toBe 'Stock updated'
           @import.rest.GET "/inventory", (error, response, body) =>
