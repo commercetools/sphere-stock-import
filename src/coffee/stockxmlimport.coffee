@@ -14,9 +14,10 @@ exports.StockXmlImport = (options) ->
 
 exports.StockXmlImport.prototype.elasticio = (msg, cfg, cb, snapshot) ->
   if msg.attachments
-    for k,attachment of msg.attachments
-      xmlString = new Buffer(attachment, 'base64').toString()
-      @run xmlString, cb
+    for attachment in msg.attachments
+      for k,v of attachment
+        xmlString = new Buffer(v, 'base64').toString()
+        @run xmlString, cb
   else
     @returnResult false, 'No attachments found in elastic.io msg.', cb
 
