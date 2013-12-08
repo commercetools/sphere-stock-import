@@ -23,8 +23,14 @@ describe 'run', ->
   it 'should throw error if no JSON object is passed', ->
     expect(=> @import.run("")).toThrow new Error('Callback must be a function')
 
-  it 'should call the given callback and return messge', (done) ->
-    @import.run "", (data)->
+  it 'should give feedback on xml parse problems', (done) ->
+    @import.run "<<", (data) ->
+      expect(data.message.status).toBe false
+      expect(data.message.msg).toMatch /Error on parsing XML/
+      done()
+
+  xit 'should call the given callback and return messge', (done) ->
+    @import.run "<bar></bar>", (data) ->
       expect(data.message.status).toBe true
       expect(data.message.msg).toBe '0 Done'
       done()

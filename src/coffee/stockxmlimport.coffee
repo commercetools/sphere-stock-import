@@ -26,9 +26,11 @@ exports.StockXmlImport.prototype.run = (xmlString, callback) ->
   throw new Error 'Callback must be a function' unless _.isFunction callback
 
   xmlHelpers.xmlTransform xmlHelpers.xmlFix(xmlString), (err, result) =>
-    @returnResult false, "Error on parsing XML of '#{k}':" + err, callback if err
-    stocks = @mapStock result.root
-    @createOrUpdate stocks, callback
+    if err
+      @returnResult false, "Error on parsing XML: " + err, callback
+    else
+      stocks = @mapStock result.root
+      @createOrUpdate stocks, callback
 
 exports.StockXmlImport.prototype.returnResult = (positiveFeedback, msg, callback) ->
   d =
