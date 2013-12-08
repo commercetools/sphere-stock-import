@@ -33,7 +33,7 @@ describe 'transform', ->
   beforeEach ->
     @import = new StockXmlImport Config
 
-  it 'single attachment - one entry', (done) ->
+  it 'one entry', (done) ->
     rawXml = '
 <row>
   <code>123</code>
