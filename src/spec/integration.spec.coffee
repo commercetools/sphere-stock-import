@@ -30,9 +30,9 @@ describe '#run', ->
       for s in stocks
         dels.push del(s.id)
 
-      Q.allSettled(dels).then (v) =>
+      Q.allSettled(dels).then (v) ->
         done()
-      .fail (err) =>
+      .fail (err) ->
         throw new Error "Problems on deleting old entires in beforeEach"
 
   it 'one new stock', (done) ->
@@ -52,7 +52,7 @@ describe '#run', ->
         @import.run rawXml, (msg) =>
           expect(msg.message.status).toBe true
           expect(msg.message.msg).toBe 'Stock update not neccessary'
-          @import.rest.GET "/inventory", (error, response, body) =>
+          @import.rest.GET "/inventory", (error, response, body) ->
             stocks = JSON.parse(body).results
             expect(stocks.length).toBe 1
             expect(stocks[0].sku).toBe '123'
@@ -77,7 +77,7 @@ describe '#run', ->
         @import.run rawXmlChanged, (msg) =>
           expect(msg.message.status).toBe true
           expect(msg.message.msg).toBe 'Stock updated'
-          @import.rest.GET "/inventory", (error, response, body) =>
+          @import.rest.GET "/inventory", (error, response, body) ->
             stocks = JSON.parse(body).results
             expect(stocks.length).toBe 1
             expect(stocks[0].sku).toBe '234'
@@ -102,7 +102,7 @@ describe '#run', ->
         @import.run rawXmlChanged, (msg) =>
           expect(msg.message.status).toBe true
           expect(msg.message.msg).toBe 'Stock updated'
-          @import.rest.GET "/inventory", (error, response, body) =>
+          @import.rest.GET "/inventory", (error, response, body) ->
             stocks = JSON.parse(body).results
             expect(stocks.length).toBe 1
             expect(stocks[0].sku).toBe '1234567890'

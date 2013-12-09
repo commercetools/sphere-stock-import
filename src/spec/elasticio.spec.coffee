@@ -8,7 +8,7 @@ describe "elasticio integration", ->
       clientSecret: ''
       projectKey: ''
     msg = ''
-    elasticio.process msg, cfg, (next) =>
+    elasticio.process msg, cfg, (next) ->
       expect(next.message.status).toBe false
       expect(next.message.msg).toBe 'No attachments found in elastic.io msg.'
       done()
@@ -33,7 +33,7 @@ describe "elasticio integration", ->
       attachments: [
         'stock.xml': enc
       ]
-    elasticio.process msg, cfg, (next) =>
+    elasticio.process msg, cfg, (next) ->
       expect(next.message.status).toBe true
       expect(next.message.msg).toBe '2 Done'
       done()

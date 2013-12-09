@@ -14,7 +14,7 @@ describe "#xmlFix", ->
 describe "#xmlTransform", ->
   it "works", ->
     xml = "<root><row><id>1</id></row><row><id>2</id></row></root>"
-    xmlHelpers.xmlTransform xml, (err, result) =>
+    xmlHelpers.xmlTransform xml, (err, result) ->
       expect(err).toBeNull()
       e =
         root:
@@ -27,6 +27,6 @@ describe "#xmlTransform", ->
 describe "#xmlVal", ->
   it "works", ->
     xml = "<root><row><id>foo</id></row></root>"
-    xmlHelpers.xmlTransform xml, (err, result) =>
+    xmlHelpers.xmlTransform xml, (err, result) ->
       expect(xmlHelpers.xmlVal(result.root.row[0], 'id')).toBe 'foo'
       expect(xmlHelpers.xmlVal(result.root.row[0], 'bar', 'default')).toBe 'default'
