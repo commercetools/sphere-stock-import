@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <row>
+    <code>foo</code>
+    <quantity>7</quantity>
+  </row>
+  <row>
+    <code>bar</code>
+    <quantity>1</quantity>
+  </row>
+</root>
