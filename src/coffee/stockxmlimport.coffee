@@ -16,8 +16,9 @@ exports.StockXmlImport.prototype.elasticio = (msg, cfg, cb, snapshot) ->
   if msg.attachments
     for attachment of msg.attachments
       continue if not attachment.match /xml$/i
-      v = msg.attachments[attachment].content
-      xmlString = new Buffer(v, 'base64').toString()
+      content = msg.attachments[attachment].content
+      continue if not content
+      xmlString = new Buffer(content, 'base64').toString()
       @run xmlString, cb
   else
     @returnResult false, 'No attachments found in elastic.io msg.', cb
