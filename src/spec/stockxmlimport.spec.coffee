@@ -72,3 +72,29 @@ describe '#transform', ->
       expect(s.quantityOnStock).toBe 7
       expect(s.expectedDelivery).toBe '2013-11-19T00:00:00'
       done()
+
+  it 'should map an extra extry for AppointedQuantity', (done) ->
+    rawXml = '
+<row>
+  <code>foo-bar</code>
+  <quantity>7.000</quantity>
+  <deliverydate>2013-11-05T00:00:00</deliverydate>
+  <CommittedDeliveryDate>2013-11-19T00:00:00</CommittedDeliveryDate>
+  <AppointedQuantity>12.000</AppointedQuantity>
+</row>'
+
+    xml = xmlHelpers.xmlFix(rawXml)
+    xmlHelpers.xmlTransform xml, (err, result) =>
+      stocks = @import.mapStock result.root, 'myChannelId'
+      expect(stocks.length).toBe 2
+      s = stocks[0]
+      expect(s.sku).toBe 'foo-bar'
+      expect(s.quantityOnStock).toBe 7
+      expect(s.expectedDelivery).toBe '2013-11-19T00:00:00'
+      s = stocks[1]
+      expect(s.sku).toBe 'foo-bar'
+      expect(s.supplyChannel.typeId).toBe 'channel'
+      expect(s.supplyChannel.id).toBe 'myChannelId'
+      expect(s.quantityOnStock).toBe 12
+      expect(s.expectedDelivery).toBe '2013-11-05T00:00:00'
+      done()

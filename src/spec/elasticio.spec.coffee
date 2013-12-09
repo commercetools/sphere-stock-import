@@ -30,9 +30,10 @@ describe "elasticio integration", ->
 '
     enc = new Buffer(xml).toString('base64')
     msg =
-      attachments: [
-        'stock.xml': enc
-      ]
+      attachments:
+        'stock.xml':
+          content: enc
+
     elasticio.process msg, cfg, (next) ->
       expect(next.message.status).toBe true
       expect(next.message.msg).toBe '2 Done'

@@ -14,10 +14,11 @@ exports.StockXmlImport = (options) ->
 
 exports.StockXmlImport.prototype.elasticio = (msg, cfg, cb, snapshot) ->
   if msg.attachments
-    for attachment in msg.attachments
-      for k,v of attachment
-        xmlString = new Buffer(v, 'base64').toString()
-        @run xmlString, cb
+    for attachment of msg.attachments
+      continue if not attachment.match /xml$/i
+      v = msg.attachments[attachment].content
+      xmlString = new Buffer(v, 'base64').toString()
+      @run xmlString, cb
   else
     @returnResult false, 'No attachments found in elastic.io msg.', cb
 
@@ -29,7 +30,7 @@ exports.StockXmlImport.prototype.run = (xmlString, callback) ->
     if err
       @returnResult false, "Error on parsing XML: " + err, callback
     else
-      stocks = @mapStock result.root
+      stocks = @mapStock result.root, "TODO"
       @createOrUpdate stocks, callback
 
 exports.StockXmlImport.prototype.returnResult = (positiveFeedback, msg, callback) ->
@@ -93,13 +94,25 @@ exports.StockXmlImport.prototype.create = (stock, bar) ->
         deferred.reject 'Problem on creating new stock.' + body
   deferred.promise
 
-exports.StockXmlImport.prototype.mapStock = (xmljs, callback) ->
+exports.StockXmlImport.prototype.mapStock = (xmljs, channelId) ->
   stocks = []
   for k,row of xmljs.row
+    sku = xmlHelpers.xmlVal row, 'code'
     d =
-      sku: xmlHelpers.xmlVal row, 'code'
+      sku: sku
       quantityOnStock: parseInt(xmlHelpers.xmlVal row, 'quantity')
     date = xmlHelpers.xmlVal row, 'CommittedDeliveryDate'
     d.expectedDelivery = date if date
     stocks.push d
+    expectedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'
+    if expectedQuantity
+      d =
+        sku: sku
+        quantityOnStock: parseInt(expectedQuantity)
+        supplyChannel:
+          typeId: 'channel'
+          id: channelId
+      date = xmlHelpers.xmlVal row, 'deliverydate'
+      d.expectedDelivery = date if date
+      stocks.push d
   stocks
