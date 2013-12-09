@@ -20,8 +20,10 @@ exports.StockXmlImport.prototype.elasticio = (msg, cfg, cb, snapshot) ->
       continue if not content
       xmlString = new Buffer(content, 'base64').toString()
       @run xmlString, cb
+  else if msg.body
+    @createOrUpdate([@createEntry(msg.body.SKU, msg.body.QUANTITY)], cb)
   else
-    @returnResult false, 'No attachments found in elastic.io msg.', cb
+    @returnResult false, 'No data found in elastic.io msg.', cb
 
 exports.StockXmlImport.prototype.run = (xmlString, callback) ->
   throw new Error 'String required' unless _.isString xmlString
@@ -99,21 +101,20 @@ exports.StockXmlImport.prototype.mapStock = (xmljs, channelId) ->
   stocks = []
   for k,row of xmljs.row
     sku = xmlHelpers.xmlVal row, 'code'
-    d =
-      sku: sku
-      quantityOnStock: parseInt(xmlHelpers.xmlVal row, 'quantity')
-    date = xmlHelpers.xmlVal row, 'CommittedDeliveryDate'
-    d.expectedDelivery = date if date
-    stocks.push d
+    stocks.push @createEntry(sku, xmlHelpers.xmlVal(row, 'quantity'), xmlHelpers.xmlVal(row, 'CommittedDeliveryDate'))
     expectedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'
     if expectedQuantity
-      d =
-        sku: sku
-        quantityOnStock: parseInt(expectedQuantity)
-        supplyChannel:
-          typeId: 'channel'
-          id: channelId
-      date = xmlHelpers.xmlVal row, 'deliverydate'
-      d.expectedDelivery = date if date
+      d = @createEntry(sku, expectedQuantity, xmlHelpers.xmlVal(row, 'deliverydate'))
+      c =
+        typeId: 'channel'
+        id: channelId
+      d.supplyChannel = c
       stocks.push d
   stocks
+
+exports.StockXmlImport.prototype.createEntry = (sku, quantity, expectedDelivery) ->
+  d =
+    sku: sku
+    quantityOnStock: parseInt(quantity)
+  d.expectedDelivery = expectedDelivery if expectedDelivery
+  d

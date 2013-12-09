@@ -1,6 +1,7 @@
 {
     "title": "sphere-stock-xml-import",
     "description": "Creates or updates your SPHERE.IO inventory from XML",
+    "url" : "http://www.commercetools.com",
     "credentials": {
         "fields": {
             "projectKey": {
@@ -26,8 +27,24 @@
     "actions": {
         "services": {
             "main": "elasticio.js",
-            "title": "Stock XML Import"
+            "title": "Stock XML Import",
+            "metadata": {
+                "in": {
+                    "type" : "object",
+                    "properties" : {
+                        "SKU" : {
+                            "title" : "SKU of product",
+                            "type" : "string",
+                            "required": true
+                        },
+                        "QUANTITY" : {
+                            "title" : "Quantity on stock of product",
+                            "type" : "number",
+                            "required": true
+                        }
+                    }
+                }
+            }
         }
     }
 }
-
