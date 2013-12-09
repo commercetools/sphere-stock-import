@@ -10,7 +10,7 @@ git merge master
 grunt build
 git add -f lib/
 
-libs=($(jq .dependencies < package.json | grep : | cut -d: -f1 | tr -d '"' | tr -d ' '))
+libs=($(jq .dependencies < package.json | grep ':' | cut -d':' -f1 | tr -d '"' | tr -d ' '))
 for lib in ${libs[@]}; do
   git add -f "node_modules/${lib}"
 done
