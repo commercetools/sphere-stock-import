@@ -99,5 +99,7 @@ exports.StockXmlImport.prototype.mapStock = (xmljs, callback) ->
     d =
       sku: xmlHelpers.xmlVal row, 'code'
       quantityOnStock: parseInt(xmlHelpers.xmlVal row, 'quantity')
+    date = xmlHelpers.xmlVal row, 'CommittedDeliveryDate'
+    d.expectedDelivery = date if date
     stocks.push d
   stocks

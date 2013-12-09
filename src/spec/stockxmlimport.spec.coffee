@@ -13,7 +13,7 @@ describe 'StockXmlImport', ->
     expect(@import._options).toBe 'foo'
 
 
-describe 'run', ->
+describe '#run', ->
   beforeEach ->
     @import = new StockXmlImport()
 
@@ -35,14 +35,14 @@ describe 'run', ->
       expect(data.message.msg).toBe '0 Done'
       done()
 
-describe 'transform', ->
+describe '#transform', ->
   beforeEach ->
     @import = new StockXmlImport Config
 
-  it 'one entry', (done) ->
+  it 'simple entry', (done) ->
     rawXml = '
 <row>
-  <code>123</code>
+  <code>1</code>
   <quantity>2</quantity>
 </row>'
 
@@ -51,6 +51,24 @@ describe 'transform', ->
       stocks = @import.mapStock result.root
       expect(stocks.length).toBe 1
       s = stocks[0]
-      expect(s.sku).toBe '123'
+      expect(s.sku).toBe '1'
       expect(s.quantityOnStock).toBe 2
+      done()
+
+  it 'should map delivery date', (done) ->
+    rawXml = '
+<row>
+  <code>2</code>
+  <quantity>7.000</quantity>
+  <CommittedDeliveryDate>2013-11-19T00:00:00</CommittedDeliveryDate>
+</row>'
+
+    xml = xmlHelpers.xmlFix(rawXml)
+    xmlHelpers.xmlTransform xml, (err, result) =>
+      stocks = @import.mapStock result.root
+      expect(stocks.length).toBe 1
+      s = stocks[0]
+      expect(s.sku).toBe '2'
+      expect(s.quantityOnStock).toBe 7
+      expect(s.expectedDelivery).toBe '2013-11-19T00:00:00'
       done()

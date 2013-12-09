@@ -7,5 +7,6 @@
   <row>
     <code>bar</code>
     <quantity>1</quantity>
+    <CommittedDeliveryDate>2013-11-19T00:00:00</CommittedDeliveryDate>
   </row>
 </root>
