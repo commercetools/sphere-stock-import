@@ -11,7 +11,7 @@ describe '#run', ->
 
     del = (id) =>
       deferred = Q.defer()
-      @import.rest.DELETE "/inventory/#{id}", (error, response, body) =>
+      @import.rest.DELETE "/inventory/#{id}", (error, response, body) ->
         if error
           deferred.reject error
         else
@@ -21,7 +21,7 @@ describe '#run', ->
             deferred.reject body
       deferred.promise
 
-    @import.rest.GET "/inventory?limit=0", (error, response, body) =>
+    @import.rest.GET "/inventory?limit=0", (error, response, body) ->
       stocks = JSON.parse(body).results
       if stocks.length is 0
         done()

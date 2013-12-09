@@ -82,7 +82,7 @@ exports.StockXmlImport.prototype.update = (s, es, bar) ->
 
 exports.StockXmlImport.prototype.create = (stock, bar) ->
   deferred = Q.defer()
-  @rest.POST '/inventory', JSON.stringify(stock), (error, response, body) =>
+  @rest.POST '/inventory', JSON.stringify(stock), (error, response, body) ->
     bar.tick()
     if error
       deferred.reject 'Error on creating new stock.' + error
