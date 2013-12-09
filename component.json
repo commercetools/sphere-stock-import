@@ -1,0 +1,33 @@
+{
+    "title": "sphere-stock-xml-import",
+    "description": "Creates or updates your SPHERE.IO inventory from XML",
+    "credentials": {
+        "fields": {
+            "projectKey": {
+                "viewClass": "TextFieldView",
+                "label": "Project Key",
+                "required": true,
+                "placeholder": "Paste your project key"
+            },
+            "clientId": {
+                "viewClass": "TextFieldView",
+                "label": "Client Id",
+                "required": true,
+                "placeholder": "Paste your Client Id"
+            },
+            "clientSecret": {
+                "viewClass": "TextFieldView",
+                "label": "Client Secret",
+                "required": true,
+                "placeholder": "Paste your Client Secret"
+            }
+        }
+    },
+    "actions": {
+        "services": {
+            "main": "elasticio.js",
+            "title": "Stock XML Import"
+        }
+    }
+}
+
