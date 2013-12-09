@@ -46,18 +46,19 @@ exports.StockXmlImport.prototype.returnResult = (positiveFeedback, msg, callback
 
 exports.StockXmlImport.prototype.createOrUpdate = (stocks, callback) ->
   @rest.GET "/inventory?limit=0", (error, response, body) =>
-    if response.statusCode is not 200
+    if error
+      @returnResult false, 'Problem on getting existing stock information.', callback
+      return
+    if response.statusCode != 200
       @returnResult false, 'Can not fetch stock information.', callback
       return
     existingStocks = JSON.parse(body).results
-    sku2entry = {}
-    for es in existingStocks
-      sku2entry[es.sku] = es
+    sku2index = @match(existingStocks)
     posts = []
     bar = new ProgressBar 'Updating stock [:bar] :percent done', { width: 50, total: stocks.length }
     for s in stocks
-      if sku2entry[s.sku]
-        posts.push @update(s, sku2entry[s.sku], bar)
+      if sku2index[s.sku] >= 0
+        posts.push @update(s, existingStocks[sku2index[s.sku]], bar)
       else
         posts.push @create(s, bar)
     Q.all(posts).then (v) =>
@@ -68,6 +69,12 @@ exports.StockXmlImport.prototype.createOrUpdate = (stocks, callback) ->
       @returnResult true, v, callback
     .fail (v) =>
       @returnResult false, v, callback
+
+exports.StockXmlImport.prototype.match = (existingStocks) ->
+  sku2index = {}
+  for es, i in existingStocks
+    sku2index[es.sku] = i
+  sku2index
 
 exports.StockXmlImport.prototype.update = (s, es, bar) ->
   deferred = Q.defer()
