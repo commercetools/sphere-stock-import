@@ -1,4 +1,4 @@
-StockXmlImport = require('./lib/stockxmlimport').StockXmlImport
+StockXmlImport = require('./main').StockXmlImport
 
 exports.process = function(msg, cfg, cb, snapshot) {
   config = {

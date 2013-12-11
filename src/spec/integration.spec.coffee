@@ -1,5 +1,5 @@
 Config = require '../config'
-StockXmlImport = require('../lib/stockxmlimport').StockXmlImport
+StockXmlImport = require('../main').StockXmlImport
 Q = require('q')
 
 # Increase timeout

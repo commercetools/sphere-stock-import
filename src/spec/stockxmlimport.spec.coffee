@@ -1,21 +1,20 @@
-Config = require '../config'
 xmlHelpers = require '../lib/xmlhelpers.js'
-StockXmlImport = require('../lib/stockxmlimport').StockXmlImport
+StockXmlImport = require('../main').StockXmlImport
 
 describe 'StockXmlImport', ->
   beforeEach ->
-    @import = new StockXmlImport('foo')
+    @import = new StockXmlImport {}
 
   it 'should initialize', ->
     expect(@import).toBeDefined()
 
   it 'should initialize with options', ->
-    expect(@import._options).toBe 'foo'
+    expect(@import.options).toEqual {}
 
 
 describe '#run', ->
   beforeEach ->
-    @import = new StockXmlImport()
+    @import = new StockXmlImport {}
 
   it 'should throw error if no JSON object is passed', ->
     expect(@import.run).toThrow new Error('String required')
@@ -29,15 +28,15 @@ describe '#run', ->
       expect(data.message.msg).toMatch /Error on parsing XML/
       done()
 
-  xit 'should call the given callback and return messge', (done) ->
-    @import.run "<bar></bar>", (data) ->
-      expect(data.message.status).toBe true
-      expect(data.message.msg).toBe '0 Done'
+  it 'Nothing to do', (done) ->
+    @import.run "<bar></bar>", (msg) ->
+      expect(msg.message.status).toBe true
+      expect(msg.message.msg).toBe '0 Done'
       done()
 
 describe '#transform', ->
   beforeEach ->
-    @import = new StockXmlImport Config
+    @import = new StockXmlImport {}
 
   it 'simple entry', (done) ->
     rawXml = '

@@ -1,1 +1,2 @@
-exports.StockXmlImport = require('./lib/stockxmlimport').StockXmlImport
+exports.StockXmlImport = require('./lib/stockxmlimport')
+exports.MarketPlaceStockUpdater = require('./lib/retailer2master')

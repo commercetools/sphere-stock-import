@@ -4,9 +4,9 @@ Config = require '../config'
 describe "elasticio file integration", ->
   it "with no attachments nor body", (done) ->
     cfg =
-      clientId: ''
-      clientSecret: ''
-      projectKey: ''
+      clientId: 'some'
+      clientSecret: 'stuff'
+      projectKey: 'here'
     msg = ''
     elasticio.process msg, cfg, (next) ->
       expect(next.message.status).toBe false
