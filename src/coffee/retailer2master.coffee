@@ -14,7 +14,7 @@ class MarketPlaceStockUpdater extends StockXmlImport
 
   initMatcher: () ->
     deferred = Q.defer()
-    Q.all([@ensureRetailerChannelInMaster(), @retailerProducts(), @allStocks(@rest)])
+    Q.all([@ensureRetailerChannelInMaster(@retailerProjectKey), @retailerProducts(), @allStocks(@rest)])
     .then ([channelId, retailerProducts, masterStocks]) =>
       @existingStocks = masterStocks
 
@@ -34,9 +34,9 @@ class MarketPlaceStockUpdater extends StockXmlImport
       deferred.reject msg
     deferred.promise
 
-  ensureRetailerChannelInMaster: () ->
+  ensureRetailerChannelInMaster: (channelKey) ->
     deferred = Q.defer()
-    @rest.GET "/channels?query=" + encodeURIComponent("key=\"#{@retailerProjectKey}\""), (error, response, body) =>
+    @rest.GET "/channels?query=" + encodeURIComponent("key=\"#{channelKey}\""), (error, response, body) =>
       if error
         deferred.reject "Error: " + error
         return deferred.promise
