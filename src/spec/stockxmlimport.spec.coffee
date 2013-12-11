@@ -16,22 +16,16 @@ describe '#run', ->
   beforeEach ->
     @import = new StockXmlImport {}
 
-  it 'should throw error if no JSON object is passed', ->
-    expect(@import.run).toThrow new Error('String required')
+  it 'should throw error if no XML string is passed', ->
+    expect(=> @import.run()).toThrow new Error('String required')
 
-  it 'should throw error if no JSON object is passed', ->
+  it 'should throw error if callback is passed', ->
     expect(=> @import.run("")).toThrow new Error('Callback must be a function')
 
   it 'should give feedback on xml parse problems', (done) ->
     @import.run "<<", (data) ->
       expect(data.message.status).toBe false
       expect(data.message.msg).toMatch /Error on parsing XML/
-      done()
-
-  it 'Nothing to do', (done) ->
-    @import.run "<bar></bar>", (msg) ->
-      expect(msg.message.status).toBe true
-      expect(msg.message.msg).toBe '0 Done'
       done()
 
 describe '#transform', ->

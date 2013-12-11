@@ -35,6 +35,12 @@ describe '#run', ->
       .fail (err) ->
         throw new Error "Problems on deleting old entires in beforeEach"
 
+  it 'Nothing to do', (done) ->
+    @import.run "<bar></bar>", (msg) ->
+      expect(msg.message.status).toBe true
+      expect(msg.message.msg).toBe '0 Done'
+      done()
+
   it 'one new stock', (done) ->
     rawXml = '
 <row>

@@ -37,9 +37,12 @@ class StockXmlImport
       if err
         @returnResult false, "Error on parsing XML: " + err, callback
       else
-        stocks = @mapStock result.root, "TODO"
-        @initMatcher().then () =>
-          @createOrUpdate stocks, callback
+        @ensureChannel().then (channelId) =>
+          stocks = @mapStock result.root, channelId
+          @initMatcher().then () =>
+            @createOrUpdate stocks, callback
+          .fail (msg) =>
+            @returnResult false, msg, cb
         .fail (msg) =>
           @returnResult false, msg, cb
 
@@ -48,7 +51,6 @@ class StockXmlImport
       message:
         status: positiveFeedback
         msg: msg
-    console.log 'Error occurred: %j', d if not positiveFeedback
     callback d
 
   createOrUpdate: (stocks, callback) ->
@@ -80,6 +82,30 @@ class StockXmlImport
       else
         stocks = JSON.parse(body).results
         deferred.resolve stocks
+    deferred.promise
+
+  ensureChannel: (channelKey) ->
+    deferred = Q.defer()
+    @rest.GET "/channels?query=" + encodeURIComponent("key=\"#{channelKey}\""), (error, response, body) ->
+      if error
+        deferred.reject "Error: " + error
+        return deferred.promise
+      if response.statusCode == 200
+        channels = JSON.parse(body).results
+        if channels.length is 1
+          deferred.resolve channels[0].id
+          return deferred.promise
+      # let's create the channel
+      c =
+        key: channelKey
+      @rest.POST "/channels", JSON.stringify(c), (error, response, body) ->
+        if error
+          deferred.reject "Error: " + error
+        else if response.statusCode == 201
+          id = JSON.parse(body).id
+          deferred.resolve id
+        else
+          deferred.reject "Problem: " + body
     deferred.promise
 
   initMatcher: () ->
@@ -145,7 +171,6 @@ class StockXmlImport
       d.supplyChannel =
         typeId: 'channel'
         id: channelId
-
     d
 
 module.exports = StockXmlImport
