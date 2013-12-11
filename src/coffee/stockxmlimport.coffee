@@ -10,6 +10,8 @@ exports.StockXmlImport = (options) ->
   @_options = options
   @sync = new InventorySync Config
   @rest = @sync._rest
+  @existingStocks = {}
+  @sku2index = {}
   @
 
 exports.StockXmlImport.prototype.elasticio = (msg, cfg, cb, snapshot) ->
@@ -21,7 +23,8 @@ exports.StockXmlImport.prototype.elasticio = (msg, cfg, cb, snapshot) ->
       xmlString = new Buffer(content, 'base64').toString()
       @run xmlString, cb
   else if msg.body
-    @createOrUpdate([@createEntry(msg.body.SKU, msg.body.QUANTITY)], cb)
+    @initMatcher().then () =>
+      @createOrUpdate([@createEntry(msg.body.SKU, msg.body.QUANTITY)], cb)
   else
     @returnResult false, 'No data found in elastic.io msg.', cb
 
@@ -29,12 +32,13 @@ exports.StockXmlImport.prototype.run = (xmlString, callback) ->
   throw new Error 'String required' unless _.isString xmlString
   throw new Error 'Callback must be a function' unless _.isFunction callback
 
-  xmlHelpers.xmlTransform xmlHelpers.xmlFix(xmlString), (err, result) =>
-    if err
-      @returnResult false, "Error on parsing XML: " + err, callback
-    else
-      stocks = @mapStock result.root, "TODO"
-      @createOrUpdate stocks, callback
+  @initMatcher().then () =>
+    xmlHelpers.xmlTransform xmlHelpers.xmlFix(xmlString), (err, result) =>
+      if err
+        @returnResult false, "Error on parsing XML: " + err, callback
+      else
+        stocks = @mapStock result.root, "TODO"
+        @createOrUpdate stocks, callback
 
 exports.StockXmlImport.prototype.returnResult = (positiveFeedback, msg, callback) ->
   d =
@@ -45,36 +49,42 @@ exports.StockXmlImport.prototype.returnResult = (positiveFeedback, msg, callback
   callback d
 
 exports.StockXmlImport.prototype.createOrUpdate = (stocks, callback) ->
+  posts = []
+  bar = new ProgressBar 'Updating stock [:bar] :percent done', { width: 50, total: stocks.length }
+  for s in stocks
+    es = @match(s)
+    if es
+      posts.push @update(s, es, bar)
+    else
+      posts.push @create(s, bar)
+
+  Q.all(posts).then (v) =>
+    if v.length is 1
+      v = v[0]
+    else
+      v = "#{v.length} Done"
+    @returnResult true, v, callback
+  .fail (v) =>
+    @returnResult false, v, callback
+
+exports.StockXmlImport.prototype.initMatcher = (rest) ->
+  deferred = Q.defer()
   @rest.GET "/inventory?limit=0", (error, response, body) =>
     if error
-      @returnResult false, 'Problem on getting existing stock information.', callback
+      deferred.reject 'Problem on getting existing stock information.'
       return
     if response.statusCode != 200
-      @returnResult false, 'Can not fetch stock information.', callback
+      deferred.reject 'Can not fetch stock information.'
       return
-    existingStocks = JSON.parse(body).results
-    sku2index = @match(existingStocks)
-    posts = []
-    bar = new ProgressBar 'Updating stock [:bar] :percent done', { width: 50, total: stocks.length }
-    for s in stocks
-      if sku2index[s.sku] >= 0
-        posts.push @update(s, existingStocks[sku2index[s.sku]], bar)
-      else
-        posts.push @create(s, bar)
-    Q.all(posts).then (v) =>
-      if v.length is 1
-        v = v[0]
-      else
-        v = "#{v.length} Done"
-      @returnResult true, v, callback
-    .fail (v) =>
-      @returnResult false, v, callback
+    @existingStocks = JSON.parse(body).results
+    for es, i in @existingStocks
+      @sku2index[es.sku] = i
+    deferred.resolve @existingStocks
+  deferred.promise
 
-exports.StockXmlImport.prototype.match = (existingStocks) ->
-  sku2index = {}
-  for es, i in existingStocks
-    sku2index[es.sku] = i
-  sku2index
+exports.StockXmlImport.prototype.match = (s) ->
+  if @sku2index[s.sku] >= 0
+    @existingStocks[@sku2index[s.sku]]
 
 exports.StockXmlImport.prototype.update = (s, es, bar) ->
   deferred = Q.defer()
