@@ -30,7 +30,8 @@ class MarketPlaceStockUpdater extends StockXmlImport
         @sku2index[rSku] = i
 
       deferred.resolve true
-
+    .fail (msg) ->
+      deferred.reject msg
     deferred.promise
 
   ensureRetailerChannelInMaster: () ->

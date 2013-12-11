@@ -20,8 +20,12 @@ class StockXmlImport
         xmlString = new Buffer(content, 'base64').toString()
         @run xmlString, cb
     else if msg.body
+      # TODO: As we get only one entry here, we should query for the existing one and not
+      # get the whole inventory
       @initMatcher().then () =>
         @createOrUpdate([@createEntry(msg.body.SKU, msg.body.QUANTITY)], cb)
+      .fail (msg) =>
+        @returnResult false, msg, cb
     else
       @returnResult false, 'No data found in elastic.io msg.', cb
 
@@ -36,6 +40,8 @@ class StockXmlImport
         stocks = @mapStock result.root, "TODO"
         @initMatcher().then () =>
           @createOrUpdate stocks, callback
+        .fail (msg) =>
+          @returnResult false, msg, cb
 
   returnResult: (positiveFeedback, msg, callback) ->
     d =
@@ -55,14 +61,14 @@ class StockXmlImport
       else
         posts.push @create(s, bar)
 
-    Q.all(posts).then (v) =>
-      if v.length is 1
-        v = v[0]
+    Q.all(posts).then (messages) =>
+      if messages.length is 1
+        messages = messages[0]
       else
-        v = "#{v.length} Done"
-      @returnResult true, v, callback
-    .fail (v) =>
-      @returnResult false, v, callback
+        messages = "#{messages.length} Done"
+      @returnResult true, messages, callback
+    .fail (msg) =>
+      @returnResult false, msg, callback
 
   allStocks: (restImpl) ->
     deferred = Q.defer()
@@ -83,6 +89,8 @@ class StockXmlImport
       for es, i in @existingStocks
         @sku2index[es.sku] = i
       deferred.resolve true
+    .fail (msg) ->
+      deferred.reject msg
     deferred.promise
 
   match: (s) ->
@@ -124,19 +132,20 @@ class StockXmlImport
       stocks.push @createEntry(sku, xmlHelpers.xmlVal(row, 'quantity'), xmlHelpers.xmlVal(row, 'CommittedDeliveryDate'))
       expectedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'
       if expectedQuantity
-        d = @createEntry(sku, expectedQuantity, xmlHelpers.xmlVal(row, 'deliverydate'))
-        c =
-          typeId: 'channel'
-          id: channelId
-        d.supplyChannel = c
+        d = @createEntry(sku, expectedQuantity, xmlHelpers.xmlVal(row, 'deliverydate'), channelId)
         stocks.push d
     stocks
 
-  createEntry: (sku, quantity, expectedDelivery) ->
+  createEntry: (sku, quantity, expectedDelivery, channelId) ->
     d =
       sku: sku
       quantityOnStock: parseInt(quantity)
     d.expectedDelivery = expectedDelivery if expectedDelivery
+    if channelId
+      d.supplyChannel =
+        typeId: 'channel'
+        id: channelId
+
     d
 
 module.exports = StockXmlImport
