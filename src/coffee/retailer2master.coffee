@@ -6,11 +6,21 @@ Q = require 'q'
 class MarketPlaceStockUpdater extends StockXmlImport
   constructor: (@options, @retailerProjectKey, @retailerClientId, @retailerClientSecret) ->
     super @options
-    @retailerRest = new Rest config: {
+    c =
       project_key: @retailerProjectKey
       client_id: @retailerClientId
       client_secret: @retailerClientSecret
-    }
+    @retailerRest = new Rest config: c
+
+  run: () ->
+    @allStocks(@retailerRest).then (retailerStock) =>
+      @initMatcher().then () =>
+        @createOrUpdate retailerStock, (res) =>
+          @returnResult true, res
+      .fail (msg)->
+        @returnResult false, msg
+    .fail (msg)->
+      @returnResult false, msg
 
   initMatcher: () ->
     deferred = Q.defer()

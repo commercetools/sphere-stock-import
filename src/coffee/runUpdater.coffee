@@ -12,8 +12,4 @@ process.argv.forEach (val, index, array) ->
   retailerClientSecret = val if index is 4
 
 updater = new MarketPlaceStockUpdater(Config, retailerProjectKey, retailerClientId, retailerClientSecret)
-
-updater.allStocks(updater.retailerRest).then (retailerStock) ->
-  updater.initMatcher().then () ->
-    updater.createOrUpdate retailerStock, (res) ->
-      console.log res
+updater.run()
