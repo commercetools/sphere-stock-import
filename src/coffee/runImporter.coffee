@@ -17,3 +17,4 @@ fs.readFile fileName, 'utf8', (err, content) ->
   stockxmlimport.run content, (result) ->
     if not result.message.status
       console.log result
+      process.exit 2
