@@ -42,9 +42,9 @@ class StockXmlImport
           @initMatcher().then () =>
             @createOrUpdate stocks, callback
           .fail (msg) =>
-            @returnResult false, msg, cb
+            @returnResult false, msg, callback
         .fail (msg) =>
-          @returnResult false, msg, cb
+          @returnResult false, msg, callback
 
   returnResult: (positiveFeedback, msg, callback) ->
     d =
