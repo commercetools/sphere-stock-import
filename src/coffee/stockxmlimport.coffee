@@ -74,7 +74,7 @@ class StockXmlImport
 
   allStocks: (restImpl) ->
     deferred = Q.defer()
-    restImpl.GET "/inventory?limit=0", (error, response, body) =>
+    restImpl.GET "/inventory?limit=0", (error, response, body) ->
       if error
         deferred.reject "Error: " + error
       else if response.statusCode != 200
