@@ -4,7 +4,8 @@ node_js:
 before_script:
 - npm install -g grunt-cli
 - ./create_config.sh
-after_success:
+script:
+- npm test
 - node lib/runUpdater.js example.xml
 env:
   global:
