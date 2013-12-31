@@ -9,8 +9,8 @@ describe "elasticio file integration", ->
       projectKey: 'here'
     msg = ''
     elasticio.process msg, cfg, (next) ->
-      expect(next.message.status).toBe false
-      expect(next.message.msg).toBe 'No data found in elastic.io msg.'
+      expect(next.status).toBe false
+      expect(next.message).toBe 'No data found in elastic.io msg.'
       done()
 
   it "single attachment - 2 entries", (done) ->
@@ -35,8 +35,8 @@ describe "elasticio file integration", ->
           content: enc
 
     elasticio.process msg, cfg, (next) ->
-      expect(next.message.status).toBe true
-      expect(next.message.msg).toBe '2 Done'
+      expect(next.status).toBe true
+      expect(next.message).toBe '2 inventory entries done.'
       done()
 
 describe "elasticio mapping integration", ->
@@ -52,6 +52,10 @@ describe "elasticio mapping integration", ->
         QUANTITY: 7
 
     elasticio.process msg, cfg, (next) ->
-      expect(next.message.status).toBe true
-      expect(next.message.msg).toBe 'New stock created'
-      done()
+      expect(next.status).toBe true
+      expect(next.message).toBe 'New inventory entry created.'
+      msg.body.QUANTITY = 3
+      elasticio.process msg, cfg, (next) ->
+        expect(next.status).toBe true
+        expect(next.message).toBe 'Inventory entry updated.'
+        done()

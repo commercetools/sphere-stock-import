@@ -15,6 +15,5 @@ fs.readFile fileName, 'utf8', (err, content) ->
     console.error 'Problems on reading file: ' + error
     process.exit 1
   stockxmlimport.run content, (result) ->
-    if not result.message.status
-      console.log result
-      process.exit 2
+    console.log result
+    process.exit 2 unless result.status

@@ -24,8 +24,8 @@ describe '#run', ->
 
   it 'should give feedback on xml parse problems', (done) ->
     @import.run "<<", (data) ->
-      expect(data.message.status).toBe false
-      expect(data.message.msg).toMatch /Error on parsing XML/
+      expect(data.status).toBe false
+      expect(data.message).toMatch /Error on parsing XML/
       done()
 
 describe '#transform', ->
