@@ -6,7 +6,7 @@ before_script:
 - ./create_config.sh
 script:
 - npm test
-- node lib/runImporter.js example.xml
+- node lib/run.js --xmlfile example.xml
 env:
   global:
   - secure: s6QNnqviViNGU3gORnJSKtXueXFHAWhAJjZYdNXrBatX/fSn8xPcm3JDZLHHrXR+jwS4rqdakTEsy4AahnZ4CL8E+a5s3h3fVeD3CanL9a5Jwj9srFXL+Q1TgQiACxS9gLixlz94wsGdkLBSj0dx9LexrgGvGNWNiALu/G2Jm2U=

@@ -3,7 +3,7 @@
   "description": "Import your stock data into SPHERE.IO's inventory from XML.",
   "version": "0.0.7",
   "homepage": "https://github.com/hajoeichler/sphere-stock-xml-import",
-  "private": true,
+  "private": false,
   "author": {
     "name": "Hajo Eichler",
     "email": "hajo.eichler@commercetools.de"
@@ -29,22 +29,23 @@
     "test": "grunt coverage"
   },
   "dependencies": {
-    "xml2js": "~0.4.0",
+    "optimist": "0.6.0",
     "sphere-node-connect": "~0.2.2",
     "sphere-node-sync": "~0.3.4",
     "underscore": "~1.5.2",
-    "q": "~0.9.7"
+    "q": "~0.9.7",
+    "xml2js": "~0.4.0"
   },
   "devDependencies": {
     "coveralls": "~2.1.0",
     "grunt": "~0.4.1",
-    "grunt-shell": "~0.5.0",
+    "grunt-bump": "~0.0.11",
     "grunt-coffeelint": "~0.0.7",
     "grunt-contrib-clean": "~0.5.0",
-    "grunt-contrib-concat": "~0.3.0",
     "grunt-contrib-coffee": "~0.7.0",
+    "grunt-contrib-concat": "~0.3.0",
     "grunt-contrib-watch": "~0.5.3",
-    "grunt-bump": "~0.0.11",
+    "grunt-shell": "~0.5.0",
     "istanbul": "~0.1.46",
     "jasmine-node": "~1.11.0"
   },
