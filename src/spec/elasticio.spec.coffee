@@ -36,7 +36,9 @@ describe "elasticio file integration", ->
 
     elasticio.process msg, cfg, (next) ->
       expect(next.status).toBe true
-      expect(next.message).toBe '2 inventory entries done.'
+      expect(next.message.length).toBe 2
+      expect(next.message[0]).toBe 'New inventory entry created.'
+      expect(next.message[1]).toBe 'New inventory entry created.'
       done()
 
 describe "elasticio mapping integration", ->

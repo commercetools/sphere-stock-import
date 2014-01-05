@@ -24,6 +24,11 @@ describe "#xmlTransform", ->
           ]
       expect(result).toEqual e
 
+  it "gives feedback on xml error", ->
+    xml = "<root><root>"
+    xmlHelpers.xmlTransform xml, (err, result) ->
+      expect(err).toMatch /Error/
+
 describe "#xmlVal", ->
   it "works", ->
     xml = "<root><row><id>foo</id></row></root>"

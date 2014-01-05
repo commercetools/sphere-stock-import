@@ -39,7 +39,7 @@ describe '#run', ->
   it 'Nothing to do', (done) ->
     @import.run '<bar></bar>', (msg) ->
       expect(msg.status).toBe true
-      expect(msg.message).toBe '0 inventory entries done.'
+      expect(msg.message).toBe 'Nothing to do.'
       done()
 
   it 'one new stock', (done) ->
