@@ -5,8 +5,8 @@ Q = require 'q'
 ProgressBar = require 'progress'
 
 class StockXmlImport extends InventoryUpdater
-  constructor: (@options) ->
-    super(@options)
+  constructor: (options) ->
+    super(options)
 
   elasticio: (msg, cfg, cb, snapshot) ->
     if msg.attachments

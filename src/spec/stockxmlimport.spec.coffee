@@ -8,10 +8,6 @@ describe 'StockXmlImport', ->
   it 'should initialize', ->
     expect(@import).toBeDefined()
 
-  it 'should initialize with options', ->
-    expect(@import.options).toEqual {}
-
-
 describe '#run', ->
   beforeEach ->
     @import = new StockXmlImport {}
