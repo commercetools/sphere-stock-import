@@ -2,7 +2,6 @@ _ = require('underscore')._
 xmlHelpers = require '../lib/xmlhelpers.js'
 InventoryUpdater = require('sphere-node-sync').InventoryUpdater
 Q = require 'q'
-ProgressBar = require 'progress'
 
 class StockXmlImport extends InventoryUpdater
   constructor: (options) ->

@@ -1,3 +1,4 @@
+_ = require('underscore')._
 elasticio = require('../elasticio.js')
 Config = require '../config'
 
@@ -36,9 +37,8 @@ describe "elasticio file integration", ->
 
     elasticio.process msg, cfg, (next) ->
       expect(next.status).toBe true
-      expect(next.message.length).toBe 2
-      expect(next.message[0]).toBe 'New inventory entry created.'
-      expect(next.message[1]).toBe 'New inventory entry created.'
+      expect(_.size(next.message)).toBe 1
+      expect(next.message['New inventory entry created.']).toBe 2
       done()
 
 describe "elasticio mapping integration", ->
