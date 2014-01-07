@@ -1,7 +1,7 @@
 {
   "name": "sphere-stock-xml-import",
   "description": "Import your stock data into SPHERE.IO's inventory from XML.",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "homepage": "https://github.com/hajoeichler/sphere-stock-xml-import",
   "private": false,
   "author": {
