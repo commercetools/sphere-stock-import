@@ -1,6 +1,6 @@
 {
     "title": "sphere-stock-xml-import",
-    "description": "Creates or updates your SPHERE.IO inventory from XML",
+    "description": "Import your stock information from XML or CSV into your SPHERE.IO project.",
     "url" : "http://www.commercetools.com",
     "credentials": {
         "fields": {
@@ -8,43 +8,26 @@
                 "viewClass": "TextFieldView",
                 "label": "Project Key",
                 "required": true,
-                "placeholder": "Paste your project key"
+                "placeholder": "Paste project key"
             },
             "clientId": {
                 "viewClass": "TextFieldView",
                 "label": "Client Id",
                 "required": true,
-                "placeholder": "Paste your Client Id"
+                "placeholder": "Paste client id"
             },
             "clientSecret": {
                 "viewClass": "TextFieldView",
                 "label": "Client Secret",
                 "required": true,
-                "placeholder": "Paste your Client Secret"
+                "placeholder": "Paste client secret"
             }
         }
     },
     "actions": {
         "services": {
             "main": "elasticio.js",
-            "title": "Stock XML Import",
-            "metadata": {
-                "in": {
-                    "type" : "object",
-                    "properties" : {
-                        "SKU" : {
-                            "title" : "SKU of product",
-                            "type" : "string",
-                            "required": true
-                        },
-                        "QUANTITY" : {
-                            "title" : "Quantity on stock of product",
-                            "type" : "number",
-                            "required": true
-                        }
-                    }
-                }
-            }
+            "title": "Stock XML Import"
         }
     }
 }
