@@ -9,7 +9,7 @@ class StockXmlImport extends InventoryUpdater
 
   elasticio: (msg, cfg, cb, snapshot) ->
     console.log 'elasticio'
-    if msg.attachments
+    if _.size(msg.attachments) > 0
       console.log 'elasticio - attachments'
       for attachment of msg.attachments
         continue if not attachment.match /xml$/i
@@ -17,7 +17,7 @@ class StockXmlImport extends InventoryUpdater
         continue if not content
         xmlString = new Buffer(content, 'base64').toString()
         @run xmlString, cb
-    else if msg.body
+    else if _.size(msg.body) > 0
       console.log 'elasticio - body'
       # TODO: As we get only one entry here, we should query for the existing one and not
       # get the whole inventory
