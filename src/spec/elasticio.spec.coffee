@@ -49,6 +49,7 @@ describe "elasticio mapping integration", ->
       sphereProjectKey: Config.config.project_key
 
     msg =
+      attachments: {}
       body:
         SKU: 'mySKU'
         QUANTITY: 7
