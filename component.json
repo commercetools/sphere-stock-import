@@ -27,7 +27,7 @@
     "actions": {
         "services": {
             "main": "elasticio.js",
-            "title": "Stock XML Import",
+            "title": "Stock XML/CSV Import",
             "metadata": {
                 "in": {
                     "type" : "object",
