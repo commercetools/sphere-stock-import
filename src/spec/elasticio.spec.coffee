@@ -57,7 +57,7 @@ describe "elasticio mapping integration", ->
     elasticio.process msg, cfg, (next) ->
       expect(next.status).toBe true
       expect(next.message).toBe 'New inventory entry created.'
-      msg.body.QUANTITY = 3
+      msg.body.QUANTITY = '3'
       elasticio.process msg, cfg, (next) ->
         expect(next.status).toBe true
         expect(next.message).toBe 'Inventory entry updated.'
