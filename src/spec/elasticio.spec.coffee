@@ -5,9 +5,9 @@ Config = require '../config'
 describe "elasticio file integration", ->
   it "with no attachments nor body", (done) ->
     cfg =
-      clientId: 'some'
-      clientSecret: 'stuff'
-      projectKey: 'here'
+      sphereClientId: 'some'
+      sphereClientSecret: 'stuff'
+      sphereProjectKey: 'here'
     msg = ''
     elasticio.process msg, cfg, (next) ->
       expect(next.status).toBe false
@@ -16,9 +16,9 @@ describe "elasticio file integration", ->
 
   it "single attachment - 2 entries", (done) ->
     cfg =
-      clientId: Config.config.client_id
-      clientSecret: Config.config.client_secret
-      projectKey: Config.config.project_key
+      sphereClientId: Config.config.client_id
+      sphereClientSecret: Config.config.client_secret
+      sphereProjectKey: Config.config.project_key
     xml = '
 <row>
   <code>abc</code>
@@ -44,9 +44,9 @@ describe "elasticio file integration", ->
 describe "elasticio mapping integration", ->
   it "single entry", (done) ->
     cfg =
-      clientId: Config.config.client_id
-      clientSecret: Config.config.client_secret
-      projectKey: Config.config.project_key
+      sphereClientId: Config.config.client_id
+      sphereClientSecret: Config.config.client_secret
+      sphereProjectKey: Config.config.project_key
 
     msg =
       body:
