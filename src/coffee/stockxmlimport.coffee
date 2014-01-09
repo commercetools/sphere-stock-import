@@ -8,9 +8,7 @@ class StockXmlImport extends InventoryUpdater
     super(options)
 
   elasticio: (msg, cfg, cb, snapshot) ->
-    console.log 'elasticio'
     if _.size(msg.attachments) > 0
-      console.log 'elasticio - attachments'
       for attachment of msg.attachments
         continue if not attachment.match /xml$/i
         content = msg.attachments[attachment].content
@@ -18,17 +16,13 @@ class StockXmlImport extends InventoryUpdater
         xmlString = new Buffer(content, 'base64').toString()
         @run xmlString, cb
     else if _.size(msg.body) > 0
-      console.log 'elasticio - body'
       # TODO: As we get only one entry here, we should query for the existing one and not
       # get the whole inventory
       @initMatcher().then () =>
-        console.log 'elasticio - initMatcher'
         @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY)], cb)
       .fail (msg) =>
-        console.log 'elasticio - initMatcher - fail'
         @returnResult false, msg, cb
     else
-      console.log 'elasticio - nothing'
       @returnResult false, 'No data found in elastic.io msg.', cb
 
   run: (xmlString, callback) ->
@@ -49,7 +43,6 @@ class StockXmlImport extends InventoryUpdater
           @returnResult false, msg, callback
 
   mapStock: (xmljs, channelId) ->
-    console.log 'mapStock'
     stocks = []
     for k,row of xmljs.row
       sku = xmlHelpers.xmlVal row, 'code'
@@ -58,7 +51,6 @@ class StockXmlImport extends InventoryUpdater
       if expectedQuantity
         d = @createInventoryEntry(sku, expectedQuantity, xmlHelpers.xmlVal(row, 'deliverydate'), channelId)
         stocks.push d
-    console.log 'mapStock: %j', stocks
     stocks
 
 module.exports = StockXmlImport
