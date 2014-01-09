@@ -27,7 +27,24 @@
     "actions": {
         "services": {
             "main": "elasticio.js",
-            "title": "Stock XML Import"
+            "title": "Stock XML Import",
+            "metadata": {
+                "in": {
+                    "type" : "object",
+                    "properties" : {
+                        "SKU" : {
+                            "title" : "SKU of product",
+                            "type" : "string",
+                            "required": true
+                        },
+                        "QUANTITY" : {
+                            "title" : "Quantity of product",
+                            "type" : "number",
+                            "required": true
+                        }
+                    }
+                }
+            }
         }
     }
 }
