@@ -4,23 +4,23 @@
     "url" : "http://www.commercetools.com",
     "credentials": {
         "fields": {
-            "projectKey": {
+            "sphereProjectKey": {
                 "viewClass": "TextFieldView",
                 "label": "Project Key",
                 "required": true,
-                "placeholder": "Paste project key"
+                "placeholder": "Paste your SPHERE.IO project key here"
             },
-            "clientId": {
+            "sphereClientId": {
                 "viewClass": "TextFieldView",
                 "label": "Client Id",
                 "required": true,
-                "placeholder": "Paste client id"
+                "placeholder": "Paste your SPHERE.IO client id here"
             },
-            "clientSecret": {
+            "sphereClientSecret": {
                 "viewClass": "TextFieldView",
                 "label": "Client Secret",
                 "required": true,
-                "placeholder": "Paste client secret"
+                "placeholder": "Paste your your SPHERE.IO client secret here"
             }
         }
     },
