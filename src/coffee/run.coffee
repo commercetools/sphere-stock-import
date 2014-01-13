@@ -7,7 +7,7 @@ argv = require('optimist')
 
 options =
   config:
-    project_key: argv.project_key
+    project_key: argv.projectKey
     client_id: argv.clientId
     client_secret: argv.clientSecret
 
