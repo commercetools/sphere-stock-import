@@ -1,16 +1,20 @@
-fs = require 'fs'
-Config = require '../config'
-argv = require('optimist')
-  .usage('Usage: $0 --xmlfile file')
-  .demand(['xmlfile'])
-  .argv
 StockXmlImport = require('../main').StockXmlImport
+fs = require 'fs'
+argv = require('optimist')
+  .usage('Usage: $0 --projectKey key --clientId id --clientSecret secret --xmlfile file')
+  .demand(['projectKey', 'clientId', 'clientSecret', 'xmlfile'])
+  .argv
 
-stockxmlimport = new StockXmlImport Config
+options =
+  project_key: argv.project_key
+  client_id: argv.clientId
+  client_secret: argv.clientSecret
+
+stockxmlimport = new StockXmlImport options
 
 fs.readFile argv.xmlfile, 'utf8', (err, content) ->
   if err
-    console.error 'Problems on reading file: ' + error
+    console.error "Problems on reading file '#{argv.xmlfile}': " + error
     process.exit 2
   stockxmlimport.run content, (result) ->
     console.log result
