@@ -6,9 +6,10 @@ argv = require('optimist')
   .argv
 
 options =
-  project_key: argv.project_key
-  client_id: argv.clientId
-  client_secret: argv.clientSecret
+  config:
+    project_key: argv.project_key
+    client_id: argv.clientId
+    client_secret: argv.clientSecret
 
 stockxmlimport = new StockXmlImport options
 
