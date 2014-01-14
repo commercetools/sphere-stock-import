@@ -15,7 +15,7 @@ stockxmlimport = new StockXmlImport options
 
 fs.readFile argv.xmlfile, 'utf8', (err, content) ->
   if err
-    console.error "Problems on reading file '#{argv.xmlfile}': " + error
+    console.error "Problems on reading file '#{argv.xmlfile}': " + err
     process.exit 2
   stockxmlimport.run content, (result) ->
     console.log result
