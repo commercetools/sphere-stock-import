@@ -1,15 +1,19 @@
 StockXmlImport = require('../main').StockXmlImport
 fs = require 'fs'
 argv = require('optimist')
-  .usage('Usage: $0 --projectKey key --clientId id --clientSecret secret --xmlfile file')
+  .usage('Usage: $0 --projectKey key --clientId id --clientSecret secret --xmlfile file --timeout timeout')
   .demand(['projectKey', 'clientId', 'clientSecret', 'xmlfile'])
   .argv
+
+timeout = argv.timeout
+timeout or= 60000
 
 options =
   config:
     project_key: argv.projectKey
     client_id: argv.clientId
     client_secret: argv.clientSecret
+  timeout: timeout
 
 stockxmlimport = new StockXmlImport options
 
