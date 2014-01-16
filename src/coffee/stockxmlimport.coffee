@@ -1,10 +1,12 @@
 _ = require('underscore')._
 xmlHelpers = require '../lib/xmlhelpers'
+package_json = require '../package.json'
 InventoryUpdater = require('sphere-node-sync').InventoryUpdater
 Q = require 'q'
 
 class StockXmlImport extends InventoryUpdater
   constructor: (options) ->
+    options.user_agent = "#{package_json.name} - #{package_json.version}" unless _.isEmpty options
     super(options)
 
   elasticio: (msg, cfg, cb, snapshot) ->
