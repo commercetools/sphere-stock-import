@@ -48,10 +48,10 @@ class StockXmlImport extends InventoryUpdater
     stocks = []
     for k,row of xmljs.row
       sku = xmlHelpers.xmlVal row, 'code'
-      stocks.push @createInventoryEntry(sku, xmlHelpers.xmlVal(row, 'quantity'), xmlHelpers.xmlVal(row, 'CommittedDeliveryDate'))
+      stocks.push @createInventoryEntry(sku, xmlHelpers.xmlVal(row, 'quantity'))
       expectedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'
       if expectedQuantity
-        d = @createInventoryEntry(sku, expectedQuantity, xmlHelpers.xmlVal(row, 'deliverydate'), channelId)
+        d = @createInventoryEntry(sku, expectedQuantity, xmlHelpers.xmlVal(row, 'CommittedDeliveryDate', xmlHelpers.xmlVal(row, 'deliverydate')), channelId)
         stocks.push d
     stocks
 
