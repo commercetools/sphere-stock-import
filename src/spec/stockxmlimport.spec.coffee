@@ -82,7 +82,7 @@ describe '#transform', ->
       s = stocks[1]
       expect(s.sku).toBe 'foo-bar'
       expect(s.quantityOnStock).toBe 12
-      expect(s.expectedDelivery).toBe '2013-11-05T00:00:00'
+      expect(s.expectedDelivery).toBe '2013-11-05T00:00:00.000Z'
       expect(s.supplyChannel.typeId).toBe 'channel'
       expect(s.supplyChannel.id).toBe 'myChannelId'
       done()
@@ -108,7 +108,7 @@ describe '#transform', ->
       s = stocks[1]
       expect(s.sku).toBe 'foo-bar'
       expect(s.quantityOnStock).toBe 12
-      expect(s.expectedDelivery).toBe '2013-11-19T00:00:00'
+      expect(s.expectedDelivery).toBe '2013-11-19T00:00:00.000Z'
       expect(s.supplyChannel.typeId).toBe 'channel'
       expect(s.supplyChannel.id).toBe 'myChannelId'
       done()

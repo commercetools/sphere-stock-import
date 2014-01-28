@@ -53,7 +53,8 @@ class StockXmlImport extends InventoryUpdater
       appointedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'
       if appointedQuantity
         expectedDelivery = xmlHelpers.xmlVal(row, 'CommittedDeliveryDate', xmlHelpers.xmlVal(row, 'deliverydate'))
-        d = @createInventoryEntry(sku, appointedQuantity, expectedDelivery, channelId)
+        date = new Date expectedDelivery
+        d = @createInventoryEntry(sku, appointedQuantity, date.toISOString(), channelId)
         stocks.push d
     stocks
 
