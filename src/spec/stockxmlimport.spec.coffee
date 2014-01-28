@@ -105,6 +105,7 @@ describe '#transform', ->
       expect(s.sku).toBe 'foo-bar'
       expect(s.quantityOnStock).toBe 7
       expect(s.expectedDelivery).toBeUndefined()
+      expect(s.supplyChannel).toBeUndefined()
       s = stocks[1]
       expect(s.sku).toBe 'foo-bar'
       expect(s.quantityOnStock).toBe 12

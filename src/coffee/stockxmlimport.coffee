@@ -5,6 +5,9 @@ InventoryUpdater = require('sphere-node-sync').InventoryUpdater
 Q = require 'q'
 
 class StockXmlImport extends InventoryUpdater
+
+  CHANNEL_KEY = 'expectedStock'
+
   constructor: (options) ->
     options.user_agent = "#{package_json.name} - #{package_json.version}" unless _.isEmpty options
     super(options)
@@ -35,7 +38,7 @@ class StockXmlImport extends InventoryUpdater
       if err
         @returnResult false, 'Error on parsing XML: ' + err, callback
       else
-        @ensureChannelByKey(@rest, 'expectedStock').then (channel) =>
+        @ensureChannelByKey(@rest, CHANNEL_KEY).then (channel) =>
           stocks = @mapStock result.root, channel.id
           console.log "stock entries to process: ", _.size(stocks)
           @initMatcher().then (result) =>
