@@ -37,7 +37,8 @@ class StockXmlImport extends InventoryUpdater
       else
         @ensureChannelByKey(@rest, 'expectedStock').then (channel) =>
           stocks = @mapStock result.root, channel.id
-          @initMatcher().then () =>
+          console.log "stock entries to process: ", _.size(stocks)
+          @initMatcher().then (result) =>
             @createOrUpdate stocks, callback
           .fail (msg) =>
             @returnResult false, msg, callback
@@ -49,9 +50,10 @@ class StockXmlImport extends InventoryUpdater
     for k,row of xmljs.row
       sku = xmlHelpers.xmlVal row, 'code'
       stocks.push @createInventoryEntry(sku, xmlHelpers.xmlVal(row, 'quantity'))
-      expectedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'
-      if expectedQuantity
-        d = @createInventoryEntry(sku, expectedQuantity, xmlHelpers.xmlVal(row, 'CommittedDeliveryDate', xmlHelpers.xmlVal(row, 'deliverydate')), channelId)
+      appointedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'
+      if appointedQuantity
+        expectedDelivery = xmlHelpers.xmlVal(row, 'CommittedDeliveryDate', xmlHelpers.xmlVal(row, 'deliverydate'))
+        d = @createInventoryEntry(sku, appointedQuantity, expectedDelivery, channelId)
         stocks.push d
     stocks
 

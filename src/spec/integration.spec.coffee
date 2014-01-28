@@ -1,3 +1,4 @@
+_ = require('underscore')._
 Config = require '../config'
 StockXmlImport = require('../main').StockXmlImport
 Q = require('q')
@@ -115,3 +116,80 @@ describe '#run', ->
             expect(stocks[0].sku).toBe '1234567890'
             expect(stocks[0].quantityOnStock).toBe 13
             done()
+
+  it 'should create and update 2 stock entries when appointed quantity is given', (done) ->
+    rawXml = '
+<row>
+  <code>myEAN</code>
+  <quantity>-1</quantity>
+  <AppointedQuantity>10</AppointedQuantity>
+  <CommittedDeliveryDate>1999-12-31T11:11:11.000Z</CommittedDeliveryDate>
+</row>'
+    rawXmlChangedAppointedQuantity = rawXml.replace('10', '20')
+    rawXmlChangedCommittedDeliveryDate = rawXml.replace('1999-12-31T11:11:11.000Z', '2000-01-01T12:12:12.000Z')
+
+    @import.run rawXml, (msg) =>
+      console.log 1, msg
+      expect(msg.status).toBe true
+      expect(_.size msg.message).toBe 1
+      expect(msg.message['New inventory entry created.']).toBe 2
+      @import.rest.GET '/inventory', (error, response, body) =>
+        stocks = JSON.parse(body).results
+        console.log 'x', stocks
+        expect(stocks.length).toBe 2
+        expect(stocks[0].sku).toBe 'myEAN'
+        expect(stocks[0].quantityOnStock).toBe -1
+        expect(stocks[0].supplyChannel).toBeUndefined()
+        expect(stocks[1].sku).toBe 'myEAN'
+        expect(stocks[1].quantityOnStock).toBe 10
+        expect(stocks[1].supplyChannel).toBeDefined()
+        expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
+
+        @import.run rawXmlChangedAppointedQuantity, (msg) =>
+          console.log 2, msg
+          expect(msg.status).toBe true
+          expect(_.size msg.message).toBe 2
+          expect(msg.message['Inventory entry updated.']).toBe 1
+          expect(msg.message['Inventory entry update not neccessary.']).toBe 1
+          @import.rest.GET '/inventory', (error, response, body) =>
+            stocks = JSON.parse(body).results
+            expect(stocks[0].sku).toBe 'myEAN'
+            expect(stocks[0].quantityOnStock).toBe -1
+            expect(stocks[0].supplyChannel).toBeUndefined()
+            expect(stocks[1].sku).toBe 'myEAN'
+            expect(stocks[1].quantityOnStock).toBe 20
+            expect(stocks[1].supplyChannel).toBeDefined()
+            expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
+
+            @import.run rawXmlChangedCommittedDeliveryDate, (msg) =>
+              console.log 3, msg
+              expect(msg.status).toBe true
+              expect(_.size msg.message).toBe 2
+              expect(msg.message['Inventory entry updated.']).toBe 1
+              expect(msg.message['Inventory entry update not neccessary.']).toBe 1
+              @import.rest.GET '/inventory', (error, response, body) =>
+                stocks = JSON.parse(body).results
+                expect(stocks[0].sku).toBe 'myEAN'
+                expect(stocks[0].quantityOnStock).toBe -1
+                expect(stocks[0].supplyChannel).toBeUndefined()
+                expect(stocks[1].sku).toBe 'myEAN'
+                expect(stocks[1].quantityOnStock).toBe 10
+                expect(stocks[1].supplyChannel).toBeDefined()
+                expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
+
+                @import.run rawXmlChangedCommittedDeliveryDate, (msg) =>
+                  console.log 4, msg
+                  expect(msg.status).toBe true
+                  expect(_.size msg.message).toBe 1
+                  expect(msg.message['Inventory entry update not neccessary.']).toBe 2
+                  @import.rest.GET '/inventory', (error, response, body) ->
+                    stocks = JSON.parse(body).results
+                    expect(stocks[0].sku).toBe 'myEAN'
+                    expect(stocks[0].quantityOnStock).toBe -1
+                    expect(stocks[0].supplyChannel).toBeUndefined()
+                    expect(stocks[1].sku).toBe 'myEAN'
+                    expect(stocks[1].quantityOnStock).toBe 10
+                    expect(stocks[1].supplyChannel).toBeDefined()
+                    expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
+
+                    done()

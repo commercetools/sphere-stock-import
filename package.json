@@ -29,9 +29,9 @@
     "test": "grunt coverage"
   },
   "dependencies": {
-    "optimist": "0.6.0",
-    "sphere-node-connect": "~0.2.2",
-    "sphere-node-sync": "~0.3.5",
+    "optimist": "~0.6.0",
+    "sphere-node-connect": "0.2.6",
+    "sphere-node-sync": "0.3.6",
     "underscore": "~1.5.2",
     "q": "~1.0.0",
     "xml2js": "~0.4.0"
