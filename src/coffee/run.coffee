@@ -2,7 +2,7 @@ fs = require 'fs'
 package_json = require '../package.json'
 StockXmlImport = require('../main').StockXmlImport
 argv = require('optimist')
-  .usage('Usage: $0 --projectKey key --clientId id --clientSecret secret --xmlfile file --timeout timeout')
+  .usage('Usage: $0 --projectKey [key] --clientId [id] --clientSecret [secret] --xmlfile [file] --timeout [timeout]')
   .default('timeout', 300000)
   .describe('projectKey', 'your SPHERE.IO project-key')
   .describe('clientId', 'your OAuth client id for the SPHERE.IO API')
