@@ -31,7 +31,9 @@ describe "#xmlTransform", ->
 
 describe "#xmlVal", ->
   it "works", ->
-    xml = "<root><row><id>foo</id></row></root>"
+    xml = "<root><row><code>foo</code>123</row></root>"
     xmlHelpers.xmlTransform xml, (err, result) ->
-      expect(xmlHelpers.xmlVal(result.root.row[0], 'id')).toBe 'foo'
-      expect(xmlHelpers.xmlVal(result.root.row[0], 'bar', 'default')).toBe 'default'
+      console.log "R %j", result
+      expect(xmlHelpers.xmlVal(result.root.row[0], 'code')).toBe 'foo'
+      expect(result.root.row[0]['_']).toBe '123'
+      expect(xmlHelpers.xmlVal(result.root.row[0], 'foo', 'defaultValue')).toBe 'defaultValue'
