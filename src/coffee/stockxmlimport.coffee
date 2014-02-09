@@ -50,7 +50,8 @@ class StockXmlImport extends InventoryUpdater
 
   mapStock: (xmljs, channelId) ->
     stocks = []
-    for k,row of xmljs.row
+    return stocks unless xmljs.row
+    for row in xmljs.row
       sku = xmlHelpers.xmlVal row, 'code'
       stocks.push @createInventoryEntry(sku, xmlHelpers.xmlVal(row, 'quantity'))
       appointedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'

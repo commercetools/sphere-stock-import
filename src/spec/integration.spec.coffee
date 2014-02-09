@@ -38,7 +38,7 @@ describe '#run', ->
         done()
 
   it 'Nothing to do', (done) ->
-    @import.run '<root><bar></bar></root>', (msg) ->
+    @import.run '<root></root>', (msg) ->
       expect(msg.status).toBe true
       expect(msg.message).toBe 'Nothing to do.'
       done()
