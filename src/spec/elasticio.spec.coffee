@@ -19,16 +19,19 @@ describe "elasticio file integration", ->
       sphereClientId: Config.config.client_id
       sphereClientSecret: Config.config.client_secret
       sphereProjectKey: Config.config.project_key
-    xml = '
-<row>
-  <code>abc</code>
-  <quantity>-2</quantity>
-</row>
-<row>
-  <code>xyz</code>
-  <quantity>0</quantity>
-</row>
-'
+    xml =
+      '''
+      <root>
+        <row>
+          <code>abc</code>
+          <quantity>-2</quantity>
+        </row>
+        <row>
+          <code>xyz</code>
+          <quantity>0</quantity>
+        </row>
+      </root>
+      '''
     enc = new Buffer(xml).toString('base64')
     msg =
       attachments:

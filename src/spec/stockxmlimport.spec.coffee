@@ -29,12 +29,15 @@ describe '#transform', ->
     @import = new StockXmlImport {}
 
   it 'simple entry', (done) ->
-    rawXml = '
-<row>
-  <code>1</code>
-  <quantity>2</quantity>
-</row>'
-
+    rawXml =
+      '''
+      <root>
+        <row>
+          <code>1</code>
+          <quantity>2</quantity>
+        </row>
+      </root>
+      '''
     xml = xmlHelpers.xmlFix(rawXml)
     xmlHelpers.xmlTransform xml, (err, result) =>
       stocks = @import.mapStock result.root
@@ -45,13 +48,16 @@ describe '#transform', ->
       done()
 
   it 'should map delivery date', (done) ->
-    rawXml = '
-<row>
-  <code>2</code>
-  <quantity>7.000</quantity>
-  <CommittedDeliveryDate>2013-11-19T00:00:00</CommittedDeliveryDate>
-</row>'
-
+    rawXml =
+      '''
+      <root>
+        <row>
+          <code>2</code>
+          <quantity>7.000</quantity>
+          <CommittedDeliveryDate>2013-11-19T00:00:00</CommittedDeliveryDate>
+        </row>
+      </root>
+      '''
     xml = xmlHelpers.xmlFix(rawXml)
     xmlHelpers.xmlTransform xml, (err, result) =>
       stocks = @import.mapStock result.root
@@ -63,14 +69,17 @@ describe '#transform', ->
       done()
 
   it 'should map an extra entry for AppointedQuantity', (done) ->
-    rawXml = '
-<row>
-  <code>foo-bar</code>
-  <quantity>7.000</quantity>
-  <deliverydate>2013-11-05T00:00:00</deliverydate>
-  <AppointedQuantity>12.000</AppointedQuantity>
-</row>'
-
+    rawXml =
+      '''
+      <root>
+        <row>
+          <code>foo-bar</code>
+          <quantity>7.000</quantity>
+          <deliverydate>2013-11-05T00:00:00</deliverydate>
+          <AppointedQuantity>12.000</AppointedQuantity>
+        </row>
+      </root>
+      '''
     xml = xmlHelpers.xmlFix(rawXml)
     xmlHelpers.xmlTransform xml, (err, result) =>
       stocks = @import.mapStock result.root, 'myChannelId'
@@ -88,15 +97,18 @@ describe '#transform', ->
       done()
 
   it 'should use CommittedDeliveryDate over deliverydate', (done) ->
-    rawXml = '
-<row>
-  <code>foo-bar</code>
-  <quantity>7.000</quantity>
-  <deliverydate>2013-11-05T00:00:00</deliverydate>
-  <AppointedQuantity>12.000</AppointedQuantity>
-  <CommittedDeliveryDate>2013-11-19T00:00:00</CommittedDeliveryDate>
-</row>'
-
+    rawXml =
+      '''
+      <root>
+        <row>
+          <code>foo-bar</code>
+          <quantity>7.000</quantity>
+          <deliverydate>2013-11-05T00:00:00</deliverydate>
+          <AppointedQuantity>12.000</AppointedQuantity>
+          <CommittedDeliveryDate>2013-11-19T00:00:00</CommittedDeliveryDate>
+        </row>
+      </root>
+      '''
     xml = xmlHelpers.xmlFix(rawXml)
     xmlHelpers.xmlTransform xml, (err, result) =>
       stocks = @import.mapStock result.root, 'myChannelId'

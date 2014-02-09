@@ -38,17 +38,21 @@ describe '#run', ->
         done()
 
   it 'Nothing to do', (done) ->
-    @import.run '<bar></bar>', (msg) ->
+    @import.run '<root><bar></bar></root>', (msg) ->
       expect(msg.status).toBe true
       expect(msg.message).toBe 'Nothing to do.'
       done()
 
   it 'one new stock', (done) ->
-    rawXml = '
-<row>
-  <code>123</code>
-  <quantity>2</quantity>
-</row>'
+    rawXml =
+      '''
+      <root>
+        <row>
+          <code>123</code>
+          <quantity>2</quantity>
+        </row>
+      </root>
+      '''
     @import.run rawXml, (msg) =>
       expect(msg.status).toBe true
       expect(msg.message).toBe 'New inventory entry created.'
@@ -68,11 +72,15 @@ describe '#run', ->
             done()
 
   it 'add more stock', (done) ->
-    rawXml = '
-<row>
-  <code>234</code>
-  <quantity>7</quantity>
-</row>'
+    rawXml =
+      '''
+      <root>
+        <row>
+          <code>234</code>
+          <quantity>7</quantity>
+        </row>
+      </root>
+      '''
     rawXmlChanged = rawXml.replace('7', '19')
     @import.run rawXml, (msg) =>
       expect(msg.status).toBe true
@@ -93,11 +101,15 @@ describe '#run', ->
             done()
 
   it 'remove some stock', (done) ->
-    rawXml = '
-<row>
-  <code>1234567890</code>
-  <quantity>77</quantity>
-</row>'
+    rawXml =
+      '''
+      <root>
+        <row>
+          <code>1234567890</code>
+          <quantity>77</quantity>
+        </row>
+      </root>
+      '''
     rawXmlChanged = rawXml.replace('77', '13')
     @import.run rawXml, (msg) =>
       expect(msg.status).toBe true
@@ -118,24 +130,26 @@ describe '#run', ->
             done()
 
   it 'should create and update 2 stock entries when appointed quantity is given', (done) ->
-    rawXml = '
-<row>
-  <code>myEAN</code>
-  <quantity>-1</quantity>
-  <AppointedQuantity>10</AppointedQuantity>
-  <CommittedDeliveryDate>1999-12-31T11:11:11.000Z</CommittedDeliveryDate>
-</row>'
+    rawXml =
+      '''
+      <root>
+        <row>
+          <code>myEAN</code>
+          <quantity>-1</quantity>
+          <AppointedQuantity>10</AppointedQuantity>
+          <CommittedDeliveryDate>1999-12-31T11:11:11.000Z</CommittedDeliveryDate>
+        </row>
+      </root>
+      '''
     rawXmlChangedAppointedQuantity = rawXml.replace('10', '20')
     rawXmlChangedCommittedDeliveryDate = rawXml.replace('1999-12-31T11:11:11.000Z', '2000-01-01T12:12:12.000Z')
 
     @import.run rawXml, (msg) =>
-      console.log 1, msg
       expect(msg.status).toBe true
       expect(_.size msg.message).toBe 1
       expect(msg.message['New inventory entry created.']).toBe 2
       @import.rest.GET '/inventory', (error, response, body) =>
         stocks = JSON.parse(body).results
-        console.log 'x', stocks
         expect(stocks.length).toBe 2
         expect(stocks[0].sku).toBe 'myEAN'
         expect(stocks[0].quantityOnStock).toBe -1
@@ -146,7 +160,6 @@ describe '#run', ->
         expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
 
         @import.run rawXmlChangedAppointedQuantity, (msg) =>
-          console.log 2, msg
           expect(msg.status).toBe true
           expect(_.size msg.message).toBe 2
           expect(msg.message['Inventory entry updated.']).toBe 1
@@ -162,7 +175,6 @@ describe '#run', ->
             expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
 
             @import.run rawXmlChangedCommittedDeliveryDate, (msg) =>
-              console.log 3, msg
               expect(msg.status).toBe true
               expect(_.size msg.message).toBe 2
               expect(msg.message['Inventory entry updated.']).toBe 1
@@ -178,7 +190,6 @@ describe '#run', ->
                 expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
 
                 @import.run rawXmlChangedCommittedDeliveryDate, (msg) =>
-                  console.log 4, msg
                   expect(msg.status).toBe true
                   expect(_.size msg.message).toBe 1
                   expect(msg.message['Inventory entry update not neccessary.']).toBe 2

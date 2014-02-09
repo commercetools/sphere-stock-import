@@ -6,11 +6,6 @@ describe "#xmlFix", ->
     expect(xmlHelpers.xmlFix(input))
       .toBe '<?xml version=\"1.0\" encoding=\"UTF-8\"?><root>val</root>'
 
-  it "adds root element", ->
-    input = "<row>1</row><row>2</row>"
-    expect(xmlHelpers.xmlFix(input))
-      .toBe '<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><row>1</row><row>2</row></root>'
-
 describe "#xmlTransform", ->
   it "works", ->
     xml = "<root><row><id>1</id></row><row><id>2</id></row></root>"
@@ -33,7 +28,6 @@ describe "#xmlVal", ->
   it "works", ->
     xml = "<root><row><code>foo</code>123</row></root>"
     xmlHelpers.xmlTransform xml, (err, result) ->
-      console.log "R %j", result
       expect(xmlHelpers.xmlVal(result.root.row[0], 'code')).toBe 'foo'
       expect(result.root.row[0]['_']).toBe '123'
       expect(xmlHelpers.xmlVal(result.root.row[0], 'foo', 'defaultValue')).toBe 'defaultValue'
