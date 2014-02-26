@@ -24,7 +24,11 @@ class StockXmlImport extends InventoryUpdater
       # TODO: As we get only one entry here, we should query for the existing one and not
       # get the whole inventory
       @initMatcher().then () =>
-        @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY)], cb)
+        if msg.body.CHANNEL_KEY
+          @ensureChannelByKey(@rest, msg.body.CHANNEL_KEY).then (channel) =>
+            @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, channel.id)], cb)
+        else
+          @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)], cb)
       .fail (msg) =>
         @returnResult false, msg, cb
     else

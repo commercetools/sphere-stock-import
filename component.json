@@ -41,6 +41,21 @@
                             "title" : "Quantity of product",
                             "type" : "number",
                             "required": true
+                        },
+                        "EXPECTED_DELIVERY" : {
+                            "title" : "Expected delivery date",
+                            "type" : "string",
+                            "required": false
+                        },
+                        "CHANNEL_ID" : {
+                            "title" : "SPHERE.IO channel id",
+                            "type" : "string",
+                            "required": false
+                        },
+                        "CHANNEL_KEY" : {
+                            "title" : "Channel key",
+                            "type" : "string",
+                            "required": false
                         }
                     }
                 }
