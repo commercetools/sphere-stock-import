@@ -23,7 +23,7 @@ describe '#run', ->
       deferred.promise
 
     @import.rest.GET '/inventory?limit=0', (error, response, body) ->
-      stocks = JSON.parse(body).results
+      stocks = body.results
       if stocks.length is 0
         done()
       console.log "Cleaning up #{stocks.length} inventory entries."
@@ -57,7 +57,7 @@ describe '#run', ->
       expect(msg.status).toBe true
       expect(msg.message).toBe 'New inventory entry created.'
       @import.rest.GET '/inventory', (error, response, body) =>
-        stocks = JSON.parse(body).results
+        stocks = body.results
         expect(stocks.length).toBe 1
         expect(stocks[0].sku).toBe '123'
         expect(stocks[0].quantityOnStock).toBe 2
@@ -65,7 +65,7 @@ describe '#run', ->
           expect(msg.status).toBe true
           expect(msg.message).toBe 'Inventory entry update not neccessary.'
           @import.rest.GET '/inventory', (error, response, body) ->
-            stocks = JSON.parse(body).results
+            stocks = body.results
             expect(stocks.length).toBe 1
             expect(stocks[0].sku).toBe '123'
             expect(stocks[0].quantityOnStock).toBe 2
@@ -86,7 +86,7 @@ describe '#run', ->
       expect(msg.status).toBe true
       expect(msg.message).toBe 'New inventory entry created.'
       @import.rest.GET '/inventory', (error, response, body) =>
-        stocks = JSON.parse(body).results
+        stocks = body.results
         expect(stocks.length).toBe 1
         expect(stocks[0].sku).toBe '234'
         expect(stocks[0].quantityOnStock).toBe 7
@@ -94,7 +94,7 @@ describe '#run', ->
           expect(msg.status).toBe true
           expect(msg.message).toBe 'Inventory entry updated.'
           @import.rest.GET '/inventory', (error, response, body) ->
-            stocks = JSON.parse(body).results
+            stocks = body.results
             expect(stocks.length).toBe 1
             expect(stocks[0].sku).toBe '234'
             expect(stocks[0].quantityOnStock).toBe 19
@@ -115,7 +115,7 @@ describe '#run', ->
       expect(msg.status).toBe true
       expect(msg.message).toBe 'New inventory entry created.'
       @import.rest.GET '/inventory', (error, response, body) =>
-        stocks = JSON.parse(body).results
+        stocks = body.results
         expect(stocks.length).toBe 1
         expect(stocks[0].sku).toBe '1234567890'
         expect(stocks[0].quantityOnStock).toBe 77
@@ -123,7 +123,7 @@ describe '#run', ->
           expect(msg.status).toBe true
           expect(msg.message).toBe 'Inventory entry updated.'
           @import.rest.GET '/inventory', (error, response, body) ->
-            stocks = JSON.parse(body).results
+            stocks = body.results
             expect(stocks.length).toBe 1
             expect(stocks[0].sku).toBe '1234567890'
             expect(stocks[0].quantityOnStock).toBe 13
@@ -149,7 +149,7 @@ describe '#run', ->
       expect(_.size msg.message).toBe 1
       expect(msg.message['New inventory entry created.']).toBe 2
       @import.rest.GET '/inventory', (error, response, body) =>
-        stocks = JSON.parse(body).results
+        stocks = body.results
         expect(stocks.length).toBe 2
         expect(stocks[0].sku).toBe 'myEAN'
         expect(stocks[0].quantityOnStock).toBe -1
@@ -165,7 +165,7 @@ describe '#run', ->
           expect(msg.message['Inventory entry updated.']).toBe 1
           expect(msg.message['Inventory entry update not neccessary.']).toBe 1
           @import.rest.GET '/inventory', (error, response, body) =>
-            stocks = JSON.parse(body).results
+            stocks = body.results
             expect(stocks[0].sku).toBe 'myEAN'
             expect(stocks[0].quantityOnStock).toBe -1
             expect(stocks[0].supplyChannel).toBeUndefined()
@@ -180,7 +180,7 @@ describe '#run', ->
               expect(msg.message['Inventory entry updated.']).toBe 1
               expect(msg.message['Inventory entry update not neccessary.']).toBe 1
               @import.rest.GET '/inventory', (error, response, body) =>
-                stocks = JSON.parse(body).results
+                stocks = body.results
                 expect(stocks[0].sku).toBe 'myEAN'
                 expect(stocks[0].quantityOnStock).toBe -1
                 expect(stocks[0].supplyChannel).toBeUndefined()
@@ -194,7 +194,7 @@ describe '#run', ->
                   expect(_.size msg.message).toBe 1
                   expect(msg.message['Inventory entry update not neccessary.']).toBe 2
                   @import.rest.GET '/inventory', (error, response, body) ->
-                    stocks = JSON.parse(body).results
+                    stocks = body.results
                     expect(stocks[0].sku).toBe 'myEAN'
                     expect(stocks[0].quantityOnStock).toBe -1
                     expect(stocks[0].supplyChannel).toBeUndefined()
