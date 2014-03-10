@@ -5,7 +5,8 @@ exports.process = function(msg, cfg, next, snapshot) {
   config = {
     client_id: cfg.sphereClientId,
     client_secret: cfg.sphereClientSecret,
-    project_key: cfg.sphereProjectKey
+    project_key: cfg.sphereProjectKey,
+    timeout: 30000
   };
   var im = new StockXmlImport({
     config: config
