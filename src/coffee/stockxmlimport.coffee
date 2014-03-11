@@ -8,12 +8,13 @@ class StockXmlImport extends InventoryUpdater
 
   CHANNEL_KEY = 'expectedStock'
 
-  constructor: (options) ->
+  constructor: (options = {}) ->
     options.user_agent = "#{package_json.name} - #{package_json.version}" unless _.isEmpty options
     super(options)
 
   elasticio: (msg, cfg, cb, snapshot) ->
     if _.size(msg.attachments) > 0
+      console.log 'elasticio XML mode'
       for attachment of msg.attachments
         continue unless attachment.match /xml$/i
         content = msg.attachments[attachment].content
@@ -21,6 +22,7 @@ class StockXmlImport extends InventoryUpdater
         xmlString = new Buffer(content, 'base64').toString()
         @run xmlString, cb
     else if _.size(msg.body) > 0
+      console.log 'elasticio CSV mode'
       queryString = 'where=' + encodeURIComponent("sku=\"#{msg.body.SKU}\"")
       @initMatcher(queryString).then (existingEntry) =>
         console.log "Query for sku '#{msg.body.SKU}' result: %j", existingEntry
