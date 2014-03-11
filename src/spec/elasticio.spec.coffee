@@ -65,7 +65,10 @@ describe 'elasticio CSV mapping integration', ->
       elasticio.process msg, cfg, (next) ->
         expect(next.status).toBe true
         expect(next.message).toBe 'Inventory entry updated.'
-        done()
+        elasticio.process msg, cfg, (next) ->
+          expect(next.status).toBe true
+          expect(next.message).toBe 'Inventory entry update not neccessary.'
+          done()
 
   it 'should import an entry with channel key', (done) ->
     cfg =
