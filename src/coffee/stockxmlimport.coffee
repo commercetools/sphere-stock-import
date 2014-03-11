@@ -15,15 +15,15 @@ class StockXmlImport extends InventoryUpdater
   elasticio: (msg, cfg, cb, snapshot) ->
     if _.size(msg.attachments) > 0
       for attachment of msg.attachments
-        continue if not attachment.match /xml$/i
+        continue unless attachment.match /xml$/i
         content = msg.attachments[attachment].content
-        continue if not content
+        continue unless content
         xmlString = new Buffer(content, 'base64').toString()
         @run xmlString, cb
     else if _.size(msg.body) > 0
-      # TODO: As we get only one entry here, we should query for the existing one and not
-      # get the whole inventory
-      @initMatcher().then () =>
+      queryString = 'where=' + encodeURIComponent("sku=\"#{msg.body.SKU}\"")
+      @initMatcher(queryString).then (existingEntry) =>
+        console.log "Query for sku '#{msg.body.SKU}' result: %j", existingEntry
         if msg.body.CHANNEL_KEY
           @ensureChannelByKey(@rest, msg.body.CHANNEL_KEY).then (channel) =>
             @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, channel.id)], cb)
