@@ -7,6 +7,7 @@ Q = require 'q'
 class StockXmlImport extends InventoryUpdater
 
   CHANNEL_KEY = 'expectedStock'
+  CHANNEL_ROLES = ['InventorySupply', 'OrderExport', 'OrderImport']
 
   constructor: (options = {}) ->
     options.user_agent = "#{package_json.name} - #{package_json.version}" unless _.isEmpty options
@@ -27,7 +28,7 @@ class StockXmlImport extends InventoryUpdater
       @initMatcher(queryString).then (existingEntry) =>
         console.log "Query for sku '#{msg.body.SKU}' result: %j", existingEntry
         if msg.body.CHANNEL_KEY
-          @ensureChannelByKey(@rest, msg.body.CHANNEL_KEY).then (channel) =>
+          @ensureChannelByKey(@rest, msg.body.CHANNEL_KEY, CHANNEL_ROLES).then (channel) =>
             @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, channel.id)], cb)
         else
           @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)], cb)
@@ -44,7 +45,7 @@ class StockXmlImport extends InventoryUpdater
       if err
         @returnResult false, 'Error on parsing XML: ' + err, callback
       else
-        @ensureChannelByKey(@rest, CHANNEL_KEY).then (channel) =>
+        @ensureChannelByKey(@rest, CHANNEL_KEY, CHANNEL_ROLES).then (channel) =>
           stocks = @mapStock result.root, channel.id
           console.log "stock entries to process: ", _.size(stocks)
           @initMatcher().then (result) =>
