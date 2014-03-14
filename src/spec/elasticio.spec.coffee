@@ -99,7 +99,7 @@ describe 'elasticio CSV mapping integration', ->
       sphereProjectKey: Config.config.project_key
 
     sxi = new StockXmlImport Config
-    sxi.ensureChannelByKey(sxi.rest, 'channel-id-test').then (channel) =>
+    sxi.ensureChannelByKey(sxi.rest, 'channel-id-test').then (channel) ->
       msg =
       attachments: {}
       body:
