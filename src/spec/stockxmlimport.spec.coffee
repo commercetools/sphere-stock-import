@@ -19,12 +19,12 @@ describe '#run', ->
     expect(=> @import.run("")).toThrow new Error('Callback must be a function')
 
   xit 'should give feedback on xml parse problems', (done) ->
-    @import.run "<foo><foo>", (data) ->
+    @import.run "<foo><foo>", 'XML', (data) ->
       expect(data.status).toBe false
       expect(data.message).toMatch /Error on parsing XML/
       done()
 
-describe '#transform', ->
+describe '#_mapStockFromXML', ->
   beforeEach ->
     @import = new StockXmlImport {}
 
@@ -40,7 +40,7 @@ describe '#transform', ->
       '''
     xml = xmlHelpers.xmlFix(rawXml)
     xmlHelpers.xmlTransform xml, (err, result) =>
-      stocks = @import.mapStock result.root
+      stocks = @import._mapStockFromXML result.root
       expect(stocks.length).toBe 1
       s = stocks[0]
       expect(s.sku).toBe '1'
@@ -60,7 +60,7 @@ describe '#transform', ->
       '''
     xml = xmlHelpers.xmlFix(rawXml)
     xmlHelpers.xmlTransform xml, (err, result) =>
-      stocks = @import.mapStock result.root
+      stocks = @import._mapStockFromXML result.root
       expect(stocks.length).toBe 1
       s = stocks[0]
       expect(s.sku).toBe '2'
@@ -82,7 +82,7 @@ describe '#transform', ->
       '''
     xml = xmlHelpers.xmlFix(rawXml)
     xmlHelpers.xmlTransform xml, (err, result) =>
-      stocks = @import.mapStock result.root, 'myChannelId'
+      stocks = @import._mapStockFromXML result.root, 'myChannelId'
       expect(stocks.length).toBe 2
       s = stocks[0]
       expect(s.sku).toBe 'foo-bar'
@@ -111,7 +111,7 @@ describe '#transform', ->
       '''
     xml = xmlHelpers.xmlFix(rawXml)
     xmlHelpers.xmlTransform xml, (err, result) =>
-      stocks = @import.mapStock result.root, 'myChannelId'
+      stocks = @import._mapStockFromXML result.root, 'myChannelId'
       expect(stocks.length).toBe 2
       s = stocks[0]
       expect(s.sku).toBe 'foo-bar'

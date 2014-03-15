@@ -29,6 +29,7 @@
     "test": "grunt coverage"
   },
   "dependencies": {
+    "csv": "0.3.6",
     "optimist": "~0.6.1",
     "sphere-node-connect": "0.4.4",
     "sphere-node-sync": "0.4.6",

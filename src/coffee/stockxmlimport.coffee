@@ -2,6 +2,7 @@ _ = require('underscore')._
 xmlHelpers = require '../lib/xmlhelpers'
 package_json = require '../package.json'
 InventoryUpdater = require('sphere-node-sync').InventoryUpdater
+Csv = require 'csv'
 Q = require 'q'
 
 class StockXmlImport extends InventoryUpdater
@@ -21,7 +22,7 @@ class StockXmlImport extends InventoryUpdater
         content = msg.attachments[attachment].content
         continue unless content
         xmlString = new Buffer(content, 'base64').toString()
-        @run xmlString, cb
+        @run xmlString, 'XML', cb
     else if _.size(msg.body) > 0
       console.log 'elasticio CSV mode'
       queryString = 'where=' + encodeURIComponent("sku=\"#{msg.body.SKU}\"")
@@ -34,28 +35,55 @@ class StockXmlImport extends InventoryUpdater
           @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)], cb)
       .fail (msg) =>
         @returnResult false, msg, cb
+      .done()
     else
       @returnResult false, 'No data found in elastic.io msg.', cb
 
-  run: (xmlString, callback) ->
-    throw new Error 'String required' unless _.isString xmlString
+  run: (fileContent, mode, callback) ->
+    throw new Error 'String required' unless _.isString fileContent
     throw new Error 'Callback must be a function' unless _.isFunction callback
 
-    xmlHelpers.xmlTransform xmlHelpers.xmlFix(xmlString), (err, result) =>
+    if mode is 'XML'
+      @performXML fileContent, callback
+    else if mode is 'CSV'
+      @performCSV fileContent, callback
+    else
+      throw new Error "Unknown stock import mode '#{mode}'!"
+
+  performCSV: (fileContent, callback) ->
+    Csv().from.string(fileContent)
+    .to.array (data, count) =>
+      header = data[0]
+      stocks = @_mapStockFromCSV _.rest data
+      @_perform stocks, callback
+
+  _perform: (stocks, callback) ->
+    console.log 'Stock entries to process: ', _.size(stocks)
+    @initMatcher().then (result) =>
+      @createOrUpdate stocks, callback
+    .fail (msg) =>
+      @returnResult false, msg, callback
+    .done()
+
+  _mapStockFromCSV: (rows, skuIndex = 0, quantityIndex = 1) ->
+    _.map rows, (row) =>
+      sku = row[skuIndex]
+      quantity = row[quantityIndex]
+      @createInventoryEntry sku, quantity
+
+  performXML: (fileContent, callback) ->
+    xmlHelpers.xmlTransform xmlHelpers.xmlFix(fileContent), (err, result) =>
       if err
         @returnResult false, 'Error on parsing XML: ' + err, callback
       else
         @ensureChannelByKey(@rest, CHANNEL_KEY, CHANNEL_ROLES).then (channel) =>
-          stocks = @mapStock result.root, channel.id
-          console.log "stock entries to process: ", _.size(stocks)
-          @initMatcher().then (result) =>
-            @createOrUpdate stocks, callback
-          .fail (msg) =>
-            @returnResult false, msg, callback
+          stocks = @_mapStockFromXML result.root, channel.id
+          @_perform stocks, callback
         .fail (msg) =>
           @returnResult false, msg, callback
+        .done()
 
-  mapStock: (xmljs, channelId) ->
+  _mapStockFromXML: (xmljs, channelId) ->
     stocks = []
     return stocks unless xmljs.row
     for row in xmljs.row

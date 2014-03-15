@@ -34,11 +34,11 @@ describe '#run', ->
       Q.all(dels).then (v) ->
         done()
       .fail (err) ->
-        console.log err
-        done()
+        done(err)
+      .done()
 
   it 'Nothing to do', (done) ->
-    @import.run '<root></root>', (msg) ->
+    @import.run '<root></root>', 'XML', (msg) ->
       expect(msg.status).toBe true
       expect(msg.message).toBe 'Nothing to do.'
       done()
@@ -53,7 +53,7 @@ describe '#run', ->
         </row>
       </root>
       '''
-    @import.run rawXml, (msg) =>
+    @import.run rawXml, 'XML', (msg) =>
       expect(msg.status).toBe true
       expect(msg.message).toBe 'New inventory entry created.'
       @import.rest.GET '/inventory', (error, response, body) =>
@@ -61,7 +61,7 @@ describe '#run', ->
         expect(stocks.length).toBe 1
         expect(stocks[0].sku).toBe '123'
         expect(stocks[0].quantityOnStock).toBe 2
-        @import.run rawXml, (msg) =>
+        @import.run rawXml, 'XML', (msg) =>
           expect(msg.status).toBe true
           expect(msg.message).toBe 'Inventory entry update not neccessary.'
           @import.rest.GET '/inventory', (error, response, body) ->
@@ -82,7 +82,7 @@ describe '#run', ->
       </root>
       '''
     rawXmlChanged = rawXml.replace('7', '19')
-    @import.run rawXml, (msg) =>
+    @import.run rawXml, 'XML', (msg) =>
       expect(msg.status).toBe true
       expect(msg.message).toBe 'New inventory entry created.'
       @import.rest.GET '/inventory', (error, response, body) =>
@@ -90,7 +90,7 @@ describe '#run', ->
         expect(stocks.length).toBe 1
         expect(stocks[0].sku).toBe '234'
         expect(stocks[0].quantityOnStock).toBe 7
-        @import.run rawXmlChanged, (msg) =>
+        @import.run rawXmlChanged, 'XML', (msg) =>
           expect(msg.status).toBe true
           expect(msg.message).toBe 'Inventory entry updated.'
           @import.rest.GET '/inventory', (error, response, body) ->
@@ -111,7 +111,7 @@ describe '#run', ->
       </root>
       '''
     rawXmlChanged = rawXml.replace('77', '13')
-    @import.run rawXml, (msg) =>
+    @import.run rawXml, 'XML', (msg) =>
       expect(msg.status).toBe true
       expect(msg.message).toBe 'New inventory entry created.'
       @import.rest.GET '/inventory', (error, response, body) =>
@@ -119,7 +119,7 @@ describe '#run', ->
         expect(stocks.length).toBe 1
         expect(stocks[0].sku).toBe '1234567890'
         expect(stocks[0].quantityOnStock).toBe 77
-        @import.run rawXmlChanged, (msg) =>
+        @import.run rawXmlChanged, 'XML', (msg) =>
           expect(msg.status).toBe true
           expect(msg.message).toBe 'Inventory entry updated.'
           @import.rest.GET '/inventory', (error, response, body) ->
@@ -144,7 +144,7 @@ describe '#run', ->
     rawXmlChangedAppointedQuantity = rawXml.replace('10', '20')
     rawXmlChangedCommittedDeliveryDate = rawXml.replace('1999-12-31T11:11:11.000Z', '2000-01-01T12:12:12.000Z')
 
-    @import.run rawXml, (msg) =>
+    @import.run rawXml, 'XML', (msg) =>
       expect(msg.status).toBe true
       expect(_.size msg.message).toBe 1
       expect(msg.message['New inventory entry created.']).toBe 2
@@ -159,7 +159,7 @@ describe '#run', ->
         expect(stocks[1].supplyChannel).toBeDefined()
         expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
 
-        @import.run rawXmlChangedAppointedQuantity, (msg) =>
+        @import.run rawXmlChangedAppointedQuantity, 'XML', (msg) =>
           expect(msg.status).toBe true
           expect(_.size msg.message).toBe 2
           expect(msg.message['Inventory entry updated.']).toBe 1
@@ -174,7 +174,7 @@ describe '#run', ->
             expect(stocks[1].supplyChannel).toBeDefined()
             expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
 
-            @import.run rawXmlChangedCommittedDeliveryDate, (msg) =>
+            @import.run rawXmlChangedCommittedDeliveryDate, 'XML', (msg) =>
               expect(msg.status).toBe true
               expect(_.size msg.message).toBe 2
               expect(msg.message['Inventory entry updated.']).toBe 1
@@ -189,7 +189,7 @@ describe '#run', ->
                 expect(stocks[1].supplyChannel).toBeDefined()
                 expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
 
-                @import.run rawXmlChangedCommittedDeliveryDate, (msg) =>
+                @import.run rawXmlChangedCommittedDeliveryDate, 'XML', (msg) =>
                   expect(msg.status).toBe true
                   expect(_.size msg.message).toBe 1
                   expect(msg.message['Inventory entry update not neccessary.']).toBe 2
@@ -204,3 +204,27 @@ describe '#run', ->
                     expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
 
                     done()
+
+  it 'CSV - one new stock', (done) ->
+    raw =
+      '''
+      stock,quantity
+      abcd,77
+      '''
+    @import.run raw, 'CSV', (msg) =>
+      expect(msg.status).toBe true
+      expect(msg.message).toBe 'New inventory entry created.'
+      @import.rest.GET '/inventory', (error, response, body) =>
+        stocks = body.results
+        expect(stocks.length).toBe 1
+        expect(stocks[0].sku).toBe 'abcd'
+        expect(stocks[0].quantityOnStock).toBe 77
+        @import.run raw, 'CSV', (msg) =>
+          expect(msg.status).toBe true
+          expect(msg.message).toBe 'Inventory entry update not neccessary.'
+          @import.rest.GET '/inventory', (error, response, body) ->
+            stocks = body.results
+            expect(stocks.length).toBe 1
+            expect(stocks[0].sku).toBe 'abcd'
+            expect(stocks[0].quantityOnStock).toBe 77
+            done()
