@@ -1,9 +1,8 @@
-_ = require('underscore')._
-xmlHelpers = require '../lib/xmlhelpers'
-package_json = require '../package.json'
-InventoryUpdater = require('sphere-node-sync').InventoryUpdater
+_ = require 'underscore'
 Csv = require 'csv'
-Q = require 'q'
+{InventoryUpdater} = require 'sphere-node-sync'
+package_json = require '../package.json'
+xmlHelpers = require '../lib/xmlhelpers'
 
 class StockXmlImport extends InventoryUpdater
 
