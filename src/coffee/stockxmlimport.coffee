@@ -56,7 +56,7 @@ class StockXmlImport extends InventoryUpdater
       header = data[0]
       stocks = @_mapStockFromCSV _.rest data
       @_perform stocks, callback
-    .on 'error', (error) ->
+    .on 'error', (error) =>
       @returnResult false, error.message, callback
 
   _perform: (stocks, callback) ->
