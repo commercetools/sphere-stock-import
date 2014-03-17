@@ -28,12 +28,13 @@ class StockXmlImport extends InventoryUpdater
       @initMatcher(queryString).then (existingEntry) =>
         console.log "Query for sku '#{msg.body.SKU}' result: %j", existingEntry
         if msg.body.CHANNEL_KEY
-          @ensureChannelByKey(@rest, msg.body.CHANNEL_KEY, CHANNEL_ROLES).then (channel) =>
+          @ensureChannelByKey(@rest, msg.body.CHANNEL_KEY, CHANNEL_ROLES)
+          .then (channel) =>
             @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, channel.id)], cb)
+          .fail (msg) => @returnResult false, msg, cb
         else
           @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)], cb)
-      .fail (msg) =>
-        @returnResult false, msg, cb
+      .fail (msg) => @returnResult false, msg, cb
       .done()
     else
       @returnResult false, 'No data found in elastic.io msg.', cb
@@ -55,6 +56,8 @@ class StockXmlImport extends InventoryUpdater
       header = data[0]
       stocks = @_mapStockFromCSV _.rest data
       @_perform stocks, callback
+    .on 'error', (error) ->
+      @returnResult false, error.message, callback
 
   _perform: (stocks, callback) ->
     console.log 'Stock entries to process: ', _.size(stocks)
@@ -73,7 +76,7 @@ class StockXmlImport extends InventoryUpdater
   performXML: (fileContent, callback) ->
     xmlHelpers.xmlTransform xmlHelpers.xmlFix(fileContent), (err, result) =>
       if err
-        @returnResult false, 'Error on parsing XML: ' + err, callback
+        @returnResult false, "Error on parsing XML: #{err}", callback
       else
         @ensureChannelByKey(@rest, CHANNEL_KEY, CHANNEL_ROLES).then (channel) =>
           stocks = @_mapStockFromXML result.root, channel.id
