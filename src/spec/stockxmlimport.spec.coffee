@@ -47,7 +47,7 @@ describe '#_mapStockFromXML', ->
       expect(s.quantityOnStock).toBe 2
       done()
 
-  it 'should map delivery date', (done) ->
+  it 'should not map delivery date when no AppointedQuantity given', (done) ->
     rawXml =
       '''
       <root>
@@ -75,7 +75,6 @@ describe '#_mapStockFromXML', ->
         <row>
           <code>foo-bar</code>
           <quantity>7.000</quantity>
-          <deliverydate>2013-11-05T00:00:00</deliverydate>
           <AppointedQuantity>12.000</AppointedQuantity>
         </row>
       </root>
@@ -91,37 +90,7 @@ describe '#_mapStockFromXML', ->
       s = stocks[1]
       expect(s.sku).toBe 'foo-bar'
       expect(s.quantityOnStock).toBe 12
-      expect(s.expectedDelivery).toBe '2013-11-05T00:00:00.000Z'
-      expect(s.supplyChannel.typeId).toBe 'channel'
-      expect(s.supplyChannel.id).toBe 'myChannelId'
-      done()
-
-  it 'should use CommittedDeliveryDate over deliverydate', (done) ->
-    rawXml =
-      '''
-      <root>
-        <row>
-          <code>foo-bar</code>
-          <quantity>7.000</quantity>
-          <deliverydate>2013-11-05T00:00:00</deliverydate>
-          <AppointedQuantity>12.000</AppointedQuantity>
-          <CommittedDeliveryDate>2013-11-19T00:00:00</CommittedDeliveryDate>
-        </row>
-      </root>
-      '''
-    xml = xmlHelpers.xmlFix(rawXml)
-    xmlHelpers.xmlTransform xml, (err, result) =>
-      stocks = @import._mapStockFromXML result.root, 'myChannelId'
-      expect(stocks.length).toBe 2
-      s = stocks[0]
-      expect(s.sku).toBe 'foo-bar'
-      expect(s.quantityOnStock).toBe 7
       expect(s.expectedDelivery).toBeUndefined()
-      expect(s.supplyChannel).toBeUndefined()
-      s = stocks[1]
-      expect(s.sku).toBe 'foo-bar'
-      expect(s.quantityOnStock).toBe 12
-      expect(s.expectedDelivery).toBe '2013-11-19T00:00:00.000Z'
       expect(s.supplyChannel.typeId).toBe 'channel'
       expect(s.supplyChannel.id).toBe 'myChannelId'
       done()
