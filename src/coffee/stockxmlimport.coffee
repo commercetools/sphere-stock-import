@@ -26,7 +26,6 @@ class StockXmlImport extends InventoryUpdater
       console.log 'elasticio CSV mode'
       queryString = 'where=' + encodeURIComponent("sku=\"#{msg.body.SKU}\"")
       @initMatcher(queryString).then (existingEntry) =>
-        console.log "Query for sku '#{msg.body.SKU}' result: %j", existingEntry
         if msg.body.CHANNEL_KEY
           @ensureChannelByKey(@rest, msg.body.CHANNEL_KEY, CHANNEL_ROLES)
           .then (channel) =>
