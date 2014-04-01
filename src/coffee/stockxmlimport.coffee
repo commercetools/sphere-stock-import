@@ -13,30 +13,33 @@ class StockXmlImport extends InventoryUpdater
     options.user_agent = "#{package_json.name} - #{package_json.version}" unless _.isEmpty options
     super(options)
 
-  elasticio: (msg, cfg, cb, snapshot) ->
+  elasticio: (msg, cfg, next, snapshot) ->
     if _.size(msg.attachments) > 0
-      console.log 'elasticio XML mode'
+      console.log 'elasticio file mode'
       for attachment of msg.attachments
-        continue unless attachment.match /xml$/i
         content = msg.attachments[attachment].content
         continue unless content
-        xmlString = new Buffer(content, 'base64').toString()
-        @run xmlString, 'XML', cb
+        encoded = new Buffer(content, 'base64').toString()
+        mode = switch
+          when attachment.match /\.csv$/i then 'CSV'
+          when attachment.match /\.xml$/i then 'XML'
+        @run encoded, mode, next
+
     else if _.size(msg.body) > 0
-      console.log 'elasticio CSV mode'
+      console.log 'elasticio CSV mapping mode'
       queryString = 'where=' + encodeURIComponent("sku=\"#{msg.body.SKU}\"")
       @initMatcher(queryString).then (existingEntry) =>
         if msg.body.CHANNEL_KEY
           @ensureChannelByKey(@rest, msg.body.CHANNEL_KEY, CHANNEL_ROLES)
           .then (channel) =>
-            @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, channel.id)], cb)
-          .fail (msg) => @returnResult false, msg, cb
+            @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, channel.id)], next)
+          .fail (msg) => @returnResult false, msg, next
         else
-          @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)], cb)
-      .fail (msg) => @returnResult false, msg, cb
+          @createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)], next)
+      .fail (msg) => @returnResult false, msg, next
       .done()
     else
-      @returnResult false, 'No data found in elastic.io msg.', cb
+      @returnResult false, 'No data found in elastic.io msg.', next
 
   run: (fileContent, mode, callback) ->
     throw new Error 'String required' unless _.isString fileContent
@@ -47,7 +50,7 @@ class StockXmlImport extends InventoryUpdater
     else if mode is 'CSV'
       @performCSV fileContent, callback
     else
-      throw new Error "Unknown stock import mode '#{mode}'!"
+      @returnResult false, "Unknown stock import mode '#{mode}'!", next
 
   performCSV: (fileContent, callback) ->
     Csv().from.string(fileContent)

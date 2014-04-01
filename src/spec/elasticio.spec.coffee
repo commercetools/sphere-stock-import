@@ -45,6 +45,31 @@ describe 'elasticio XML file integration', ->
       expect(next.message['New inventory entry created.']).toBe 2
       done()
 
+describe 'elasticio CSV file integration', ->
+  it 'should import from one file with 3 entries', (done) ->
+    cfg =
+      sphereClientId: Config.config.client_id
+      sphereClientSecret: Config.config.client_secret
+      sphereProjectKey: Config.config.project_key
+    csv =
+      '''
+      sku,quantity
+      1,1
+      2,2
+      3,3
+      '''
+    enc = new Buffer(csv).toString('base64')
+    msg =
+      attachments:
+        'stock.csv':
+          content: enc
+
+    elasticio.process msg, cfg, (next) ->
+      expect(next.status).toBe true
+      expect(_.size next.message).toBe 1
+      expect(next.message['New inventory entry created.']).toBe 3
+      done()
+
 describe 'elasticio CSV mapping integration', ->
   it 'should import a simple entry', (done) ->
     cfg =
