@@ -10,8 +10,7 @@ exports.process = function(msg, cfg, next, snapshot) {
     timeout: 60000,
     user_agent: "#{package_json.name} - elasticio - #{package_json.version}"
     logConfig: {
-      levelStream: 'warn',
-      levelFile: 'error'
+      streams: []
     }
   };
   var im = new StockXmlImport({
