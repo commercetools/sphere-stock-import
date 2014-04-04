@@ -1,6 +1,6 @@
 var package_json = require('./package.json')
 var StockImport = require('./lib/stockimport')
-var bunyanLogentries = require('bunyan-logentries')
+//var bunyanLogentries = require('bunyan-logentries')
 
 exports.process = function(msg, cfg, next, snapshot) {
   var config = {
@@ -15,9 +15,9 @@ exports.process = function(msg, cfg, next, snapshot) {
       ]
     }
   };
-  if (cfg.logentriesToken) {
-    config.logConfig.streams.push({ level: 'info', stream: bunyanLogentries.createStream({token: cfg.logentriesToken}), type: 'raw' })
-  }
+//  if (cfg.logentriesToken) {
+//    config.logConfig.streams.push({ level: 'info', stream: bunyanLogentries.createStream({token: cfg.logentriesToken}), type: 'raw' })
+//  }
   var im = new StockImport({
     config: config
   });
