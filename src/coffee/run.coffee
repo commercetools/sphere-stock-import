@@ -29,7 +29,7 @@ fs.readFile fileName, 'utf8', (err, content) ->
   if err?
     console.error "Problems on reading file '#{fileName}': #{err}"
     process.exit 2
-  stockxmlimport.run(content, mode)
+  stockimport.run(content, mode)
   .then (result) ->
     console.info result
     process.exit 0
