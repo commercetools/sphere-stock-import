@@ -39,7 +39,7 @@ class StockImport
     else if _.size(msg.body) > 0
       @_initMatcher("sku=\"#{msg.body.SKU}\"")
       .then =>
-        if msg.body.CHANNEL_KEY
+        if msg.body.CHANNEL_KEY?
           @ensureChannelByKey(@client._rest, msg.body.CHANNEL_KEY, CHANNEL_ROLES)
           .then (result) =>
             @_createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, result.id)])
@@ -104,7 +104,7 @@ class StockImport
 
     # TODO: register this before!
     .on 'error', (error) ->
-      deferred.reject new Error "Problem in parsing CSV: #{error}"
+      deferred.reject "Problem in parsing CSV: #{error}"
 
     deferred.promise
 
@@ -118,7 +118,7 @@ class StockImport
     deferred = Q.defer()
     xmlHelpers.xmlTransform xmlHelpers.xmlFix(fileContent), (err, xml) =>
       if err?
-        deferred.reject new Error "Error on parsing XML: #{err}"
+        deferred.reject "Error on parsing XML: #{err}"
       else
         @ensureChannelByKey(@client._rest, CHANNEL_KEY_FOR_XML_MAPPING, CHANNEL_ROLES)
         .then (result) =>
@@ -139,7 +139,7 @@ class StockImport
         sku = xmlHelpers.xmlVal row, 'code'
         stocks.push @createInventoryEntry(sku, xmlHelpers.xmlVal(row, 'quantity'))
         appointedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'
-        if appointedQuantity
+        if appointedQuantity?
           expectedDelivery = xmlHelpers.xmlVal row, 'CommittedDeliveryDate'
           if expectedDelivery?
             expectedDelivery = new Date(expectedDelivery).toISOString()
@@ -186,7 +186,7 @@ class StockImport
 
   _createOrUpdate: (inventoryEntries) ->
     if _.size(inventoryEntries) is 0
-      Q.resolve 'Nothing to do.'
+      Q 'Nothing to do.'
     else
       posts = _.map inventoryEntries, (entry) =>
         existingEntry = @_match(entry)
