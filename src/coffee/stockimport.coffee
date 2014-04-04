@@ -1,7 +1,7 @@
 _ = require 'underscore'
 Csv = require 'csv'
 SphereClient = require 'sphere-node-client'
-{ElasticIo, Qbatch} = require 'sphere-node-utils'
+{ElasticIo} = require 'sphere-node-utils'
 {InventorySync} = require 'sphere-node-sync'
 package_json = require '../package.json'
 xmlHelpers = require '../lib/xmlhelpers'
@@ -32,8 +32,10 @@ class StockImport
         encoded = new Buffer(content, 'base64').toString()
         mode = @getMode(attachment)
         @run(encoded, mode)
-        .then (result) => ElasticIo.returnSuccess @sumResult(result), next
-        .fail (err) -> ElasticIo.returnFailure err, next
+        .then (result) =>
+          ElasticIo.returnSuccess @sumResult(result), next
+        .fail (err) ->
+          ElasticIo.returnFailure err, next
         .done()
 
     else if _.size(msg.body) > 0
@@ -43,11 +45,14 @@ class StockImport
           @ensureChannelByKey(@client._rest, msg.body.CHANNEL_KEY, CHANNEL_ROLES)
           .then (result) =>
             @_createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, result.id)])
-          .then (result) => ElasticIo.returnSuccess @sumResult(result), next
+          .then (result) =>
+            ElasticIo.returnSuccess @sumResult(result), next
         else
           @_createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)])
-          .then (result) => ElasticIo.returnSuccess @sumResult(result), next
-      .fail (msg) -> ElasticIo.returnFailure msg, next
+          .then (result) =>
+            ElasticIo.returnSuccess @sumResult(result), next
+      .fail (msg) ->
+        ElasticIo.returnFailure err, next
       .done()
     else
       ElasticIo.returnFailure 'No data found in elastic.io msg.', next

@@ -20,7 +20,13 @@
                 "viewClass": "TextFieldView",
                 "label": "Client Secret",
                 "required": true,
-                "placeholder": "Paste your your SPHERE.IO client secret here"
+                "placeholder": "Paste your SPHERE.IO client secret here"
+            },
+            "logentriesToken": {
+                "viewClass": "TextFieldView",
+                "label": "Logentries.com Token",
+                "required": false,
+                "placeholder": "Paste your logentries.com token here"
             }
         }
     },
