@@ -193,7 +193,7 @@ describe 'integration test', ->
         expect(result[0].statusCode).toBe 304
         expect(result[1].statusCode).toBe 304
         @client.inventoryEntries.fetch()
-      .then (result) =>
+      .then (result) ->
         stocks = result.body.results
         expect(stocks[0].sku).toBe 'myEAN'
         expect(stocks[0].quantityOnStock).toBe -1
