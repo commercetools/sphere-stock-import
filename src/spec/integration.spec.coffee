@@ -1,155 +1,157 @@
 _ = require('underscore')._
 Config = require '../config'
-StockXmlImport = require('../main').StockXmlImport
+StockImport = require '../lib/stockimport'
 Q = require('q')
 
 # Increase timeout
-jasmine.getEnv().defaultTimeoutInterval = 20000
+jasmine.getEnv().defaultTimeoutInterval = 10000
 
-describe '#run', ->
+describe 'integration test', ->
   beforeEach (done) ->
-    @import = new StockXmlImport Config
+    @stockimport = new StockImport Config
+    @client = @stockimport.client
 
-    del = (id) =>
-      deferred = Q.defer()
-      @import.rest.DELETE "/inventory/#{id}", (error, response, body) ->
-        if error
-          deferred.reject error
-        else
-          if response.statusCode is 200 or response.statusCode is 404
-            deferred.resolve true
-          else
-            deferred.reject body
-      deferred.promise
-
-    @import.rest.GET '/inventory?limit=0', (error, response, body) ->
-      stocks = body.results
-      if stocks.length is 0
+    console.info 'Deleting old inventory entires...'
+    @client.inventoryEntries.perPage(0).fetch()
+    .then (result) =>
+      dels = _.map result.body.results, (e) =>
+        @client.inventoryEntries.byId(e.id).delete(e.version)
+      Q.all(dels)
+      .then ->
+        console.info "#{_.size dels} deleted."
         done()
-      console.log "Cleaning up #{stocks.length} inventory entries."
-      dels = []
-      for s in stocks
-        dels.push del(s.id)
+    .fail (err) ->
+      done err
 
-      Q.all(dels).then (v) ->
+  describe 'XML file', ->
+    it 'Nothing to do', (done) ->
+      @stockimport.run('<root></root>', 'XML')
+      .then (result) ->
+        expect(result).toBe 'Nothing to do.'
         done()
       .fail (err) ->
-        done(err)
-      .done()
+        done err
 
-  it 'Nothing to do', (done) ->
-    @import.run '<root></root>', 'XML', (msg) ->
-      expect(msg.status).toBe true
-      expect(msg.message).toBe 'Nothing to do.'
-      done()
-
-  it 'one new stock', (done) ->
-    rawXml =
-      '''
-      <root>
-        <row>
-          <code>123</code>
-          <quantity>2</quantity>
-        </row>
-      </root>
-      '''
-    @import.run rawXml, 'XML', (msg) =>
-      expect(msg.status).toBe true
-      expect(msg.message).toBe 'New inventory entry created.'
-      @import.rest.GET '/inventory', (error, response, body) =>
-        stocks = body.results
-        expect(stocks.length).toBe 1
+    it 'one new stock', (done) ->
+      rawXml =
+        '''
+        <root>
+          <row>
+            <code>123</code>
+            <quantity>2</quantity>
+          </row>
+        </root>
+        '''
+      @stockimport.run(rawXml, 'XML')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 201
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
         expect(stocks[0].sku).toBe '123'
         expect(stocks[0].quantityOnStock).toBe 2
-        @import.run rawXml, 'XML', (msg) =>
-          expect(msg.status).toBe true
-          expect(msg.message).toBe 'Inventory entry update not neccessary.'
-          @import.rest.GET '/inventory', (error, response, body) ->
-            stocks = body.results
-            expect(stocks.length).toBe 1
-            expect(stocks[0].sku).toBe '123'
-            expect(stocks[0].quantityOnStock).toBe 2
-            done()
+        @stockimport.run(rawXml, 'XML')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 304
+        @client.inventoryEntries.fetch()
+      .then (result) ->
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe '123'
+        expect(stocks[0].quantityOnStock).toBe 2
+        done()
+      .fail (err) ->
+        done err
 
-  it 'add more stock', (done) ->
-    rawXml =
-      '''
-      <root>
-        <row>
-          <code>234</code>
-          <quantity>7</quantity>
-        </row>
-      </root>
-      '''
-    rawXmlChanged = rawXml.replace('7', '19')
-    @import.run rawXml, 'XML', (msg) =>
-      expect(msg.status).toBe true
-      expect(msg.message).toBe 'New inventory entry created.'
-      @import.rest.GET '/inventory', (error, response, body) =>
-        stocks = body.results
-        expect(stocks.length).toBe 1
+    it 'add more stock', (done) ->
+      rawXml =
+        '''
+        <root>
+          <row>
+            <code>234</code>
+            <quantity>7</quantity>
+          </row>
+        </root>
+        '''
+      rawXmlChanged = rawXml.replace('7', '19')
+      @stockimport.run(rawXml, 'XML')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 201
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
         expect(stocks[0].sku).toBe '234'
         expect(stocks[0].quantityOnStock).toBe 7
-        @import.run rawXmlChanged, 'XML', (msg) =>
-          expect(msg.status).toBe true
-          expect(msg.message).toBe 'Inventory entry updated.'
-          @import.rest.GET '/inventory', (error, response, body) ->
-            stocks = body.results
-            expect(stocks.length).toBe 1
-            expect(stocks[0].sku).toBe '234'
-            expect(stocks[0].quantityOnStock).toBe 19
-            done()
+        @stockimport.run(rawXmlChanged, 'XML')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 200
+        @client.inventoryEntries.fetch()
+      .then (result) ->
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe '234'
+        expect(stocks[0].quantityOnStock).toBe 19
+        done()
+      .fail (err) ->
+        done err
 
-  it 'remove some stock', (done) ->
-    rawXml =
-      '''
-      <root>
-        <row>
-          <code>1234567890</code>
-          <quantity>77</quantity>
-        </row>
-      </root>
-      '''
-    rawXmlChanged = rawXml.replace('77', '13')
-    @import.run rawXml, 'XML', (msg) =>
-      expect(msg.status).toBe true
-      expect(msg.message).toBe 'New inventory entry created.'
-      @import.rest.GET '/inventory', (error, response, body) =>
-        stocks = body.results
-        expect(stocks.length).toBe 1
+    it 'remove some stock', (done) ->
+      rawXml =
+        '''
+        <root>
+          <row>
+            <code>1234567890</code>
+            <quantity>77</quantity>
+          </row>
+        </root>
+        '''
+      rawXmlChanged = rawXml.replace('77', '-13')
+      @stockimport.run(rawXml, 'XML')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 201
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
         expect(stocks[0].sku).toBe '1234567890'
         expect(stocks[0].quantityOnStock).toBe 77
-        @import.run rawXmlChanged, 'XML', (msg) =>
-          expect(msg.status).toBe true
-          expect(msg.message).toBe 'Inventory entry updated.'
-          @import.rest.GET '/inventory', (error, response, body) ->
-            stocks = body.results
-            expect(stocks.length).toBe 1
-            expect(stocks[0].sku).toBe '1234567890'
-            expect(stocks[0].quantityOnStock).toBe 13
-            done()
+        @stockimport.run(rawXmlChanged, 'XML')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 200
+        @client.inventoryEntries.fetch()
+      .then (result) ->
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe '1234567890'
+        expect(stocks[0].quantityOnStock).toBe -13
+        done()
+      .fail (err) ->
+        done err
 
-  it 'should create and update 2 stock entries when appointed quantity is given', (done) ->
-    rawXml =
-      '''
-      <root>
-        <row>
-          <code>myEAN</code>
-          <quantity>-1</quantity>
-          <AppointedQuantity>10</AppointedQuantity>
-          <CommittedDeliveryDate>1999-12-31T11:11:11.000Z</CommittedDeliveryDate>
-        </row>
-      </root>
-      '''
-    rawXmlChangedAppointedQuantity = rawXml.replace('10', '20')
-    rawXmlChangedCommittedDeliveryDate = rawXml.replace('1999-12-31T11:11:11.000Z', '2000-01-01T12:12:12.000Z')
+    it 'should create and update 2 stock entries when appointed quantity is given', (done) ->
+      rawXml =
+        '''
+        <root>
+          <row>
+            <code>myEAN</code>
+            <quantity>-1</quantity>
+            <AppointedQuantity>10</AppointedQuantity>
+            <CommittedDeliveryDate>1999-12-31T11:11:11.000Z</CommittedDeliveryDate>
+          </row>
+        </root>
+        '''
+      rawXmlChangedAppointedQuantity = rawXml.replace('10', '20')
+      rawXmlChangedCommittedDeliveryDate = rawXml.replace('1999-12-31T11:11:11.000Z', '2000-01-01T12:12:12.000Z')
 
-    @import.run rawXml, 'XML', (msg) =>
-      expect(msg.status).toBe true
-      expect(_.size msg.message).toBe 1
-      expect(msg.message['New inventory entry created.']).toBe 2
-      @import.rest.GET '/inventory', (error, response, body) =>
-        stocks = body.results
+      @stockimport.run(rawXml, 'XML')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 201
+        expect(result[1].statusCode).toBe 201
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
         expect(stocks.length).toBe 2
         expect(stocks[0].sku).toBe 'myEAN'
         expect(stocks[0].quantityOnStock).toBe -1
@@ -158,73 +160,77 @@ describe '#run', ->
         expect(stocks[1].quantityOnStock).toBe 10
         expect(stocks[1].supplyChannel).toBeDefined()
         expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
+        @stockimport.run(rawXmlChangedAppointedQuantity, 'XML')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 304
+        expect(result[1].statusCode).toBe 200
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(stocks[0].sku).toBe 'myEAN'
+        expect(stocks[0].quantityOnStock).toBe -1
+        expect(stocks[0].supplyChannel).toBeUndefined()
+        expect(stocks[1].sku).toBe 'myEAN'
+        expect(stocks[1].quantityOnStock).toBe 20
+        expect(stocks[1].supplyChannel).toBeDefined()
+        expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
+        @stockimport.run(rawXmlChangedCommittedDeliveryDate, 'XML')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 304
+        expect(result[1].statusCode).toBe 200
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(stocks[0].sku).toBe 'myEAN'
+        expect(stocks[0].quantityOnStock).toBe -1
+        expect(stocks[0].supplyChannel).toBeUndefined()
+        expect(stocks[1].sku).toBe 'myEAN'
+        expect(stocks[1].quantityOnStock).toBe 10
+        expect(stocks[1].supplyChannel).toBeDefined()
+        expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
+        @stockimport.run(rawXmlChangedCommittedDeliveryDate, 'XML')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 304
+        expect(result[1].statusCode).toBe 304
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(stocks[0].sku).toBe 'myEAN'
+        expect(stocks[0].quantityOnStock).toBe -1
+        expect(stocks[0].supplyChannel).toBeUndefined()
+        expect(stocks[1].sku).toBe 'myEAN'
+        expect(stocks[1].quantityOnStock).toBe 10
+        expect(stocks[1].supplyChannel).toBeDefined()
+        expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
+        done()
+      .fail (err) ->
+        done err
 
-        @import.run rawXmlChangedAppointedQuantity, 'XML', (msg) =>
-          expect(msg.status).toBe true
-          expect(_.size msg.message).toBe 2
-          expect(msg.message['Inventory entry updated.']).toBe 1
-          expect(msg.message['Inventory entry update not neccessary.']).toBe 1
-          @import.rest.GET '/inventory', (error, response, body) =>
-            stocks = body.results
-            expect(stocks[0].sku).toBe 'myEAN'
-            expect(stocks[0].quantityOnStock).toBe -1
-            expect(stocks[0].supplyChannel).toBeUndefined()
-            expect(stocks[1].sku).toBe 'myEAN'
-            expect(stocks[1].quantityOnStock).toBe 20
-            expect(stocks[1].supplyChannel).toBeDefined()
-            expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
-
-            @import.run rawXmlChangedCommittedDeliveryDate, 'XML', (msg) =>
-              expect(msg.status).toBe true
-              expect(_.size msg.message).toBe 2
-              expect(msg.message['Inventory entry updated.']).toBe 1
-              expect(msg.message['Inventory entry update not neccessary.']).toBe 1
-              @import.rest.GET '/inventory', (error, response, body) =>
-                stocks = body.results
-                expect(stocks[0].sku).toBe 'myEAN'
-                expect(stocks[0].quantityOnStock).toBe -1
-                expect(stocks[0].supplyChannel).toBeUndefined()
-                expect(stocks[1].sku).toBe 'myEAN'
-                expect(stocks[1].quantityOnStock).toBe 10
-                expect(stocks[1].supplyChannel).toBeDefined()
-                expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
-
-                @import.run rawXmlChangedCommittedDeliveryDate, 'XML', (msg) =>
-                  expect(msg.status).toBe true
-                  expect(_.size msg.message).toBe 1
-                  expect(msg.message['Inventory entry update not neccessary.']).toBe 2
-                  @import.rest.GET '/inventory', (error, response, body) ->
-                    stocks = body.results
-                    expect(stocks[0].sku).toBe 'myEAN'
-                    expect(stocks[0].quantityOnStock).toBe -1
-                    expect(stocks[0].supplyChannel).toBeUndefined()
-                    expect(stocks[1].sku).toBe 'myEAN'
-                    expect(stocks[1].quantityOnStock).toBe 10
-                    expect(stocks[1].supplyChannel).toBeDefined()
-                    expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
-
-                    done()
-
-  it 'CSV - one new stock', (done) ->
-    raw =
-      '''
-      stock,quantity
-      abcd,77
-      '''
-    @import.run raw, 'CSV', (msg) =>
-      expect(msg.status).toBe true
-      expect(msg.message).toBe 'New inventory entry created.'
-      @import.rest.GET '/inventory', (error, response, body) =>
-        stocks = body.results
-        expect(stocks.length).toBe 1
+  describe 'CSV file', ->
+    it 'CSV - one new stock', (done) ->
+      raw =
+        '''
+        stock,quantity
+        abcd,0
+        '''
+      @stockimport.run(raw, 'CSV')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 201
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
         expect(stocks[0].sku).toBe 'abcd'
-        expect(stocks[0].quantityOnStock).toBe 77
-        @import.run raw, 'CSV', (msg) =>
-          expect(msg.status).toBe true
-          expect(msg.message).toBe 'Inventory entry update not neccessary.'
-          @import.rest.GET '/inventory', (error, response, body) ->
-            stocks = body.results
-            expect(stocks.length).toBe 1
-            expect(stocks[0].sku).toBe 'abcd'
-            expect(stocks[0].quantityOnStock).toBe 77
-            done()
+        expect(stocks[0].quantityOnStock).toBe 0
+        @stockimport.run(raw, 'CSV')
+      .then (result) =>
+        expect(result[0].statusCode).toBe 304
+        @client.inventoryEntries.fetch()
+      .then (result) ->
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe 'abcd'
+        expect(stocks[0].quantityOnStock).toBe 0
+        done()
+      .fail (err) ->
+        done err

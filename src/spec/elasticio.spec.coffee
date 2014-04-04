@@ -1,142 +1,152 @@
-_ = require('underscore')._
+_ = require 'underscore'
 elasticio = require '../elasticio'
 Config = require '../config'
-StockXmlImport = require('../main').StockXmlImport
+StockImport = require '../lib/stockimport'
 
-describe 'elasticio XML file integration', ->
+describe 'elasticio integration', ->
   it 'should work with no attachments nor body', (done) ->
     cfg =
       sphereClientId: 'some'
       sphereClientSecret: 'stuff'
       sphereProjectKey: 'here'
     msg = ''
-    elasticio.process msg, cfg, (next) ->
-      expect(next.status).toBe false
-      expect(next.message).toBe 'No data found in elastic.io msg.'
+    elasticio.process msg, cfg, (error, message) ->
+      expect(error).toBe 'No data found in elastic.io msg.'
       done()
 
-  it 'should import from one file with 2 entries', (done) ->
-    cfg =
-      sphereClientId: Config.config.client_id
-      sphereClientSecret: Config.config.client_secret
-      sphereProjectKey: Config.config.project_key
-    xml =
-      '''
-      <root>
-        <row>
-          <code>abc</code>
-          <quantity>-2</quantity>
-        </row>
-        <row>
-          <code>xyz</code>
-          <quantity>0</quantity>
-        </row>
-      </root>
-      '''
-    enc = new Buffer(xml).toString('base64')
-    msg =
-      attachments:
-        'stock.xml':
-          content: enc
+  describe 'XML file', ->
+    it 'should import from one file with 2 entries', (done) ->
+      cfg =
+        sphereClientId: Config.config.client_id
+        sphereClientSecret: Config.config.client_secret
+        sphereProjectKey: Config.config.project_key
+      xml =
+        '''
+        <root>
+          <row>
+            <code>e-123</code>
+            <quantity>-2</quantity>
+          </row>
+          <row>
+            <code>e-xyz</code>
+            <quantity>0</quantity>
+          </row>
+        </root>
+        '''
+      enc = new Buffer(xml).toString('base64')
+      msg =
+        attachments:
+          'stock.xml':
+            content: enc
 
-    elasticio.process msg, cfg, (next) ->
-      expect(next.status).toBe true
-      expect(_.size next.message).toBe 1
-      expect(next.message['New inventory entry created.']).toBe 2
-      done()
-
-describe 'elasticio CSV file integration', ->
-  it 'should import from one file with 3 entries', (done) ->
-    cfg =
-      sphereClientId: Config.config.client_id
-      sphereClientSecret: Config.config.client_secret
-      sphereProjectKey: Config.config.project_key
-    csv =
-      '''
-      sku,quantity
-      1,1
-      2,2
-      3,3
-      '''
-    enc = new Buffer(csv).toString('base64')
-    msg =
-      attachments:
-        'stock.csv':
-          content: enc
-
-    elasticio.process msg, cfg, (next) ->
-      expect(next.status).toBe true
-      expect(_.size next.message).toBe 1
-      expect(next.message['New inventory entry created.']).toBe 3
-      done()
-
-describe 'elasticio CSV mapping integration', ->
-  it 'should import a simple entry', (done) ->
-    cfg =
-      sphereClientId: Config.config.client_id
-      sphereClientSecret: Config.config.client_secret
-      sphereProjectKey: Config.config.project_key
-
-    msg =
-      attachments: {}
-      body:
-        SKU: 'mySKU'
-        QUANTITY: 7
-
-    elasticio.process msg, cfg, (next) ->
-      expect(next.status).toBe true
-      expect(next.message).toBe 'New inventory entry created.'
-      msg.body.QUANTITY = '3'
-      elasticio.process msg, cfg, (next) ->
-        expect(next.status).toBe true
-        expect(next.message).toBe 'Inventory entry updated.'
-        elasticio.process msg, cfg, (next) ->
-          expect(next.status).toBe true
-          expect(next.message).toBe 'Inventory entry update not neccessary.'
-          done()
-
-  it 'should import an entry with channel key', (done) ->
-    cfg =
-      sphereClientId: Config.config.client_id
-      sphereClientSecret: Config.config.client_secret
-      sphereProjectKey: Config.config.project_key
-
-    msg =
-      attachments: {}
-      body:
-        SKU: 'mySKU'
-        QUANTITY: -3
-        CHANNEL_KEY: 'channel-key-test'
-
-    elasticio.process msg, cfg, (next) ->
-      expect(next.status).toBe true
-      expect(next.message).toBe 'New inventory entry created.'
-      msg.body.QUANTITY = '3'
-      elasticio.process msg, cfg, (next) ->
-        expect(next.status).toBe true
-        expect(next.message).toBe 'Inventory entry updated.'
+      elasticio.process msg, cfg, (error, message) ->
+        expect(error).toBe null
+        expect(_.size message).toBe 2
+        expect(message[0].statusCode).toBe 201
+        expect(message[1].statusCode).toBe 201
         done()
 
-  it 'should import an entry with channel id', (done) ->
-    cfg =
-      sphereClientId: Config.config.client_id
-      sphereClientSecret: Config.config.client_secret
-      sphereProjectKey: Config.config.project_key
-
-    sxi = new StockXmlImport Config
-    sxi.ensureChannelByKey(sxi.rest, 'channel-id-test').then (channel) ->
+  describe 'CSV file', ->
+    it 'should import from one file with 3 entries', (done) ->
+      cfg =
+        sphereClientId: Config.config.client_id
+        sphereClientSecret: Config.config.client_secret
+        sphereProjectKey: Config.config.project_key
+      csv =
+        '''
+        sku,quantity
+        c1,1
+        c2,2
+        c3,3
+        '''
+      enc = new Buffer(csv).toString('base64')
       msg =
-      attachments: {}
-      body:
-        SKU: 'mySKU'
-        QUANTITY: 99
-        CHANNEL_ID: channel.id
+        attachments:
+          'stock.csv':
+            content: enc
 
-      elasticio.process msg, cfg, (next) ->
-        expect(next.status).toBe true
-        expect(next.message).toBe 'New inventory entry created.'
+      elasticio.process msg, cfg, (error, message) ->
+        expect(error).toBe null
+        expect(_.size message).toBe 3
+        expect(message[0].statusCode).toBe 201
+        expect(message[1].statusCode).toBe 201
+        expect(message[2].statusCode).toBe 201
+        done()
+
+  describe 'CSV mapping', ->
+    it 'should import a simple entry', (done) ->
+      cfg =
+        sphereClientId: Config.config.client_id
+        sphereClientSecret: Config.config.client_secret
+        sphereProjectKey: Config.config.project_key
+
+      msg =
+        attachments: {}
+        body:
+          SKU: 'mySKU1'
+          QUANTITY: 7
+
+      elasticio.process msg, cfg, (error, message) ->
+        expect(error).toBe null
+        expect(_.size message).toBe 1
+        expect(message[0].statusCode).toBe 201
         msg.body.QUANTITY = '3'
-        elasticio.process msg, cfg, (next) ->
-          expect(next.status).toBe true
-          expect(next.message).toBe 'Inventory entry updated.'
+        elasticio.process msg, cfg, (error, message) ->
+          expect(error).toBe null
+          expect(_.size message).toBe 1
+          expect(message[0].statusCode).toBe 200
+          elasticio.process msg, cfg, (error, message) ->
+            expect(error).toBe null
+            expect(_.size message).toBe 1
+            expect(message[0].statusCode).toBe 304
+            done()
+
+    it 'should import an entry with channel key', (done) ->
+      cfg =
+        sphereClientId: Config.config.client_id
+        sphereClientSecret: Config.config.client_secret
+        sphereProjectKey: Config.config.project_key
+
+      msg =
+        attachments: {}
+        body:
+          SKU: 'mySKU2'
+          QUANTITY: -3
+          CHANNEL_KEY: 'channel-key-test'
+
+      elasticio.process msg, cfg, (error, message) ->
+        expect(error).toBe null
+        expect(_.size message).toBe 1
+        expect(message[0].statusCode).toBe 201
+        msg.body.QUANTITY = '3'
+        elasticio.process msg, cfg, (error, message) ->
+          expect(error).toBe null
+          expect(_.size message).toBe 1
+          expect(message[0].statusCode).toBe 200
           done()
+
+    it 'should import an entry with channel id', (done) ->
+      cfg =
+        sphereClientId: Config.config.client_id
+        sphereClientSecret: Config.config.client_secret
+        sphereProjectKey: Config.config.project_key
+
+      sxi = new StockImport Config
+      sxi.ensureChannelByKey(sxi.client._rest, 'channel-id-test').then (channel) ->
+        msg =
+        attachments: {}
+        body:
+          SKU: 'mySKU3'
+          QUANTITY: 99
+          CHANNEL_ID: channel.id
+
+        elasticio.process msg, cfg, (error, message) ->
+          expect(error).toBe null
+          expect(_.size message).toBe 1
+          expect(message[0].statusCode).toBe 201
+          msg.body.QUANTITY = '3'
+          elasticio.process msg, cfg, (error, message) ->
+            expect(error).toBe null
+            expect(_.size message).toBe 1
+            expect(message[0].statusCode).toBe 200
+            done()

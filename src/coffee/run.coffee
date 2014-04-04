@@ -1,6 +1,6 @@
 fs = require 'fs'
 package_json = require '../package.json'
-StockXmlImport = require('../main').StockXmlImport
+StockImport = require '../lib/stockimport'
 argv = require('optimist')
   .usage('Usage: $0 --projectKey [key] --clientId [id] --clientSecret [secret] --file [file]')
   .default('timeout', 300000)
@@ -20,28 +20,19 @@ options =
   timeout: argv.timeout
   user_agent: "#{package_json.name} - #{package_json.version}"
 
-stockxmlimport = new StockXmlImport options
+stockimport = new StockImport options
 
 fileName = argv.file
-mode =
-  if /\.xml$/i.test fileName
-    'XML'
-  else if /\.csv$/i.test fileName
-    'CSV'
-  else
-    'UNKNOWN'
-
-if mode? is 'UNKNOWN'
-  console.error "Don't know how to import #{fileName}. Please provide an XML or CSV file."
-  process.exit 9
+mode = stockimport.getMode fileName
 
 fs.readFile fileName, 'utf8', (err, content) ->
-  if err
-    console.error "Problems on reading file '#{fileName}': " + err
+  if err?
+    console.error "Problems on reading file '#{fileName}': #{err}"
     process.exit 2
-  stockxmlimport.run content, mode, (result) ->
-    if result.status
-      console.log result
-      process.exit 0
-    console.error result
+  stockxmlimport.run(content, mode)
+  .then (result) ->
+    console.info result
+    process.exit 0
+  .fail (err) ->
+    console.error err
     process.exit 1
