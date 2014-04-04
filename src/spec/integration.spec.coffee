@@ -27,7 +27,7 @@ describe 'integration test', ->
     it 'Nothing to do', (done) ->
       @stockimport.run('<root></root>', 'XML')
       .then (result) ->
-        expect(result).toBe 'Nothing to do.'
+        expect(result).toEqual []
         done()
       .fail (err) ->
         done err

@@ -41,9 +41,9 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(_.size message).toBe 2
-        expect(message[0].statusCode).toBe 201
-        expect(message[1].statusCode).toBe 201
+        expect(message['Inventory entry created.']).toBe 2
+        expect(message['Inventory entry updated.']).toBe 0
+        expect(message['Inventory update was not necessary.']).toBe 0
         done()
 
   describe 'CSV file', ->
@@ -67,10 +67,9 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(_.size message).toBe 3
-        expect(message[0].statusCode).toBe 201
-        expect(message[1].statusCode).toBe 201
-        expect(message[2].statusCode).toBe 201
+        expect(message['Inventory entry created.']).toBe 3
+        expect(message['Inventory entry updated.']).toBe 0
+        expect(message['Inventory update was not necessary.']).toBe 0
         done()
 
   describe 'CSV mapping', ->
@@ -88,17 +87,20 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(_.size message).toBe 1
-        expect(message[0].statusCode).toBe 201
+        expect(message['Inventory entry created.']).toBe 1
+        expect(message['Inventory entry updated.']).toBe 0
+        expect(message['Inventory update was not necessary.']).toBe 0
         msg.body.QUANTITY = '3'
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(_.size message).toBe 1
-          expect(message[0].statusCode).toBe 200
+          expect(message['Inventory entry created.']).toBe 0
+          expect(message['Inventory entry updated.']).toBe 1
+          expect(message['Inventory update was not necessary.']).toBe 0
           elasticio.process msg, cfg, (error, message) ->
             expect(error).toBe null
-            expect(_.size message).toBe 1
-            expect(message[0].statusCode).toBe 304
+            expect(message['Inventory entry created.']).toBe 0
+            expect(message['Inventory entry updated.']).toBe 0
+            expect(message['Inventory update was not necessary.']).toBe 1
             done()
 
     it 'should import an entry with channel key', (done) ->
@@ -116,13 +118,15 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(_.size message).toBe 1
-        expect(message[0].statusCode).toBe 201
+        expect(message['Inventory entry created.']).toBe 1
+        expect(message['Inventory entry updated.']).toBe 0
+        expect(message['Inventory update was not necessary.']).toBe 0
         msg.body.QUANTITY = '3'
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(_.size message).toBe 1
-          expect(message[0].statusCode).toBe 200
+          expect(message['Inventory entry created.']).toBe 0
+          expect(message['Inventory entry updated.']).toBe 1
+          expect(message['Inventory update was not necessary.']).toBe 0
           done()
 
     it 'should import an entry with channel id', (done) ->
@@ -142,11 +146,13 @@ describe 'elasticio integration', ->
 
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(_.size message).toBe 1
-          expect(message[0].statusCode).toBe 201
+          expect(message['Inventory entry created.']).toBe 1
+          expect(message['Inventory entry updated.']).toBe 0
+          expect(message['Inventory update was not necessary.']).toBe 0
           msg.body.QUANTITY = '3'
           elasticio.process msg, cfg, (error, message) ->
             expect(error).toBe null
-            expect(_.size message).toBe 1
-            expect(message[0].statusCode).toBe 200
+            expect(message['Inventory entry created.']).toBe 0
+            expect(message['Inventory entry updated.']).toBe 1
+            expect(message['Inventory update was not necessary.']).toBe 0
             done()

@@ -32,7 +32,7 @@ class StockImport
         encoded = new Buffer(content, 'base64').toString()
         mode = @getMode(attachment)
         @run(encoded, mode)
-        .then (result) -> ElasticIo.returnSuccess result, next
+        .then (result) => ElasticIo.returnSuccess @sumResult(result), next
         .fail (err) -> ElasticIo.returnFailure err, next
         .done()
 
@@ -43,10 +43,10 @@ class StockImport
           @ensureChannelByKey(@client._rest, msg.body.CHANNEL_KEY, CHANNEL_ROLES)
           .then (result) =>
             @_createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, result.id)])
-          .then (result) -> ElasticIo.returnSuccess result, next
+          .then (result) => ElasticIo.returnSuccess @sumResult(result), next
         else
           @_createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)])
-          .then (result) -> ElasticIo.returnSuccess result, next
+          .then (result) => ElasticIo.returnSuccess @sumResult(result), next
       .fail (msg) -> ElasticIo.returnFailure msg, next
       .done()
     else
@@ -87,6 +87,25 @@ class StockImport
       @performCSV fileContent
     else
       Q.reject "Unknown import mode '#{mode}'!"
+
+  sumResult: (result) ->
+    if _.isArray result
+      if _.isEmpty result
+        'Nothing done.'
+      else
+        nums = _.reduce result, ((memo, r) ->
+          switch r.statusCode
+            when 201 then memo[0] = memo[0] + 1
+            when 200 then memo[1] = memo[1] + 1
+            when 304 then memo[2] = memo[2] + 1
+          memo
+          ), [0, 0, 0]
+        res =
+          'Inventory entry created.': nums[0]
+          'Inventory entry updated.': nums[1]
+          'Inventory update was not necessary.': nums[2]
+    else
+      result
 
   performCSV: (fileContent) ->
     deferred = Q.defer()
@@ -185,16 +204,13 @@ class StockImport
           not _.has(entry, CHANNEL_REF_NAME)
 
   _createOrUpdate: (inventoryEntries) ->
-    if _.size(inventoryEntries) is 0
-      Q 'Nothing to do.'
-    else
-      posts = _.map inventoryEntries, (entry) =>
-        existingEntry = @_match(entry)
-        if existingEntry?
-          @sync.buildActions(entry, existingEntry).update()
-        else
-          @client.inventoryEntries.create(entry)
+    posts = _.map inventoryEntries, (entry) =>
+      existingEntry = @_match(entry)
+      if existingEntry?
+        @sync.buildActions(entry, existingEntry).update()
+      else
+        @client.inventoryEntries.create(entry)
 
-      Q.all(posts)
+    Q.all(posts)
 
 module.exports = StockImport

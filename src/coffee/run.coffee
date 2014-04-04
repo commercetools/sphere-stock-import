@@ -31,7 +31,7 @@ fs.readFile fileName, 'utf8', (err, content) ->
     process.exit 2
   stockimport.run(content, mode)
   .then (result) ->
-    console.info result
+    console.info stockimport.sumResult(result)
     process.exit 0
   .fail (err) ->
     console.error err
