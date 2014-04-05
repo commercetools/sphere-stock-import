@@ -188,6 +188,7 @@ class StockImport
     entry
 
   _perform: (stocks, next) ->
+    @_log "Stock entries to process: #{_.size(stocks)}"
     if _.isFunction next
       _.each stocks, (entry) ->
         msg =
@@ -201,7 +202,6 @@ class StockImport
         ElasticIo.returnSuccess msg, next
       Q 'elastic.io messages sent.'
     else
-      @_log "Stock entries to process: #{_.size(stocks)}"
       @_initMatcher().then =>
         @_createOrUpdate stocks
 
