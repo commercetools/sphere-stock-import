@@ -14,6 +14,8 @@ CHANNEL_ROLES = ['InventorySupply', 'OrderExport', 'OrderImport']
 class StockImport
 
   _log: (msg) ->
+    if @client?
+      client._logger.info msg
     console.log "[SphereStockImport] #{msg}"
 
   constructor: (options) ->
