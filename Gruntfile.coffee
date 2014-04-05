@@ -10,7 +10,7 @@ module.exports = (grunt) ->
       banner: "/* ===========================================================\n" +
         "# <%= pkg.name %> - v<%= pkg.version %>\n" +
         "# ==============================================================\n" +
-        "# Copyright (c) 2013 <%= pkg.author.name %>\n" +
+        "# Copyright (c) 2013,2014 <%= pkg.author.name %>\n" +
         "# Licensed under the MIT license.\n" +
         "*/\n"
 
