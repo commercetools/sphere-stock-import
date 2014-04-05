@@ -220,7 +220,7 @@ class StockImport
       else
         @client.inventoryEntries.create(entry)
 
-    @_log "POST requests: #{_.size posts}"
+    @_log "Requests: #{_.size posts}"
     Q.all(posts)
 
 module.exports = StockImport
