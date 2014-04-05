@@ -32,12 +32,12 @@ mode = stockimport.getMode fileName
 
 fs.readFile fileName, 'utf8', (err, content) ->
   if err?
-    logger.error "Problems on reading file '#{fileName}': #{err}"
+    stockimport.client._logger.error "Problems on reading file '#{fileName}': #{err}"
     process.exit 2
   stockimport.run(content, mode)
   .then (result) ->
     console.info stockimport.sumResult(result)
     process.exit 0
   .fail (err) ->
-    logger.error err
+    stockimport.client._logger.error err
     process.exit 1
