@@ -32,7 +32,7 @@
     },
     "actions": {
         "csvMappingImport": {
-            "main": "elasticio.js",
+            "main": "lib/elasticio.js",
             "title": "CSV Import via CSV Mapping",
             "metadata": {
                 "in": {
@@ -68,11 +68,11 @@
             }
         },
         "csvFileImport": {
-            "main": "elasticio.js",
+            "main": "lib/elasticio.js",
             "title": "CSV File Import"
         },
         "xmlFileImport": {
-            "main": "elasticio.js",
+            "main": "lib/elasticio.js",
             "title": "XML File Import"
         }
     }

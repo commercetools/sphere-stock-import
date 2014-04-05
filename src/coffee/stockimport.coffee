@@ -4,7 +4,7 @@ SphereClient = require 'sphere-node-client'
 {ElasticIo} = require 'sphere-node-utils'
 {InventorySync} = require 'sphere-node-sync'
 package_json = require '../package.json'
-xmlHelpers = require '../lib/xmlhelpers'
+xmlHelpers = require './xmlhelpers'
 Q = require 'q'
 
 CHANNEL_KEY_FOR_XML_MAPPING = 'expectedStock'

@@ -1,5 +1,5 @@
 _ = require 'underscore'
-elasticio = require '../elasticio'
+elasticio = require '../lib/elasticio'
 Config = require '../config'
 StockImport = require '../lib/stockimport'
 

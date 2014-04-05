@@ -1,6 +1,6 @@
 fs = require 'fs'
 package_json = require '../package.json'
-StockImport = require '../lib/stockimport'
+StockImport = require './stockimport'
 argv = require('optimist')
   .usage('Usage: $0 --projectKey [key] --clientId [id] --clientSecret [secret] --file [file]')
   .default('timeout', 60000)
