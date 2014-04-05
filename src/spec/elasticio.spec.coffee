@@ -2,6 +2,7 @@ _ = require 'underscore'
 elasticio = require '../lib/elasticio'
 Config = require '../config'
 StockImport = require '../lib/stockimport'
+{ElasticIo} = require 'sphere-node-utils'
 
 describe 'elasticio integration', ->
   it 'should work with no attachments nor body', (done) ->
@@ -14,7 +15,7 @@ describe 'elasticio integration', ->
       expect(error).toBe 'No data found in elastic.io msg.'
       done()
 
-  xdescribe 'XML file', ->
+  describe 'XML file', ->
     it 'should import from one file with 2 entries', (done) ->
       cfg =
         sphereClientId: Config.config.client_id
@@ -39,14 +40,24 @@ describe 'elasticio integration', ->
           'stock.xml':
             content: enc
 
+      spyOn(ElasticIo, 'returnSuccess').andCallThrough()
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(message['Inventory entry created.']).toBe 2
-        expect(message['Inventory entry updated.']).toBe 0
-        expect(message['Inventory update was not necessary.']).toBe 0
-        done()
+        if message is 'elastic.io messages sent.'
+          expect(ElasticIo.returnSuccess.callCount).toBe 3
+          expectedMessage =
+            body:
+              QUANTITY: -2
+              SKU: 'e-123'
+          expect(ElasticIo.returnSuccess).toHaveBeenCalledWith(expectedMessage, jasmine.any(Function))
+          expectedMessage =
+            body:
+              QUANTITY: 0
+              SKU: 'e-xyz'
+          expect(ElasticIo.returnSuccess).toHaveBeenCalledWith(expectedMessage, jasmine.any(Function))
+          done()
 
-  xdescribe 'CSV file', ->
+  describe 'CSV file', ->
     it 'should import from one file with 3 entries', (done) ->
       cfg =
         sphereClientId: Config.config.client_id
@@ -65,12 +76,27 @@ describe 'elasticio integration', ->
           'stock.csv':
             content: enc
 
+      spyOn(ElasticIo, 'returnSuccess').andCallThrough()
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(message['Inventory entry created.']).toBe 3
-        expect(message['Inventory entry updated.']).toBe 0
-        expect(message['Inventory update was not necessary.']).toBe 0
-        done()
+        if message is 'elastic.io messages sent.'
+          expect(error).toBe null
+          expectedMessage =
+            body:
+              QUANTITY: 1
+              SKU: 'c1'
+          expect(ElasticIo.returnSuccess).toHaveBeenCalledWith(expectedMessage, jasmine.any(Function))
+          expectedMessage =
+            body:
+              QUANTITY: 2
+              SKU: 'c2'
+          expect(ElasticIo.returnSuccess).toHaveBeenCalledWith(expectedMessage, jasmine.any(Function))
+          expectedMessage =
+            body:
+              QUANTITY: 3
+              SKU: 'c3'
+          expect(ElasticIo.returnSuccess).toHaveBeenCalledWith(expectedMessage, jasmine.any(Function))
+          done()
 
   describe 'CSV mapping', ->
     it 'should import a simple entry', (done) ->
