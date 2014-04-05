@@ -13,6 +13,9 @@ CHANNEL_ROLES = ['InventorySupply', 'OrderExport', 'OrderImport']
 
 class StockImport
 
+  _log: (msg) ->
+    console.log "[SphereStockImport] #{msg}"
+
   constructor: (options) ->
     if options?
       @client = new SphereClient options
@@ -185,7 +188,7 @@ class StockImport
     entry
 
   _perform: (stocks) ->
-    console.info "Stock entries to process: #{_.size(stocks)}"
+    @_log "Stock entries to process: #{_.size(stocks)}"
     @_initMatcher().then =>
       @_createOrUpdate stocks
 
@@ -198,6 +201,7 @@ class StockImport
     req.fetch()
     .then (result) =>
       @existingInventoryEntries = result.body.results
+      @_log "Existing entries: #{_.size @existingInventoryEntries}"
       Q 'initialized'
 
   _match: (entry) ->
@@ -216,6 +220,7 @@ class StockImport
       else
         @client.inventoryEntries.create(entry)
 
+    @_log "POST requests: #{_.size post}"
     Q.all(posts)
 
 module.exports = StockImport
