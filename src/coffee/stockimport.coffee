@@ -33,8 +33,8 @@ class StockImport
         content = msg.attachments[attachment].content
         continue unless content
         encoded = new Buffer(content, 'base64').toString()
-        mode = @getMode(attachment)
-        @run(encoded, mode)
+        mode = @getMode attachment
+        @run encoded, mode, next
         .then (result) =>
           ElasticIo.returnSuccess @sumResult(result), next
         .fail (err) ->
@@ -88,11 +88,11 @@ class StockImport
 
     deferred.promise
 
-  run: (fileContent, mode) ->
+  run: (fileContent, mode, next) ->
     if mode is 'XML'
-      @performXML fileContent
+      @performXML fileContent, next
     else if mode is 'CSV'
-      @performCSV fileContent
+      @performCSV fileContent, next
     else
       Q.reject "Unknown import mode '#{mode}'!"
 
@@ -115,14 +115,14 @@ class StockImport
     else
       result
 
-  performCSV: (fileContent) ->
+  performCSV: (fileContent, next) ->
     deferred = Q.defer()
 
     Csv().from.string(fileContent)
     .to.array (data, count) =>
       header = data[0]
       stocks = @_mapStockFromCSV _.rest data
-      @_perform stocks
+      @_perform stocks, next
       .then (result) ->
         deferred.resolve result
       .fail (err) ->
@@ -141,7 +141,7 @@ class StockImport
       quantity = row[quantityIndex]
       @createInventoryEntry sku, quantity
 
-  performXML: (fileContent) ->
+  performXML: (fileContent, next) ->
     deferred = Q.defer()
     xmlHelpers.xmlTransform xmlHelpers.xmlFix(fileContent), (err, xml) =>
       if err?
@@ -150,7 +150,7 @@ class StockImport
         @ensureChannelByKey(@client._rest, CHANNEL_KEY_FOR_XML_MAPPING, CHANNEL_ROLES)
         .then (result) =>
           stocks = @_mapStockFromXML xml.root, result.id
-          @_perform(stocks)
+          @_perform stocks, next
           .then (result) ->
             deferred.resolve result
         .fail (err) ->
@@ -187,10 +187,23 @@ class StockImport
 
     entry
 
-  _perform: (stocks) ->
-    @_log "Stock entries to process: #{_.size(stocks)}"
-    @_initMatcher().then =>
-      @_createOrUpdate stocks
+  _perform: (stocks, next) ->
+    if _.isFunction next
+      _.each stocks, (entry) ->
+        msg =
+          body:
+            SKU: entry.sku
+            QUANTITY: entry.quantityOnStock
+        if entry.expectedDelivery?
+          msg.body.EXPECTED_DELIVERY = entry.expectedDelivery
+        if entry[CHANNEL_REF_NAME]?
+          msg.body.CHANNEL_ID = entry[CHANNEL_REF_NAME].id
+        ElasticIo.returnSuccess msg, next
+      Q 'elastic.io messages sent.'
+    else
+      @_log "Stock entries to process: #{_.size(stocks)}"
+      @_initMatcher().then =>
+        @_createOrUpdate stocks
 
   _initMatcher: (where) ->
     req = @client.inventoryEntries

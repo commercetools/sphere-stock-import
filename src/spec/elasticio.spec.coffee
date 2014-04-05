@@ -14,7 +14,7 @@ describe 'elasticio integration', ->
       expect(error).toBe 'No data found in elastic.io msg.'
       done()
 
-  describe 'XML file', ->
+  xdescribe 'XML file', ->
     it 'should import from one file with 2 entries', (done) ->
       cfg =
         sphereClientId: Config.config.client_id
@@ -46,7 +46,7 @@ describe 'elasticio integration', ->
         expect(message['Inventory update was not necessary.']).toBe 0
         done()
 
-  describe 'CSV file', ->
+  xdescribe 'CSV file', ->
     it 'should import from one file with 3 entries', (done) ->
       cfg =
         sphereClientId: Config.config.client_id
