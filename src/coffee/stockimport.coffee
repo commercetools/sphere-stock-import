@@ -16,7 +16,7 @@ class StockImport
 
   _log: (msg) ->
     if @client?
-      client._logger.info msg
+      @client._logger.info msg
     console.log "#{LOG_PREFIX}#{msg}"
 
   constructor: (options) ->
