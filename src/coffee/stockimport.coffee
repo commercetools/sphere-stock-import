@@ -15,9 +15,10 @@ LOG_PREFIX = "[SphereStockImport] "
 class StockImport
 
   _log: (msg) ->
+    m = "#{LOG_PREFIX}#{msg}"
     if @client?
-      @client._logger.info msg
-    console.log "#{LOG_PREFIX}#{msg}"
+      @client._logger.info m
+    console.log m
 
   constructor: (options) ->
     if options?
