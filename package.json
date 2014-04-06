@@ -32,10 +32,10 @@
     "csv": "0.3.7",
     "bunyan-logentries": "0.1.0",
     "optimist": "0.6.1",
-    "sphere-node-client": "0.6.2",
+    "sphere-node-client": "0.6.3",
     "sphere-node-sync": "0.5.0",
-    "sphere-node-utils": "0.3.7",
-    "underscore": "~1.6.0",
+    "sphere-node-utils": "0.4.0",
+    "underscore": "1.6.0",
     "q": "1.0.0",
     "xml2js": "0.4.0"
   },
