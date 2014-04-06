@@ -10,13 +10,14 @@ Q = require 'q'
 CHANNEL_KEY_FOR_XML_MAPPING = 'expectedStock'
 CHANNEL_REF_NAME = 'supplyChannel'
 CHANNEL_ROLES = ['InventorySupply', 'OrderExport', 'OrderImport']
+LOG_PREFIX = "[SphereStockImport] "
 
 class StockImport
 
   _log: (msg) ->
     if @client?
       client._logger.info msg
-    console.log "[SphereStockImport] #{msg}"
+    console.log "#{LOG_PREFIX}#{msg}"
 
   constructor: (options) ->
     if options?
@@ -60,7 +61,7 @@ class StockImport
         ElasticIo.returnFailure err, next
       .done()
     else
-      ElasticIo.returnFailure 'No data found in elastic.io msg.', next
+      ElasticIo.returnFailure "#{LOG_PREFIX}No data found in elastic.io msg.", next
 
   ensureChannelByKey: (rest, channelKey, channelRolesForCreation) ->
     deferred = Q.defer()
@@ -70,7 +71,7 @@ class StockImport
         deferred.reject "Error on getting channel: #{error}"
       else if response.statusCode isnt 200
         humanReadable = JSON.stringify body, null, 2
-        deferred.reject "Problem on getting channel: #{humanReadable}"
+        deferred.reject "#{LOG_PREFIX}Problem on getting channel: #{humanReadable}"
       else
         channels = body.results
         if _.size(channels) is 1
@@ -81,12 +82,12 @@ class StockImport
             roles: channelRolesForCreation
           rest.POST '/channels', channel, (error, response, body) ->
             if error?
-              deferred.reject "Error on creating channel: #{error}"
+              deferred.reject "#{LOG_PREFIX}Error on creating channel: #{error}"
             else if response.statusCode is 201
               deferred.resolve body
             else
               humanReadable = JSON.stringify body, null, 2
-              deferred.reject "Problem on creating channel: #{humanReadable}"
+              deferred.reject "#{LOG_PREFIX}Problem on creating channel: #{humanReadable}"
 
     deferred.promise
 
@@ -96,7 +97,7 @@ class StockImport
     else if mode is 'CSV'
       @performCSV fileContent, next
     else
-      Q.reject "Unknown import mode '#{mode}'!"
+      Q.reject "#{LOG_PREFIX}Unknown import mode '#{mode}'!"
 
   sumResult: (result) ->
     if _.isArray result
@@ -133,7 +134,7 @@ class StockImport
 
     # TODO: register this before!
     .on 'error', (error) ->
-      deferred.reject "Problem in parsing CSV: #{error}"
+      deferred.reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
 
     deferred.promise
 
@@ -147,7 +148,7 @@ class StockImport
     deferred = Q.defer()
     xmlHelpers.xmlTransform xmlHelpers.xmlFix(fileContent), (err, xml) =>
       if err?
-        deferred.reject "Error on parsing XML: #{err}"
+        deferred.reject "#{LOG_PREFIX}Error on parsing XML: #{err}"
       else
         @ensureChannelByKey(@client._rest, CHANNEL_KEY_FOR_XML_MAPPING, CHANNEL_ROLES)
         .then (result) =>
@@ -202,7 +203,7 @@ class StockImport
         if entry[CHANNEL_REF_NAME]?
           msg.body.CHANNEL_ID = entry[CHANNEL_REF_NAME].id
         ElasticIo.returnSuccess msg, next
-      Q 'elastic.io messages sent.'
+      Q "#{LOG_PREFIX}elastic.io messages sent."
     else
       @_initMatcher().then =>
         @_createOrUpdate stocks
@@ -217,7 +218,7 @@ class StockImport
     .then (result) =>
       @existingInventoryEntries = result.body.results
       @_log "Existing entries: #{_.size @existingInventoryEntries}"
-      Q 'initialized'
+      Q '#{LOG_PREFIX}matcher initialized'
 
   _match: (entry) ->
     _.find @existingInventoryEntries, (existingEntry) ->
