@@ -69,11 +69,65 @@
         },
         "csvFileImport": {
             "main": "lib/elasticio.js",
-            "title": "CSV File Import"
+            "title": "CSV File Import",
+            "metadata": {
+                "out": {
+                    "type" : "object",
+                    "properties" : {
+                        "SKU" : {
+                            "title" : "SKU of product",
+                            "type" : "string",
+                            "required": true
+                        },
+                        "QUANTITY" : {
+                            "title" : "Quantity of product",
+                            "type" : "number",
+                            "required": true
+                        },
+                        "EXPECTED_DELIVERY" : {
+                            "title" : "Expected delivery date",
+                            "type" : "string",
+                            "required": false
+                        },
+                        "CHANNEL_ID" : {
+                            "title" : "SPHERE.IO channel id",
+                            "type" : "string",
+                            "required": false
+                        }
+                    }
+                }
+            }
         },
         "xmlFileImport": {
             "main": "lib/elasticio.js",
-            "title": "XML File Import"
+            "title": "XML File Import",
+            "metadata": {
+                "out": {
+                    "type" : "object",
+                    "properties" : {
+                        "SKU" : {
+                            "title" : "SKU of product",
+                            "type" : "string",
+                            "required": true
+                        },
+                        "QUANTITY" : {
+                            "title" : "Quantity of product",
+                            "type" : "number",
+                            "required": true
+                        },
+                        "EXPECTED_DELIVERY" : {
+                            "title" : "Expected delivery date",
+                            "type" : "string",
+                            "required": false
+                        },
+                        "CHANNEL_ID" : {
+                            "title" : "SPHERE.IO channel id",
+                            "type" : "string",
+                            "required": false
+                        }
+                    }
+                }
+            }
         }
     }
 }
