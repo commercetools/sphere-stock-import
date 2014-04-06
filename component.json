@@ -31,9 +31,9 @@
         }
     },
     "actions": {
-        "csvMappingImport": {
+        "importer": {
             "main": "lib/elasticio.js",
-            "title": "CSV Import via CSV Mapping",
+            "title": "Importer",
             "metadata": {
                 "in": {
                     "type" : "object",
@@ -67,9 +67,9 @@
                 }
             }
         },
-        "csvFileImport": {
+        "csvFileMapping": {
             "main": "lib/elasticio.js",
-            "title": "CSV File Import",
+            "title": "CSV file mapping",
             "metadata": {
                 "out": {
                     "type" : "object",
@@ -98,9 +98,9 @@
                 }
             }
         },
-        "xmlFileImport": {
+        "xmlFileMapping": {
             "main": "lib/elasticio.js",
-            "title": "XML File Import",
+            "title": "XML file mapping",
             "metadata": {
                 "out": {
                     "type" : "object",
