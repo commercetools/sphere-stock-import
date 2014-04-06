@@ -12,7 +12,7 @@ describe 'elasticio integration', ->
       sphereProjectKey: 'here'
     msg = ''
     elasticio.process msg, cfg, (error, message) ->
-      expect(error).toBe 'No data found in elastic.io msg.'
+      expect(error).toBe '[SphereStockImport] No data found in elastic.io msg.'
       done()
 
   describe 'XML file', ->
@@ -43,7 +43,7 @@ describe 'elasticio integration', ->
       spyOn(ElasticIo, 'returnSuccess').andCallThrough()
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        if message is 'elastic.io messages sent.'
+        if message is '[SphereStockImport] elastic.io messages sent.'
           expect(ElasticIo.returnSuccess.callCount).toBe 3
           expectedMessage =
             body:
@@ -79,7 +79,7 @@ describe 'elasticio integration', ->
       spyOn(ElasticIo, 'returnSuccess').andCallThrough()
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        if message is 'elastic.io messages sent.'
+        if message is '[SphereStockImport] elastic.io messages sent.'
           expect(error).toBe null
           expectedMessage =
             body:
