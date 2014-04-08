@@ -39,8 +39,14 @@ Options:
   --clientId      your OAuth client id for the SPHERE.IO API                  [required]
   --clientSecret  your OAuth client secret for the SPHERE.IO API              [required]
   --file          XML or CSV file containing inventory information to import  [required]
+  --sftpHost      the SFTP host                                               [*optional]
+  --sftpUsername  the SFTP username                                           [*optional]
+  --sftpPassword  the SFTP password                                           [*optional]
+  --sftpSource    path in the SFTP server from where to read the files        [*optional]
+  --sftpTarget    path in the SFTP server to where to move the worked files   [*optional]
   --timeout       Set timeout for requests                                    [default: 300000]
 ```
+> `*optional` means that they are required all together to use the SFTP functionality
 
 #### CSV Format
 
@@ -53,7 +59,7 @@ bar,-1
 SKU-123,42
 ```
 
-> Please note that the header names are currenlty ignored. 
+> Please note that the header names are currenlty ignored.
 
 #### XML Format
 
