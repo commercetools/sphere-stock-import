@@ -11,7 +11,7 @@ module.exports = class
    * @param {Object} [options] Configuration for {Sftp}
   ###
   constructor: (options = {}) ->
-    {host, username, password, @sourceFolder, @targetFolder} = options
+    {host, username, password, @sourceFolder, @targetFolder, @logger} = options
     # TODO: validate options
     @sftpClient = new Sftp
       host: host
@@ -21,16 +21,20 @@ module.exports = class
   download: (tmpFolder) ->
     d = Q.defer()
     fs.exists(tmpFolder)
-    .then (exists) ->
+    .then (exists) =>
       if exists
         Q()
       else
+        @logger.info 'Creating new tmp folder'
         fs.makeDirectory tmpFolder
     .then => @sftpClient.openSftp()
     .then (sftp) =>
+      @logger.info 'New connection opened'
       @_sftp = sftp
       @sftpClient.listFiles(sftp, @sourceFolder)
     .then (files) =>
+      @logger.info 'Downloading files'
+      @logger.debug files
       Q.all _.filter(files, (f) ->
         switch f.filename
           when '.', '..' then false
@@ -38,20 +42,25 @@ module.exports = class
       ).map (f) =>
         @sftpClient.getFile(@_sftp, "#{@sourceFolder}/#{f.filename}", "#{tmpFolder}/#{f.filename}")
     .then -> fs.list(tmpFolder)
-    .then (files) -> d.resolve(files)
+    .then (files) ->
+      d.resolve _.filter files, (fileName) ->
+        switch
+          when fileName.match /\.csv$/i then true
+          when fileName.match /\.xml$/i then true
+          else false
     .fail (error) -> d.reject error
     .fin =>
-      console.log 'Closing connection'
+      @logger.info 'Closing connection'
       @sftpClient.close(@_sftp)
     d.promise
-
-  process: ->
 
   finish: (fileName) ->
     d = Q.defer()
     @sftpClient.openSftp()
     .then (sftp) =>
+      @logger.info 'New connection opened'
       @_sftp = sftp
+      @logger.info "Renaming file #{fileName} on the remote server"
       @sftpClient.moveFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
     .then -> d.resolve()
     .fail (error) -> d.reject error
