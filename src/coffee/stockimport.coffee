@@ -54,7 +54,7 @@ class StockImport
           @_createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)])
           .then (result) =>
             ElasticIo.returnSuccess @sumResult(result), next
-      .fail (msg) ->
+      .fail (err) ->
         ElasticIo.returnFailure err, next
       .done()
     else
