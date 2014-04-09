@@ -6,6 +6,7 @@ package_json = require '../package.json'
 Logger = require './logger'
 StockImport = require './stockimport'
 SftpHelper = require './sftp'
+{ProjectCredentialsConfig} = require 'sphere-node-utils'
 
 argv = require('optimist')
   .usage('Usage: $0 --projectKey [key] --clientId [id] --clientSecret [secret] --file [file] --logDir [dir] --logLevel [level]')
@@ -24,7 +25,7 @@ argv = require('optimist')
   .default('logLevel', 'info')
   .default('logDir', '.')
   .default('timeout', 60000)
-  .demand(['projectKey', 'clientId', 'clientSecret'])
+  .demand(['projectKey'])
   .argv
 
 logger = new Logger
@@ -36,7 +37,7 @@ logger = new Logger
 process.on 'SIGUSR2', -> logger.reopenFileStreams()
 
 options =
-  config:
+  config: credentials.enrichCredentials
     project_key: argv.projectKey
     client_id: argv.clientId
     client_secret: argv.clientSecret
