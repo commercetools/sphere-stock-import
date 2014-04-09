@@ -44,6 +44,7 @@ Options:
   --sftpPassword  the SFTP password                                           [*optional]
   --sftpSource    path in the SFTP server from where to read the files        [*optional]
   --sftpTarget    path in the SFTP server to where to move the worked files   [*optional]
+  --sftpFileRegex a RegEx to filter files when downloading them               [*optional]
   --logDir        log level for file logging                                  [default: info]
   --logLevel      directory to store logs                                     [default: .]
   --timeout       Set timeout for requests                                    [default: 300000]

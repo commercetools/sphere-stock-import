@@ -11,7 +11,7 @@ module.exports = class
    * @param {Object} [options] Configuration for {Sftp}
   ###
   constructor: (options = {}) ->
-    {host, username, password, @sourceFolder, @targetFolder, @logger} = options
+    {host, username, password, @sourceFolder, @targetFolder, @fileRegex, @logger} = options
     # TODO: validate options
     @sftpClient = new Sftp
       host: host
@@ -33,7 +33,7 @@ module.exports = class
     .then (sftp) =>
       @logger.info 'New connection opened'
       @_sftp = sftp
-      @sftpClient.downloadAllFiles(sftp, tmpFolder, @sourceFolder)
+      @sftpClient.downloadAllFiles(sftp, tmpFolder, @sourceFolder, @fileRegex)
     .then -> fs.list(tmpFolder)
     .then (files) ->
       d.resolve _.filter files, (fileName) ->
@@ -54,8 +54,7 @@ module.exports = class
       @logger.info 'New connection opened'
       @_sftp = sftp
       @logger.info "Renaming file #{fileName} on the remote server"
-      # @sftpClient.moveFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
-      Q()
+      @sftpClient.moveFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
     .then -> d.resolve()
     .fail (error) -> d.reject error
     .fin =>

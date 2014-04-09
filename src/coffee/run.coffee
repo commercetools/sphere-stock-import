@@ -22,6 +22,7 @@ argv = require('optimist')
   .describe('sftpPassword', 'the SFTP password')
   .describe('sftpSource', 'path in the SFTP server from where to read the files')
   .describe('sftpTarget', 'path in the SFTP server to where to move the worked files')
+  .describe('sftpFileRegex', 'a RegEx to filter files when downloading them')
   .describe('logLevel', 'log level for file logging')
   .describe('logDir', 'directory to store logs')
   .describe('timeout', 'Set timeout for requests')
@@ -126,6 +127,7 @@ credentialsConfig = ProjectCredentialsConfig.create()
       password: argv.sftpPassword
       sourceFolder: argv.sftpSource
       targetFolder: argv.sftpTarget
+      fileRegex: argv.sftpFileRegex
       logger: logger
 
     createTmpDir()
