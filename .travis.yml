@@ -1,6 +1,10 @@
 language: node_js
 node_js:
 - '0.10'
+branches:
+  except:
+    - latest
+    - production
 before_script:
 - npm install -g grunt-cli
 - ./create_config.sh
