@@ -2,6 +2,7 @@ fs = require 'q-io/fs'
 Q = require 'q'
 _ = require 'underscore'
 path = require 'path'
+tmp = require 'tmp'
 {ProjectCredentialsConfig} = require 'sphere-node-utils'
 package_json = require '../package.json'
 Logger = require './logger'
@@ -36,17 +37,17 @@ logger = new Logger
 
 process.on 'SIGUSR2', -> logger.reopenFileStreams()
 
-importFn = (fileName) ->
+importFn = (importer, fileName) ->
   throw new Error 'You must provide a file to be processed' unless fileName
   d = Q.defer()
   logger.info "About to process file #{fileName}"
-  mode = stockimport.getMode fileName
+  mode = importer.getMode fileName
   fs.read fileName
   .then (content) ->
     logger.info 'File read, running import'
-    stockimport.run(content, mode)
+    importer.run(content, mode)
     .then (result) ->
-      logger.info stockimport.sumResult(result)
+      logger.info importer.sumResult(result)
       d.resolve(fileName)
     .fail (e) ->
       logger.error e, "Oops, something went wrong when processing file #{fileName}"
@@ -56,7 +57,7 @@ importFn = (fileName) ->
     d.reject 2
   d.promise
 
-processFn = (files, fn) ->
+processFn = (helper, files, fn) ->
   throw new Error 'Please provide a function to process the files' unless _.isFunction fn
   d = Q.defer()
   _process = (tick) ->
@@ -69,12 +70,25 @@ processFn = (files, fn) ->
       fn(file)
       .then ->
         logger.info "Finishing processing file #{file}"
-        sftpHelper.finish(file)
+        helper.finish(file)
       .then ->
         _process(tick + 1)
       .fail (error) -> d.reject error
       .done()
   _process(0)
+  d.promise
+
+###*
+ * Simple temporary directory creation, it will be removed on process exit.
+###
+createTmpDir = ->
+  d = Q.defer()
+  # unsafeCleanup: recursively removes the created temporary directory, even when it's not empty
+  tmp.dir {unsafeCleanup: true}, (err, path) ->
+    if err
+      d.reject err
+    else
+      d.resolve path
   d.promise
 
 credentialsConfig = ProjectCredentialsConfig.create()
@@ -94,14 +108,11 @@ credentialsConfig = ProjectCredentialsConfig.create()
   file = argv.file
 
   if file
-    importFn(file)
+    importFn(stockimport, file)
     .then -> process.exit 0
     .fail (code) -> process.exit code
     .done()
   else
-
-    TMP_PATH = path.join __dirname, '../tmp'
-
     sftpHelper = new SftpHelper
       host: argv.sftpHost
       username: argv.sftpUsername
@@ -110,15 +121,16 @@ credentialsConfig = ProjectCredentialsConfig.create()
       targetFolder: argv.sftpTarget
       logger: logger
 
-    sftpHelper.download(TMP_PATH)
-    .then (files) ->
-      logger.info files, "Processing #{files.length} files..."
-      processFn files, (file) -> importFn("#{TMP_PATH}/#{file}")
-    .then ->
-      logger.info 'Cleaning tmp folder'
-      sftpHelper.cleanup(TMP_PATH)
-    .then ->
-      process.exit(0)
+    createTmpDir()
+    .then (tmpPath) ->
+      logger.info "Tmp folder created at #{tmpPath}"
+      sftpHelper.download(tmpPath)
+      .then (files) ->
+        logger.info files, "Processing #{files.length} files..."
+        processFn sftpHelper, files, (file) -> importFn(stockimport, "#{tmpPath}/#{file}")
+      .then ->
+        logger.info 'Processing files complete'
+        process.exit(0)
     .fail (error) ->
       logger.error error, 'Oops, something went wrong!'
       process.exit(1)

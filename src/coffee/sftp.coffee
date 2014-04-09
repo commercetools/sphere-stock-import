@@ -64,7 +64,7 @@ module.exports = class
       @sftpClient.moveFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
     .then -> d.resolve()
     .fail (error) -> d.reject error
-    .fin => @sftpClient.close(@_sftp)
+    .fin =>
+      @logger.info 'Closing connection'
+      @sftpClient.close(@_sftp)
     d.promise
-
-  cleanup: (tmpFolder) -> fs.removeTree(tmpFolder)
