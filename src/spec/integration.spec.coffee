@@ -16,6 +16,10 @@ describe 'integration test', ->
       config: Config.config
       logConfig:
         logger: logger
+      headerNames:
+        skuHeader: 'stock'
+        quantityHeader: 'number'
+
     @client = @stockimport.client
 
     logger.info 'Deleting old inventory entries...'
@@ -219,7 +223,7 @@ describe 'integration test', ->
     it 'CSV - one new stock', (done) ->
       raw =
         '''
-        stock,quantity
+        stock,number
         abcd,0
         '''
       @stockimport.run(raw, 'CSV')

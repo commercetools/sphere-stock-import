@@ -176,6 +176,7 @@ describe 'elasticio integration', ->
         config: Config.config
         logConfig:
           logger: @logger
+        headerNames: {}
 
       sxi.ensureChannelByKey(sxi.client._rest, 'channel-id-test').then (channel) ->
         msg =

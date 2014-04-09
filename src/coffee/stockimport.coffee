@@ -19,6 +19,9 @@ class StockImport
     @sync = new InventorySync options
     @client = @sync._client
     @existingInventoryEntries = {}
+    @skuHeader = options.headerNames.skuHeader
+    @quantityHeader = options.headerNames.quantityHeader
+    this
 
   getMode: (fileName) ->
     switch
@@ -121,10 +124,12 @@ class StockImport
     Csv().from.string(fileContent)
     .to.array (data, count) =>
       header = data[0]
-      stocks = @_mapStockFromCSV _.rest data
-      @_perform stocks, next
-      .then (result) ->
-        deferred.resolve result
+      @_getHeaderIndexes header, @skuHeader, @quantityHeader
+      .then (headerIndexes) =>
+        stocks = @_mapStockFromCSV _.rest data, headerIndexes[0], headerIndexes[1]
+        @_perform stocks, next
+        .then (result) ->
+          deferred.resolve result
       .fail (err) ->
         deferred.reject err
       .done()
@@ -134,6 +139,13 @@ class StockImport
       deferred.reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
 
     deferred.promise
+
+  _getHeaderIndexes: (header, skuHeader, quantityHeader) ->
+    skuIndex = _.indexOf header, skuHeader
+    return Q.reject "Can't find header '#{skuHeader}' for SKU column." if skuIndex is -1
+    quantityIndex = _.indexOf header, quantityHeader
+    return Q.reject "Can't find header '#{quantityHeader}' for quantity column." if quantityIndex is -1
+    Q [skuIndex, quantityIndex]
 
   _mapStockFromCSV: (rows, skuIndex = 0, quantityIndex = 1) ->
     _.map rows, (row) =>

@@ -25,6 +25,9 @@ exports.process = (msg, cfg, next, snapshot) ->
     user_agent: "#{package_json.name} - elasticio - #{package_json.version}",
     logConfig:
       logger: logger
+    headerNames:
+      skuHeader: 'sku'
+      quantityHeader: 'quantity'
 
   stockimport = new StockImport opts
   stockimport.elasticio msg, cfg, next, snapshot

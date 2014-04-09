@@ -15,6 +15,9 @@ describe 'StockImport', ->
       config: Config.config
       logConfig:
         logger: logger
+      headerNames:
+        skuHeader: 'id'
+        quantityHeader: 'amount'
 
   it 'should initialize', ->
     expect(@import).toBeDefined()
@@ -88,12 +91,36 @@ describe 'StockImport', ->
         expect(s.supplyChannel.id).toBe 'myChannelId'
         done()
 
+  describe '#_getHeaderIndexes', ->
+    it 'should reject if no sku header found', (done) ->
+      @import._getHeaderIndexes ['bla', 'foo', 'quantity', 'price'], 'sku', 'q'
+      .fail (err) ->
+        expect(err).toBe "Can't find header 'sku' for SKU column."
+        done()
+      .then (msg) -> done msg
+
+    it 'should reject if no quantity header found', (done) ->
+      @import._getHeaderIndexes ['sku', 'price', 'quality'], 'sku', 'quantity'
+      .fail (err) ->
+        expect(err).toBe "Can't find header 'quantity' for quantity column."
+        done()
+      .then (msg) -> done msg
+
+    it 'should return the indexes of the two named columns', (done) ->
+      @import._getHeaderIndexes ['foo', 'q', 'bar', 's'], 's', 'q'
+      .then (indexes) ->
+        expect(indexes[0]).toBe 3
+        expect(indexes[1]).toBe 1
+        done()
+      .fail (err) ->
+        done err
+
   describe '#_mapStockFromCSV', ->
 
     it 'simple entry', (done) ->
       rawCSV =
         '''
-        stock,quantity
+        id,amount
         123,77
         abc,-3
         '''

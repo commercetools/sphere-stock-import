@@ -15,6 +15,8 @@ argv = require('optimist')
   .describe('clientId', 'your OAuth client id for the SPHERE.IO API')
   .describe('clientSecret', 'your OAuth client secret for the SPHERE.IO API')
   .describe('file', 'XML or CSV file containing inventory information to import')
+  .describe('skuHeader', 'The name of the column containing the SKUs')
+  .describe('quantityHeader', 'The name of the column containing the quantity information')
   .describe('sftpHost', 'the SFTP host')
   .describe('sftpUsername', 'the SFTP username')
   .describe('sftpPassword', 'the SFTP password')
@@ -23,6 +25,8 @@ argv = require('optimist')
   .describe('logLevel', 'log level for file logging')
   .describe('logDir', 'directory to store logs')
   .describe('timeout', 'Set timeout for requests')
+  .default('skuHeader', 'sku')
+  .default('quantityHeader', 'quantity')
   .default('logLevel', 'info')
   .default('logDir', '.')
   .default('timeout', 60000)
@@ -102,6 +106,9 @@ credentialsConfig = ProjectCredentialsConfig.create()
     user_agent: "#{package_json.name} - #{package_json.version}"
     logConfig:
       logger: logger
+    headerNames:
+      skuHeader: argv.skuHeader
+      quantityHeader: argv.quantityHeader
 
   stockimport = new StockImport options
 
