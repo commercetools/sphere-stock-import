@@ -178,7 +178,7 @@ describe 'elasticio integration', ->
           logger: @logger
         headerNames: {}
 
-      sxi.ensureChannelByKey(sxi.client._rest, 'channel-id-test').then (channel) ->
+      sxi.ensure('channel-id-test').then (channel) ->
         msg =
         attachments: {}
         body:

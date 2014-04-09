@@ -3,6 +3,7 @@ _ = require 'underscore'
 Csv = require 'csv'
 {ElasticIo} = require 'sphere-node-utils'
 {InventorySync} = require 'sphere-node-sync'
+SphereClient = require 'sphere-node-client'
 package_json = require '../package.json'
 xmlHelpers = require './xmlhelpers'
 
@@ -17,8 +18,7 @@ class StockImport
     {logConfig} = options
     @logger = logConfig.logger
     @sync = new InventorySync options
-    @client = @sync._client
-    @existingInventoryEntries = {}
+    @client = new SphereClient options
     @skuHeader = options.headerNames.skuHeader
     @quantityHeader = options.headerNames.quantityHeader
     this
@@ -46,15 +46,19 @@ class StockImport
 
     else if _.size(msg.body) > 0
       @_initMatcher("sku=\"#{msg.body.SKU}\"")
-      .then =>
+      .then (existingEntries) =>
         if msg.body.CHANNEL_KEY?
-          @ensureChannelByKey(@client._rest, msg.body.CHANNEL_KEY, CHANNEL_ROLES)
+          @client.ensure(msg.body.CHANNEL_KEY, CHANNEL_ROLES)
           .then (result) =>
-            @_createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, result.id)])
+            @_createOrUpdate [
+              @createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, result.id)
+            ], existingEntries
           .then (result) =>
             ElasticIo.returnSuccess @sumResult(result), next
         else
-          @_createOrUpdate([@createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)])
+          @_createOrUpdate [
+            @createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)
+          ], existingEntries
           .then (result) =>
             ElasticIo.returnSuccess @sumResult(result), next
       .fail (err) ->
@@ -63,33 +67,33 @@ class StockImport
     else
       ElasticIo.returnFailure "#{LOG_PREFIX}No data found in elastic.io msg.", next
 
-  ensureChannelByKey: (rest, channelKey, channelRolesForCreation) ->
-    deferred = Q.defer()
-    query = encodeURIComponent("key=\"#{channelKey}\"")
-    rest.GET "/channels?where=#{query}", (error, response, body) ->
-      if error?
-        deferred.reject "Error on getting channel: #{error}"
-      else if response.statusCode isnt 200
-        humanReadable = JSON.stringify body, null, 2
-        deferred.reject "#{LOG_PREFIX}Problem on getting channel: #{humanReadable}"
-      else
-        channels = body.results
-        if _.size(channels) is 1
-          deferred.resolve channels[0]
-        else
-          channel =
-            key: channelKey
-            roles: channelRolesForCreation
-          rest.POST '/channels', channel, (error, response, body) ->
-            if error?
-              deferred.reject "#{LOG_PREFIX}Error on creating channel: #{error}"
-            else if response.statusCode is 201
-              deferred.resolve body
-            else
-              humanReadable = JSON.stringify body, null, 2
-              deferred.reject "#{LOG_PREFIX}Problem on creating channel: #{humanReadable}"
+  # ensureChannelByKey: (rest, channelKey, channelRolesForCreation) ->
+  #   deferred = Q.defer()
+  #   query = encodeURIComponent("key=\"#{channelKey}\"")
+  #   rest.GET "/channels?where=#{query}", (error, response, body) ->
+  #     if error?
+  #       deferred.reject "Error on getting channel: #{error}"
+  #     else if response.statusCode isnt 200
+  #       humanReadable = JSON.stringify body, null, 2
+  #       deferred.reject "#{LOG_PREFIX}Problem on getting channel: #{humanReadable}"
+  #     else
+  #       channels = body.results
+  #       if _.size(channels) is 1
+  #         deferred.resolve channels[0]
+  #       else
+  #         channel =
+  #           key: channelKey
+  #           roles: channelRolesForCreation
+  #         rest.POST '/channels', channel, (error, response, body) ->
+  #           if error?
+  #             deferred.reject "#{LOG_PREFIX}Error on creating channel: #{error}"
+  #           else if response.statusCode is 201
+  #             deferred.resolve body
+  #           else
+  #             humanReadable = JSON.stringify body, null, 2
+  #             deferred.reject "#{LOG_PREFIX}Problem on creating channel: #{humanReadable}"
 
-    deferred.promise
+  #   deferred.promise
 
   run: (fileContent, mode, next) ->
     if mode is 'XML'
@@ -159,14 +163,12 @@ class StockImport
       if err?
         deferred.reject "#{LOG_PREFIX}Error on parsing XML: #{err}"
       else
-        @ensureChannelByKey(@client._rest, CHANNEL_KEY_FOR_XML_MAPPING, CHANNEL_ROLES)
+        @client.channels.ensure(CHANNEL_KEY_FOR_XML_MAPPING, CHANNEL_ROLES)
         .then (result) =>
-          stocks = @_mapStockFromXML xml.root, result.id
+          stocks = @_mapStockFromXML xml.root, result.body.id
           @_perform stocks, next
-          .then (result) ->
-            deferred.resolve result
-        .fail (err) ->
-          deferred.reject err
+        .then (result) -> deferred.resolve result
+        .fail (err) -> deferred.reject err
         .done()
 
     deferred.promise
@@ -214,32 +216,35 @@ class StockImport
         ElasticIo.returnSuccess msg, next
       Q "#{LOG_PREFIX}elastic.io messages sent."
     else
-      @_initMatcher().then =>
-        @_createOrUpdate stocks
+      @_initMatcher().then (existingEntries) => @_createOrUpdate stocks, existingEntries
 
   _initMatcher: (where) ->
-    req = @client.inventoryEntries
+    deferred = Q.defer()
+    inventoryService = @client.inventoryEntries
     if where?
-      req = req.where(where).perPage(1)
+      inventoryService = inventoryService.where(where).perPage(1)
     else
-      req = req.perPage(0)
-    req.fetch()
-    .then (result) =>
-      @existingInventoryEntries = result.body.results
-      @logger.info "Existing entries: #{_.size @existingInventoryEntries}"
-      Q '#{LOG_PREFIX}matcher initialized'
+      inventoryService = inventoryService.perPage(0)
+    inventoryService.fetch()
+    .then (results) =>
+      @logger.info results, "Existing entries: #{results.body.total}"
+      # Q '#{LOG_PREFIX}matcher initialized'
+      deferred.resolve results.body.results
+    .fail (error) -> deferred.reject error
+    deferred.promise
 
-  _match: (entry) ->
-    _.find @existingInventoryEntries, (existingEntry) ->
+  _match: (entry, existingEntries) ->
+    _.find existingEntries, (existingEntry) ->
       if existingEntry.sku is entry.sku
         if _.has(existingEntry, CHANNEL_REF_NAME) and _.has(entry, CHANNEL_REF_NAME)
           existingEntry[CHANNEL_REF_NAME].id is entry[CHANNEL_REF_NAME].id
         else
           not _.has(entry, CHANNEL_REF_NAME)
 
-  _createOrUpdate: (inventoryEntries) ->
+  _createOrUpdate: (inventoryEntries, existingEntries) ->
+    @logger.info inventoryEntries, 'Inventory entries'
     posts = _.map inventoryEntries, (entry) =>
-      existingEntry = @_match(entry)
+      existingEntry = @_match(entry, existingEntries)
       if existingEntry?
         @sync.buildActions(entry, existingEntry).update()
       else

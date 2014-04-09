@@ -25,9 +25,8 @@ describe 'integration test', ->
     logger.info 'Deleting old inventory entries...'
     @client.inventoryEntries.perPage(0).fetch()
     .then (result) =>
-      dels = _.map result.body.results, (e) =>
+      Q.all _.map result.body.results, (e) =>
         @client.inventoryEntries.byId(e.id).delete(e.version)
-      Q.all(dels)
     .then (results) ->
       logger.info "#{_.size results} deleted."
       done()
@@ -161,62 +160,86 @@ describe 'integration test', ->
       .then (result) =>
         expect(result[0].statusCode).toBe 201
         expect(result[1].statusCode).toBe 201
-        @client.inventoryEntries.fetch()
+        @client.inventoryEntries.sort('id').fetch()
       .then (result) =>
         stocks = result.body.results
         expect(stocks.length).toBe 2
-        expect(stocks[0].sku).toBe 'myEAN'
-        expect(stocks[0].quantityOnStock).toBe -1
-        expect(stocks[0].supplyChannel).toBeUndefined()
-        expect(stocks[1].sku).toBe 'myEAN'
-        expect(stocks[1].quantityOnStock).toBe 10
-        expect(stocks[1].supplyChannel).toBeDefined()
-        expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
+
+        stockA = _.find stocks, (s) -> s.quantityOnStock is -1
+        expect(stockA).toBeDefined()
+        expect(stockA.sku).toBe 'myEAN'
+        expect(stockA.quantityOnStock).toBe -1
+        expect(stockA.supplyChannel).toBeUndefined()
+
+        stockB = _.find stocks, (s) -> s.quantityOnStock is 10
+        expect(stockB).toBeDefined()
+        expect(stockB.sku).toBe 'myEAN'
+        expect(stockB.quantityOnStock).toBe 10
+        expect(stockB.supplyChannel).toBeDefined()
+        expect(stockB.expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
         @stockimport.run(rawXmlChangedAppointedQuantity, 'XML')
       .then (result) =>
         expect(result[0].statusCode).toBe 304
         expect(result[1].statusCode).toBe 200
-        @client.inventoryEntries.fetch()
+        @client.inventoryEntries.sort('id').fetch()
       .then (result) =>
         stocks = result.body.results
-        expect(stocks[0].sku).toBe 'myEAN'
-        expect(stocks[0].quantityOnStock).toBe -1
-        expect(stocks[0].supplyChannel).toBeUndefined()
-        expect(stocks[1].sku).toBe 'myEAN'
-        expect(stocks[1].quantityOnStock).toBe 20
-        expect(stocks[1].supplyChannel).toBeDefined()
-        expect(stocks[1].expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
+
+        stockA = _.find stocks, (s) -> s.quantityOnStock is -1
+        expect(stockA).toBeDefined()
+        expect(stockA.sku).toBe 'myEAN'
+        expect(stockA.quantityOnStock).toBe -1
+        expect(stockA.supplyChannel).toBeUndefined()
+
+        stockB = _.find stocks, (s) -> s.quantityOnStock is 20
+        expect(stockB).toBeDefined()
+        expect(stockB.sku).toBe 'myEAN'
+        expect(stockB.quantityOnStock).toBe 20
+        expect(stockB.supplyChannel).toBeDefined()
+        expect(stockB.expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
         @stockimport.run(rawXmlChangedCommittedDeliveryDate, 'XML')
       .then (result) =>
         expect(result[0].statusCode).toBe 304
         expect(result[1].statusCode).toBe 200
-        @client.inventoryEntries.fetch()
+        @client.inventoryEntries.sort('id').fetch()
       .then (result) =>
         stocks = result.body.results
-        expect(stocks[0].sku).toBe 'myEAN'
-        expect(stocks[0].quantityOnStock).toBe -1
-        expect(stocks[0].supplyChannel).toBeUndefined()
-        expect(stocks[1].sku).toBe 'myEAN'
-        expect(stocks[1].quantityOnStock).toBe 10
-        expect(stocks[1].supplyChannel).toBeDefined()
-        expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
+
+        stockA = _.find stocks, (s) -> s.quantityOnStock is -1
+        expect(stockA).toBeDefined()
+        expect(stockA.sku).toBe 'myEAN'
+        expect(stockA.quantityOnStock).toBe -1
+        expect(stockA.supplyChannel).toBeUndefined()
+
+        stockB = _.find stocks, (s) -> s.quantityOnStock is 10
+        expect(stockB).toBeDefined()
+        expect(stockB.sku).toBe 'myEAN'
+        expect(stockB.quantityOnStock).toBe 10
+        expect(stockB.supplyChannel).toBeDefined()
+        expect(stockB.expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
         @stockimport.run(rawXmlChangedCommittedDeliveryDate, 'XML')
       .then (result) =>
         expect(result[0].statusCode).toBe 304
         expect(result[1].statusCode).toBe 304
-        @client.inventoryEntries.fetch()
+        @client.inventoryEntries.sort('id').fetch()
       .then (result) ->
         stocks = result.body.results
-        expect(stocks[0].sku).toBe 'myEAN'
-        expect(stocks[0].quantityOnStock).toBe -1
-        expect(stocks[0].supplyChannel).toBeUndefined()
-        expect(stocks[1].sku).toBe 'myEAN'
-        expect(stocks[1].quantityOnStock).toBe 10
-        expect(stocks[1].supplyChannel).toBeDefined()
-        expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
+
+        stockA = _.find stocks, (s) -> s.quantityOnStock is -1
+        expect(stockA).toBeDefined()
+        expect(stockA.sku).toBe 'myEAN'
+        expect(stockA.quantityOnStock).toBe -1
+        expect(stockA.supplyChannel).toBeUndefined()
+
+        stockB = _.find stocks, (s) -> s.quantityOnStock is 10
+        expect(stockB).toBeDefined()
+        expect(stockB.sku).toBe 'myEAN'
+        expect(stockB.quantityOnStock).toBe 10
+        expect(stockB.supplyChannel).toBeDefined()
+        expect(stockB.expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
         done()
       .fail (err) -> done(_.prettify err)
-    , 10000 # 10sec
+    , 20000 # 20sec
 
   describe 'CSV file', ->
 
