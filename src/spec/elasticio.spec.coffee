@@ -1,10 +1,18 @@
 _ = require 'underscore'
 elasticio = require '../lib/elasticio'
 Config = require '../config'
+Logger = require '../lib/logger'
 StockImport = require '../lib/stockimport'
 {ElasticIo} = require 'sphere-node-utils'
 
 describe 'elasticio integration', ->
+
+  beforeEach ->
+    @logger = new Logger
+      streams: [
+        { level: 'info', stream: process.stdout }
+      ]
+
   it 'should work with no attachments nor body', (done) ->
     cfg =
       sphereClientId: 'some'
@@ -16,6 +24,7 @@ describe 'elasticio integration', ->
       done()
 
   describe 'XML file', ->
+
     it 'should import from one file with 2 entries', (done) ->
       cfg =
         sphereClientId: Config.config.client_id
@@ -58,6 +67,7 @@ describe 'elasticio integration', ->
           done()
 
   describe 'CSV file', ->
+
     it 'should import from one file with 3 entries', (done) ->
       cfg =
         sphereClientId: Config.config.client_id
@@ -99,6 +109,7 @@ describe 'elasticio integration', ->
           done()
 
   describe 'CSV mapping', ->
+
     it 'should import a simple entry', (done) ->
       cfg =
         sphereClientId: Config.config.client_id
@@ -161,7 +172,11 @@ describe 'elasticio integration', ->
         sphereClientSecret: Config.config.client_secret
         sphereProjectKey: Config.config.project_key
 
-      sxi = new StockImport Config
+      sxi = new StockImport
+        config: Config.config
+        logConfig:
+          logger: @logger
+
       sxi.ensureChannelByKey(sxi.client._rest, 'channel-id-test').then (channel) ->
         msg =
         attachments: {}

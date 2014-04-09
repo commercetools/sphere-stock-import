@@ -1,7 +1,6 @@
 Q = require 'q'
 _ = require 'underscore'
 Csv = require 'csv'
-SphereClient = require 'sphere-node-client'
 {ElasticIo} = require 'sphere-node-utils'
 {InventorySync} = require 'sphere-node-sync'
 package_json = require '../package.json'
@@ -14,17 +13,12 @@ LOG_PREFIX = "[SphereStockImport] "
 
 class StockImport
 
-  _log: (msg) ->
-    m = "#{LOG_PREFIX}#{msg}"
-    if @client?
-      @client._logger.info m
-    console.log m
-
-  constructor: (options) ->
-    if options?
-      @client = new SphereClient options
-      @sync = new InventorySync options
-      @existingInventoryEntries = {}
+  constructor: (options = {}) ->
+    {logConfig} = options
+    @logger = logConfig.logger
+    @sync = new InventorySync options
+    @client = @sync._client
+    @existingInventoryEntries = {}
 
   getMode: (fileName) ->
     switch
@@ -33,6 +27,7 @@ class StockImport
       else throw new Error "Unsupported mode (file extension) for file #{fileName} (use csv or xml)"
 
   elasticio: (msg, cfg, next, snapshot) ->
+    @logger.debug msg, 'Running elastic.io'
     if _.size(msg.attachments) > 0
       for attachment of msg.attachments
         content = msg.attachments[attachment].content
@@ -193,7 +188,7 @@ class StockImport
     entry
 
   _perform: (stocks, next) ->
-    @_log "Stock entries to process: #{_.size(stocks)}"
+    @logger.info "Stock entries to process: #{_.size(stocks)}"
     if _.isFunction next
       _.each stocks, (entry) ->
         msg =
@@ -219,7 +214,7 @@ class StockImport
     req.fetch()
     .then (result) =>
       @existingInventoryEntries = result.body.results
-      @_log "Existing entries: #{_.size @existingInventoryEntries}"
+      @logger.info "Existing entries: #{_.size @existingInventoryEntries}"
       Q '#{LOG_PREFIX}matcher initialized'
 
   _match: (entry) ->
@@ -238,7 +233,7 @@ class StockImport
       else
         @client.inventoryEntries.create(entry)
 
-    @_log "Requests: #{_.size posts}"
+    @logger.info "Requests: #{_.size posts}"
     Q.all(posts)
 
 module.exports = StockImport

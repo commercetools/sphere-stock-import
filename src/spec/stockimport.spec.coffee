@@ -1,16 +1,26 @@
 _ = require 'underscore'
 Csv = require 'csv'
+Config = require '../config'
+Logger = require '../lib/logger'
 xmlHelpers = require '../lib/xmlhelpers.js'
 StockImport = require '../lib/stockimport'
 
 describe 'StockImport', ->
   beforeEach ->
-    @import = new StockImport()
+    logger = new Logger
+      streams: [
+        { level: 'info', stream: process.stdout }
+      ]
+    @import = new StockImport
+      config: Config.config
+      logConfig:
+        logger: logger
 
   it 'should initialize', ->
     expect(@import).toBeDefined()
 
   describe '#_mapStockFromXML', ->
+
     it 'simple entry', (done) ->
       rawXml =
         '''
@@ -79,16 +89,16 @@ describe 'StockImport', ->
         done()
 
   describe '#_mapStockFromCSV', ->
+
     it 'simple entry', (done) ->
-      stockimport = new StockImport()
       rawCSV =
         '''
         stock,quantity
         123,77
         abc,-3
         '''
-      Csv().from.string(rawCSV).to.array (data, count) ->
-        stocks = stockimport._mapStockFromCSV _.rest(data)
+      Csv().from.string(rawCSV).to.array (data, count) =>
+        stocks = @import._mapStockFromCSV _.rest(data)
         expect(_.size stocks).toBe 2
         s = stocks[0]
         expect(s.sku).toBe '123'

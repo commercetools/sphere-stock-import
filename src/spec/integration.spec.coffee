@@ -1,36 +1,44 @@
-_ = require('underscore')._
+Q = require 'q'
+_ = require 'underscore'
+_.mixin require('sphere-node-utils')._u
 Config = require '../config'
+Logger = require '../lib/logger'
 StockImport = require '../lib/stockimport'
-Q = require('q')
-
-# Increase timeout
-jasmine.getEnv().defaultTimeoutInterval = 10000
 
 describe 'integration test', ->
+
   beforeEach (done) ->
-    @stockimport = new StockImport Config
+    logger = new Logger
+      streams: [
+        { level: 'info', stream: process.stdout }
+      ]
+    @stockimport = new StockImport
+      config: Config.config
+      logConfig:
+        logger: logger
     @client = @stockimport.client
 
-    console.info 'Deleting old inventory entires...'
+    logger.info 'Deleting old inventory entries...'
     @client.inventoryEntries.perPage(0).fetch()
     .then (result) =>
       dels = _.map result.body.results, (e) =>
         @client.inventoryEntries.byId(e.id).delete(e.version)
       Q.all(dels)
-      .then ->
-        console.info "#{_.size dels} deleted."
-        done()
-    .fail (err) ->
-      done err
+    .then (results) ->
+      logger.info "#{_.size results} deleted."
+      done()
+    .fail (err) -> done(_.prettify err)
+  , 10000 # 10sec
 
   describe 'XML file', ->
+
     it 'Nothing to do', (done) ->
       @stockimport.run('<root></root>', 'XML')
       .then (result) ->
         expect(result).toEqual []
         done()
-      .fail (err) ->
-        done err
+      .fail (err) -> done(_.prettify err)
+    , 10000 # 10sec
 
     it 'one new stock', (done) ->
       rawXml =
@@ -61,8 +69,8 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe '123'
         expect(stocks[0].quantityOnStock).toBe 2
         done()
-      .fail (err) ->
-        done err
+      .fail (err) -> done(_.prettify err)
+    , 10000 # 10sec
 
     it 'add more stock', (done) ->
       rawXml =
@@ -94,8 +102,8 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe '234'
         expect(stocks[0].quantityOnStock).toBe 19
         done()
-      .fail (err) ->
-        done err
+      .fail (err) -> done(_.prettify err)
+    , 10000 # 10sec
 
     it 'remove some stock', (done) ->
       rawXml =
@@ -127,8 +135,8 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe '1234567890'
         expect(stocks[0].quantityOnStock).toBe -13
         done()
-      .fail (err) ->
-        done err
+      .fail (err) -> done(_.prettify err)
+    , 10000 # 10sec
 
     it 'should create and update 2 stock entries when appointed quantity is given', (done) ->
       rawXml =
@@ -203,10 +211,11 @@ describe 'integration test', ->
         expect(stocks[1].supplyChannel).toBeDefined()
         expect(stocks[1].expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
         done()
-      .fail (err) ->
-        done err
+      .fail (err) -> done(_.prettify err)
+    , 10000 # 10sec
 
   describe 'CSV file', ->
+
     it 'CSV - one new stock', (done) ->
       raw =
         '''
@@ -232,5 +241,5 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe 'abcd'
         expect(stocks[0].quantityOnStock).toBe 0
         done()
-      .fail (err) ->
-        done err
+      .fail (err) -> done(_.prettify err)
+    , 10000 # 10sec
