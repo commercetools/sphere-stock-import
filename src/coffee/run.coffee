@@ -36,6 +36,7 @@ logger = new Logger
 
 process.on 'SIGUSR2', -> logger.reopenFileStreams()
 
+credentialsConfig = ProjectCredentialsConfig.create()
 options =
   config: credentials.enrichCredentials
     project_key: argv.projectKey
