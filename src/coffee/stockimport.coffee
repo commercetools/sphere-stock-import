@@ -1,3 +1,4 @@
+Q = require 'q'
 _ = require 'underscore'
 Csv = require 'csv'
 SphereClient = require 'sphere-node-client'
@@ -5,7 +6,6 @@ SphereClient = require 'sphere-node-client'
 {InventorySync} = require 'sphere-node-sync'
 package_json = require '../package.json'
 xmlHelpers = require './xmlhelpers'
-Q = require 'q'
 
 CHANNEL_KEY_FOR_XML_MAPPING = 'expectedStock'
 CHANNEL_REF_NAME = 'supplyChannel'
@@ -30,6 +30,7 @@ class StockImport
     switch
       when fileName.match /\.csv$/i then 'CSV'
       when fileName.match /\.xml$/i then 'XML'
+      else throw new Error "Unsupported mode (file extension) for file #{fileName} (use csv or xml)"
 
   elasticio: (msg, cfg, next, snapshot) ->
     if _.size(msg.attachments) > 0
