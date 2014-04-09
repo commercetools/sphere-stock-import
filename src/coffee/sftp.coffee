@@ -17,9 +17,11 @@ module.exports = class
       host: host
       username: username
       password: password
+      logger: @logger
 
   download: (tmpFolder) ->
     d = Q.defer()
+
     fs.exists(tmpFolder)
     .then (exists) =>
       if exists
@@ -31,16 +33,7 @@ module.exports = class
     .then (sftp) =>
       @logger.info 'New connection opened'
       @_sftp = sftp
-      @sftpClient.listFiles(sftp, @sourceFolder)
-    .then (files) =>
-      @logger.info 'Downloading files'
-      @logger.debug files
-      Q.all _.filter(files, (f) ->
-        switch f.filename
-          when '.', '..' then false
-          else true
-      ).map (f) =>
-        @sftpClient.getFile(@_sftp, "#{@sourceFolder}/#{f.filename}", "#{tmpFolder}/#{f.filename}")
+      @sftpClient.downloadAllFiles(sftp, tmpFolder, @sourceFolder)
     .then -> fs.list(tmpFolder)
     .then (files) ->
       d.resolve _.filter files, (fileName) ->
@@ -61,7 +54,8 @@ module.exports = class
       @logger.info 'New connection opened'
       @_sftp = sftp
       @logger.info "Renaming file #{fileName} on the remote server"
-      @sftpClient.moveFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
+      # @sftpClient.moveFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
+      Q()
     .then -> d.resolve()
     .fail (error) -> d.reject error
     .fin =>
