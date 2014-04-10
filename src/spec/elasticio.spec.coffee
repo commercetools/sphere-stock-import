@@ -1,17 +1,33 @@
 _ = require 'underscore'
-elasticio = require '../lib/elasticio'
-Config = require '../config'
-Logger = require '../lib/logger'
-StockImport = require '../lib/stockimport'
+Q = require 'q'
+SphereClient = require 'sphere-node-client'
 {ElasticIo} = require 'sphere-node-utils'
+Logger = require '../lib/logger'
+Config = require '../config'
+elasticio = require '../lib/elasticio'
 
 describe 'elasticio integration', ->
 
-  beforeEach ->
-    @logger = new Logger
+  beforeEach (done) ->
+    logger = new Logger
       streams: [
         { level: 'info', stream: process.stdout }
       ]
+    @client = new SphereClient
+      config: Config.config
+      logConfig:
+        logger: logger
+
+    logger.info 'Deleting old inventory entries...'
+    @client.inventoryEntries.perPage(0).fetch()
+    .then (result) =>
+      Q.all _.map result.body.results, (e) =>
+        @client.inventoryEntries.byId(e.id).delete(e.version)
+    .then (results) ->
+      logger.info "#{_.size results} deleted."
+      done()
+    .fail (err) -> done(_.prettify err)
+  , 10000 # 10sec
 
   it 'should work with no attachments nor body', (done) ->
     cfg =
@@ -124,8 +140,8 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(message['Inventory entry created.']).toBe 0
-        expect(message['Inventory entry updated.']).toBe 1
+        expect(message['Inventory entry created.']).toBe 1
+        expect(message['Inventory entry updated.']).toBe 0
         expect(message['Inventory update was not necessary.']).toBe 0
         msg.body.QUANTITY = '3'
         elasticio.process msg, cfg, (error, message) ->
@@ -156,8 +172,8 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(message['Inventory entry created.']).toBe 0
-        expect(message['Inventory entry updated.']).toBe 1
+        expect(message['Inventory entry created.']).toBe 1
+        expect(message['Inventory entry updated.']).toBe 0
         expect(message['Inventory update was not necessary.']).toBe 0
         msg.body.QUANTITY = '3'
         elasticio.process msg, cfg, (error, message) ->
@@ -174,13 +190,7 @@ describe 'elasticio integration', ->
         sphereClientSecret: Config.config.client_secret
         sphereProjectKey: Config.config.project_key
 
-      sxi = new StockImport
-        config: Config.config
-        logConfig:
-          logger: @logger
-        headerNames: {}
-
-      sxi.client.channels.ensure('channel-id-test', ['InventorySupply', 'OrderExport', 'OrderImport'])
+      @client.channels.ensure('channel-id-test', ['InventorySupply', 'OrderExport', 'OrderImport'])
       .then (channel) ->
         msg =
         attachments: {}
@@ -191,8 +201,8 @@ describe 'elasticio integration', ->
 
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(message['Inventory entry created.']).toBe 0
-          expect(message['Inventory entry updated.']).toBe 1
+          expect(message['Inventory entry created.']).toBe 1
+          expect(message['Inventory entry updated.']).toBe 0
           expect(message['Inventory update was not necessary.']).toBe 0
           msg.body.QUANTITY = '3'
           elasticio.process msg, cfg, (error, message) ->
