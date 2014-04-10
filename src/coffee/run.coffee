@@ -62,7 +62,7 @@ importFn = (importer, fileName) ->
     d.reject 2
   d.promise
 
-processFn = (helper, files, fn) ->
+processFn = (files, fn) ->
   throw new Error 'Please provide a function to process the files' unless _.isFunction fn
   d = Q.defer()
   _process = (tick) ->
@@ -73,11 +73,7 @@ processFn = (helper, files, fn) ->
     else
       file = files[tick]
       fn(file)
-      .then ->
-        logger.info "Finishing processing file #{file}"
-        helper.finish(file)
-      .then ->
-        _process(tick + 1)
+      .then -> _process(tick + 1)
       .fail (error) -> d.reject error
       .done()
   _process(0)
@@ -136,7 +132,11 @@ credentialsConfig = ProjectCredentialsConfig.create()
       sftpHelper.download(tmpPath)
       .then (files) ->
         logger.info files, "Processing #{files.length} files..."
-        processFn sftpHelper, files, (file) -> importFn(stockimport, "#{tmpPath}/#{file}")
+        processFn files, (file) ->
+          importFn(stockimport, "#{tmpPath}/#{file}")
+          .then ->
+            logger.info "Finishing processing file #{file}"
+            sftpHelper.finish(file)
       .then ->
         logger.info 'Processing files complete'
         process.exit(0)
