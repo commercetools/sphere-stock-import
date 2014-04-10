@@ -39,14 +39,16 @@ Options:
   --clientId      your OAuth client id for the SPHERE.IO API                  [required]
   --clientSecret  your OAuth client secret for the SPHERE.IO API              [required]
   --file          XML or CSV file containing inventory information to import  [required]
+  --csvHeaders    a list of column names to use as mapping, comma separated   [default: 'sku, quantity']
   --sftpHost      the SFTP host                                               [*optional]
   --sftpUsername  the SFTP username                                           [*optional]
   --sftpPassword  the SFTP password                                           [*optional]
   --sftpSource    path in the SFTP server from where to read the files        [*optional]
   --sftpTarget    path in the SFTP server to where to move the worked files   [*optional]
   --sftpFileRegex a RegEx to filter files when downloading them               [*optional]
-  --logDir        log level for file logging                                  [default: info]
-  --logLevel      directory to store logs                                     [default: .]
+  --logDir        log level for file logging                                  [default: 'info']
+  --logLevel      directory to store logs                                     [default: '.']
+  --logSilent     use console to print messages                               [default: false]
   --timeout       Set timeout for requests                                    [default: 300000]
 ```
 > `*optional` means that they are required all together to use the SFTP functionality

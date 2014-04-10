@@ -93,21 +93,21 @@ describe 'StockImport', ->
 
   describe '#_getHeaderIndexes', ->
     it 'should reject if no sku header found', (done) ->
-      @import._getHeaderIndexes ['bla', 'foo', 'quantity', 'price'], 'sku', 'q'
-      .fail (err) ->
-        expect(err).toBe "Can't find header 'sku' for SKU column."
-        done()
+      @import._getHeaderIndexes ['bla', 'foo', 'quantity', 'price'], 'sku, q'
       .then (msg) -> done msg
+      .fail (err) ->
+        expect(err).toBe "Can't find header 'sku' in 'bla,foo,quantity,price'."
+        done()
 
     it 'should reject if no quantity header found', (done) ->
-      @import._getHeaderIndexes ['sku', 'price', 'quality'], 'sku', 'quantity'
+      @import._getHeaderIndexes ['sku', 'price', 'quality'], 'sku, quantity'
       .fail (err) ->
-        expect(err).toBe "Can't find header 'quantity' for quantity column."
+        expect(err).toBe "Can't find header 'quantity' in 'sku,price,quality'."
         done()
       .then (msg) -> done msg
 
     it 'should return the indexes of the two named columns', (done) ->
-      @import._getHeaderIndexes ['foo', 'q', 'bar', 's'], 's', 'q'
+      @import._getHeaderIndexes ['foo', 'q', 'bar', 's'], 's, q'
       .then (indexes) ->
         expect(indexes[0]).toBe 3
         expect(indexes[1]).toBe 1

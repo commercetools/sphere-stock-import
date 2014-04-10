@@ -19,8 +19,7 @@ class StockImport
     @logger = logConfig.logger
     @sync = new InventorySync options
     @client = new SphereClient options
-    @skuHeader = options.headerNames.skuHeader
-    @quantityHeader = options.headerNames.quantityHeader
+    @csvHeaders = options.csvHeaders
     this
 
   getMode: (fileName) ->
@@ -131,7 +130,7 @@ class StockImport
     Csv().from.string(fileContent)
     .to.array (data, count) =>
       header = data[0]
-      @_getHeaderIndexes header, @skuHeader, @quantityHeader
+      @_getHeaderIndexes header, @csvHeaders
       .then (headerIndexes) =>
         stocks = @_mapStockFromCSV _.rest data, headerIndexes[0], headerIndexes[1]
         @_perform stocks, next
@@ -147,12 +146,12 @@ class StockImport
 
     deferred.promise
 
-  _getHeaderIndexes: (header, skuHeader, quantityHeader) ->
-    skuIndex = _.indexOf header, skuHeader
-    return Q.reject "Can't find header '#{skuHeader}' for SKU column." if skuIndex is -1
-    quantityIndex = _.indexOf header, quantityHeader
-    return Q.reject "Can't find header '#{quantityHeader}' for quantity column." if quantityIndex is -1
-    Q [skuIndex, quantityIndex]
+  _getHeaderIndexes: (header, csvHeaders) ->
+    Q.all _.map csvHeaders.split(','), (h) ->
+      cleanHeader = h.trim()
+      headerIndex = _.indexOf header, cleanHeader
+      return Q.reject "Can't find header '#{cleanHeader}' in '#{header}'." if headerIndex is -1
+      Q(headerIndex)
 
   _mapStockFromCSV: (rows, skuIndex = 0, quantityIndex = 1) ->
     _.map rows, (row) =>
