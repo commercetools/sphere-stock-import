@@ -47,9 +47,11 @@ class StockImport
     else if _.size(msg.body) > 0
       @_initMatcher("sku=\"#{msg.body.SKU}\"")
       .then (existingEntries) =>
+        @logger.debug existingEntries, 'Existing entries'
         if msg.body.CHANNEL_KEY?
-          @client.ensure(msg.body.CHANNEL_KEY, CHANNEL_ROLES)
+          @client.channels.ensure(msg.body.CHANNEL_KEY, CHANNEL_ROLES)
           .then (result) =>
+            @logger.debug result, 'Channel ensured, about to create or update'
             @_createOrUpdate [
               @createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, result.id)
             ], existingEntries
@@ -61,7 +63,8 @@ class StockImport
           ], existingEntries
           .then (result) =>
             ElasticIo.returnSuccess @sumResult(result), next
-      .fail (err) ->
+      .fail (err) =>
+        @logger.debug err, 'Failed to process inventory'
         ElasticIo.returnFailure err, next
       .done()
     else

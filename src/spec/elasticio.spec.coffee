@@ -124,8 +124,8 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(message['Inventory entry created.']).toBe 1
-        expect(message['Inventory entry updated.']).toBe 0
+        expect(message['Inventory entry created.']).toBe 0
+        expect(message['Inventory entry updated.']).toBe 1
         expect(message['Inventory update was not necessary.']).toBe 0
         msg.body.QUANTITY = '3'
         elasticio.process msg, cfg, (error, message) ->
@@ -139,6 +139,7 @@ describe 'elasticio integration', ->
             expect(message['Inventory entry updated.']).toBe 0
             expect(message['Inventory update was not necessary.']).toBe 1
             done()
+    , 10000 # 10sec
 
     it 'should import an entry with channel key', (done) ->
       cfg =
@@ -155,8 +156,8 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(message['Inventory entry created.']).toBe 1
-        expect(message['Inventory entry updated.']).toBe 0
+        expect(message['Inventory entry created.']).toBe 0
+        expect(message['Inventory entry updated.']).toBe 1
         expect(message['Inventory update was not necessary.']).toBe 0
         msg.body.QUANTITY = '3'
         elasticio.process msg, cfg, (error, message) ->
@@ -165,6 +166,7 @@ describe 'elasticio integration', ->
           expect(message['Inventory entry updated.']).toBe 1
           expect(message['Inventory update was not necessary.']).toBe 0
           done()
+    , 10000 # 10sec
 
     it 'should import an entry with channel id', (done) ->
       cfg =
@@ -178,7 +180,8 @@ describe 'elasticio integration', ->
           logger: @logger
         headerNames: {}
 
-      sxi.ensure('channel-id-test').then (channel) ->
+      sxi.client.channels.ensure('channel-id-test', ['InventorySupply', 'OrderExport', 'OrderImport'])
+      .then (channel) ->
         msg =
         attachments: {}
         body:
@@ -188,8 +191,8 @@ describe 'elasticio integration', ->
 
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(message['Inventory entry created.']).toBe 1
-          expect(message['Inventory entry updated.']).toBe 0
+          expect(message['Inventory entry created.']).toBe 0
+          expect(message['Inventory entry updated.']).toBe 1
           expect(message['Inventory update was not necessary.']).toBe 0
           msg.body.QUANTITY = '3'
           elasticio.process msg, cfg, (error, message) ->
@@ -198,3 +201,4 @@ describe 'elasticio integration', ->
             expect(message['Inventory entry updated.']).toBe 1
             expect(message['Inventory update was not necessary.']).toBe 0
             done()
+    , 10000 # 10sec
