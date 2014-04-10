@@ -126,6 +126,8 @@ credentialsConfig = ProjectCredentialsConfig.create()
       fileRegex: argv.sftpFileRegex
       logger: logger
 
+    tmp.setGracefulCleanup()
+
     createTmpDir()
     .then (tmpPath) ->
       logger.info "Tmp folder created at #{tmpPath}"
