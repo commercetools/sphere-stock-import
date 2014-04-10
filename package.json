@@ -34,7 +34,7 @@
     "optimist": "0.6.1",
     "sphere-node-client": "0.6.6",
     "sphere-node-sync": "0.5.2",
-    "sphere-node-utils": "0.4.3",
+    "sphere-node-utils": "0.4.4",
     "q": "1.0.0",
     "q-io": "1.11.0",
     "tmp": "0.0.23",

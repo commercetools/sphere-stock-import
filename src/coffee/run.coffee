@@ -3,7 +3,7 @@ Q = require 'q'
 _ = require 'underscore'
 path = require 'path'
 tmp = require 'tmp'
-{ProjectCredentialsConfig} = require 'sphere-node-utils'
+{ProjectCredentialsConfig, Qutils} = require 'sphere-node-utils'
 package_json = require '../package.json'
 Logger = require './logger'
 StockImport = require './stockimport'
@@ -25,20 +25,27 @@ argv = require('optimist')
   .describe('sftpFileRegex', 'a RegEx to filter files when downloading them')
   .describe('logLevel', 'log level for file logging')
   .describe('logDir', 'directory to store logs')
+  .describe('logSilent', 'use console to print messages')
   .describe('timeout', 'Set timeout for requests')
   .default('skuHeader', 'sku')
   .default('quantityHeader', 'quantity')
   .default('logLevel', 'info')
   .default('logDir', '.')
+  .default('logSilent', false)
   .default('timeout', 60000)
   .demand(['projectKey'])
   .argv
 
-logger = new Logger
+logOptions =
   streams: [
     { level: 'error', stream: process.stderr }
     { level: argv.logLevel, path: "#{argv.logDir}/sphere-stock-xml-import_#{argv.projectKey}.log" }
   ]
+logOptions.silent = argv.logSilent if argv.logSilent
+logger = new Logger logOptions
+if argv.logSilent
+  logger.trace = -> # noop
+  logger.debug = -> # noop
 
 process.on 'SIGUSR2', -> logger.reopenFileStreams()
 
@@ -60,23 +67,6 @@ importFn = (importer, fileName) ->
   .fail (e) ->
     logger.error e, "Cannot read file #{fileName}"
     d.reject 2
-  d.promise
-
-processFn = (files, fn) ->
-  throw new Error 'Please provide a function to process the files' unless _.isFunction fn
-  d = Q.defer()
-  _process = (tick) ->
-    logger.info tick, 'Current tick'
-    if tick >= files.length
-      logger.info 'No more files, resolving...'
-      d.resolve()
-    else
-      file = files[tick]
-      fn(file)
-      .then -> _process(tick + 1)
-      .fail (error) -> d.reject error
-      .done()
-  _process(0)
   d.promise
 
 ###*
@@ -134,7 +124,7 @@ credentialsConfig = ProjectCredentialsConfig.create()
       sftpHelper.download(tmpPath)
       .then (files) ->
         logger.info files, "Processing #{files.length} files..."
-        processFn files, (file) ->
+        Qutils.processList files, (file) ->
           importFn(stockimport, "#{tmpPath}/#{file}")
           .then ->
             logger.info "Finishing processing file #{file}"
@@ -147,6 +137,6 @@ credentialsConfig = ProjectCredentialsConfig.create()
       process.exit(1)
     .done()
 .fail (err) ->
-  logger.error e, "Problems on getting client credentials from config files."
+  logger.error err, "Problems on getting client credentials from config files."
   process.exit(1)
 .done()
