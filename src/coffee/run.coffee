@@ -50,11 +50,11 @@ process.on 'SIGUSR2', -> logger.reopenFileStreams()
 importFn = (importer, fileName) ->
   throw new Error 'You must provide a file to be processed' unless fileName
   d = Q.defer()
-  logger.info "About to process file #{fileName}"
+  logger.debug "About to process file #{fileName}"
   mode = importer.getMode fileName
   fs.read fileName
   .then (content) ->
-    logger.info 'File read, running import'
+    logger.debug 'File read, running import'
     importer.run(content, mode)
     .then (result) ->
       logger.info importer.sumResult(result)
@@ -116,14 +116,14 @@ credentialsConfig = ProjectCredentialsConfig.create()
 
     createTmpDir()
     .then (tmpPath) ->
-      logger.info "Tmp folder created at #{tmpPath}"
+      logger.debug "Tmp folder created at #{tmpPath}"
       sftpHelper.download(tmpPath)
       .then (files) ->
-        logger.info files, "Processing #{files.length} files..."
+        logger.debug files, "Processing #{files.length} files..."
         Qutils.processList files, (file) ->
           importFn(stockimport, "#{tmpPath}/#{file}")
           .then ->
-            logger.info "Finishing processing file #{file}"
+            logger.debug "Finishing processing file #{file}"
             sftpHelper.finish(file)
       .then ->
         logger.info 'Processing files complete'

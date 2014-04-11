@@ -27,11 +27,11 @@ module.exports = class
       if exists
         Q()
       else
-        @logger.info 'Creating new tmp folder'
+        @logger.debug 'Creating new tmp folder'
         fs.makeDirectory tmpFolder
     .then => @sftpClient.openSftp()
     .then (sftp) =>
-      @logger.info 'New connection opened'
+      @logger.debug 'New connection opened'
       @_sftp = sftp
       @sftpClient.downloadAllFiles(sftp, tmpFolder, @sourceFolder, @fileRegex)
     .then -> fs.list(tmpFolder)
@@ -43,7 +43,7 @@ module.exports = class
           else false
     .fail (error) -> d.reject error
     .fin =>
-      @logger.info 'Closing connection'
+      @logger.debug 'Closing connection'
       @sftpClient.close(@_sftp)
     d.promise
 
@@ -51,13 +51,13 @@ module.exports = class
     d = Q.defer()
     @sftpClient.openSftp()
     .then (sftp) =>
-      @logger.info 'New connection opened'
+      @logger.debug 'New connection opened'
       @_sftp = sftp
-      @logger.info "Renaming file #{fileName} on the remote server"
+      @logger.debug "Renaming file #{fileName} on the remote server"
       @sftpClient.moveFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
     .then -> d.resolve()
     .fail (error) -> d.reject error
     .fin =>
-      @logger.info 'Closing connection'
+      @logger.debug 'Closing connection'
       @sftpClient.close(@_sftp)
     d.promise

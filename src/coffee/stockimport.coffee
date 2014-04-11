@@ -231,7 +231,7 @@ class StockImport
       inventoryService = inventoryService.perPage(0)
     inventoryService.fetch()
     .then (results) =>
-      @logger.info results, "Existing entries: #{results.body.total}"
+      @logger.info "Existing entries: #{results.body.total}"
       # Q '#{LOG_PREFIX}matcher initialized'
       deferred.resolve results.body.results
     .fail (error) -> deferred.reject error
@@ -246,7 +246,7 @@ class StockImport
           not _.has(entry, CHANNEL_REF_NAME)
 
   _createOrUpdate: (inventoryEntries, existingEntries) ->
-    @logger.info inventoryEntries, 'Inventory entries'
+    @logger.debug inventoryEntries, 'Inventory entries'
     posts = _.map inventoryEntries, (entry) =>
       existingEntry = @_match(entry, existingEntries)
       if existingEntry?
@@ -254,7 +254,7 @@ class StockImport
       else
         @client.inventoryEntries.create(entry)
 
-    @logger.info "Requests: #{_.size posts}"
+    @logger.info "About to send #{_.size posts} requests"
     Q.all(posts)
 
 module.exports = StockImport
