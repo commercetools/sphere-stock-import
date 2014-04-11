@@ -132,7 +132,8 @@ class StockImport
       header = data[0]
       @_getHeaderIndexes header, @csvHeaders
       .then (headerIndexes) =>
-        stocks = @_mapStockFromCSV _.rest data, headerIndexes[0], headerIndexes[1]
+        stocks = @_mapStockFromCSV data, headerIndexes[0], headerIndexes[1]
+        @logger.debug stocks, "Stock mapped from csv for indexes #{headerIndexes}"
         @_perform stocks, next
         .then (result) ->
           deferred.resolve result
@@ -147,10 +148,11 @@ class StockImport
     deferred.promise
 
   _getHeaderIndexes: (header, csvHeaders) ->
-    Q.all _.map csvHeaders.split(','), (h) ->
+    Q.all _.map csvHeaders.split(','), (h) =>
       cleanHeader = h.trim()
       headerIndex = _.indexOf header, cleanHeader
       return Q.reject "Can't find header '#{cleanHeader}' in '#{header}'." if headerIndex is -1
+      @logger.debug header, "Found index #{headerIndex} for #{cleanHeader}"
       Q(headerIndex)
 
   _mapStockFromCSV: (rows, skuIndex = 0, quantityIndex = 1) ->
