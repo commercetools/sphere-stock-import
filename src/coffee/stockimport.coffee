@@ -132,7 +132,7 @@ class StockImport
       header = data[0]
       @_getHeaderIndexes header, @csvHeaders
       .then (headerIndexes) =>
-        stocks = @_mapStockFromCSV data, headerIndexes[0], headerIndexes[1]
+        stocks = @_mapStockFromCSV _.tail(data), headerIndexes[0], headerIndexes[1]
         @logger.debug stocks, "Stock mapped from csv for indexes #{headerIndexes}"
         @_perform stocks, next
         .then (result) ->
