@@ -15,9 +15,7 @@ describe 'StockImport', ->
       config: Config.config
       logConfig:
         logger: logger
-      headerNames:
-        skuHeader: 'id'
-        quantityHeader: 'amount'
+      csvHeaders: 'id, amount'
 
   it 'should initialize', ->
     expect(@import).toBeDefined()

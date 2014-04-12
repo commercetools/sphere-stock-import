@@ -69,34 +69,6 @@ class StockImport
     else
       ElasticIo.returnFailure "#{LOG_PREFIX}No data found in elastic.io msg.", next
 
-  # ensureChannelByKey: (rest, channelKey, channelRolesForCreation) ->
-  #   deferred = Q.defer()
-  #   query = encodeURIComponent("key=\"#{channelKey}\"")
-  #   rest.GET "/channels?where=#{query}", (error, response, body) ->
-  #     if error?
-  #       deferred.reject "Error on getting channel: #{error}"
-  #     else if response.statusCode isnt 200
-  #       humanReadable = JSON.stringify body, null, 2
-  #       deferred.reject "#{LOG_PREFIX}Problem on getting channel: #{humanReadable}"
-  #     else
-  #       channels = body.results
-  #       if _.size(channels) is 1
-  #         deferred.resolve channels[0]
-  #       else
-  #         channel =
-  #           key: channelKey
-  #           roles: channelRolesForCreation
-  #         rest.POST '/channels', channel, (error, response, body) ->
-  #           if error?
-  #             deferred.reject "#{LOG_PREFIX}Error on creating channel: #{error}"
-  #           else if response.statusCode is 201
-  #             deferred.resolve body
-  #           else
-  #             humanReadable = JSON.stringify body, null, 2
-  #             deferred.reject "#{LOG_PREFIX}Problem on creating channel: #{humanReadable}"
-
-  #   deferred.promise
-
   run: (fileContent, mode, next) ->
     if mode is 'XML'
       @performXML fileContent, next

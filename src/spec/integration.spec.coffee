@@ -16,9 +16,7 @@ describe 'integration test', ->
       config: Config.config
       logConfig:
         logger: logger
-      headerNames:
-        skuHeader: 'stock'
-        quantityHeader: 'number'
+      csvHeaders: 'stock,number'
 
     @client = @stockimport.client
 
