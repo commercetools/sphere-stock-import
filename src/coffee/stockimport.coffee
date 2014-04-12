@@ -254,7 +254,7 @@ class StockImport
       else
         @client.inventoryEntries.create(entry)
 
-    @logger.info "About to send #{_.size posts} requests"
+    @logger.debug "About to send #{_.size posts} requests"
     Q.all(posts)
 
 module.exports = StockImport

@@ -54,7 +54,7 @@ module.exports = class
       @logger.debug 'New connection opened'
       @_sftp = sftp
       @logger.debug "Renaming file #{fileName} on the remote server"
-      @sftpClient.moveFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
+      @sftpClient.safeRenameFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
     .then -> d.resolve()
     .fail (error) -> d.reject error
     .fin =>
