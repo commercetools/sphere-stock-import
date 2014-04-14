@@ -101,11 +101,11 @@ class StockImport
 
     Csv().from.string(fileContent)
     .to.array (data, count) =>
-      header = data[0]
-      @_getHeaderIndexes header, @csvHeaders
-      .then (headerIndexes) =>
-        stocks = @_mapStockFromCSV _.tail(data), headerIndexes[0], headerIndexes[1]
-        @logger.debug stocks, "Stock mapped from csv for indexes #{headerIndexes}"
+      headers = data[0]
+      @_getHeaderIndexes headers, @csvHeaders
+      .then (mappedHeaderIndexes) =>
+        stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes[0], mappedHeaderIndexes[1]
+        @logger.debug stocks, "Stock mapped from csv for headers #{mappedHeaderIndexes}"
         @_perform stocks, next
         .then (result) ->
           deferred.resolve result
@@ -119,12 +119,13 @@ class StockImport
 
     deferred.promise
 
-  _getHeaderIndexes: (header, csvHeaders) ->
+  _getHeaderIndexes: (headers, csvHeaders) ->
     Q.all _.map csvHeaders.split(','), (h) =>
       cleanHeader = h.trim()
-      headerIndex = _.indexOf header, cleanHeader
-      return Q.reject "Can't find header '#{cleanHeader}' in '#{header}'." if headerIndex is -1
-      @logger.debug header, "Found index #{headerIndex} for #{cleanHeader}"
+      mappedHeader = _.find headers, (header) -> header.toLowerCase() is cleanHeader.toLowerCase()
+      return Q.reject "Can't find header '#{cleanHeader}' in '#{headers}'." unless mappedHeader
+      headerIndex = _.indexOf headers, mappedHeader
+      @logger.debug headers, "Found index #{headerIndex} for header #{cleanHeader}"
       Q(headerIndex)
 
   _mapStockFromCSV: (rows, skuIndex = 0, quantityIndex = 1) ->
