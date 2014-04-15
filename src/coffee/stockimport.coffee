@@ -20,6 +20,7 @@ class StockImport
     @sync = new InventorySync options
     @client = new SphereClient options
     @csvHeaders = options.csvHeaders
+    @csvDelimiter = options.csvDelimiter
     this
 
   getMode: (fileName) ->
@@ -99,7 +100,7 @@ class StockImport
   performCSV: (fileContent, next) ->
     deferred = Q.defer()
 
-    Csv().from.string(fileContent)
+    Csv().from.string(fileContent, {delimiter: @csvDelimiter})
     .to.array (data, count) =>
       headers = data[0]
       @_getHeaderIndexes headers, @csvHeaders

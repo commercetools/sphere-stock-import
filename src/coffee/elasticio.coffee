@@ -26,6 +26,7 @@ exports.process = (msg, cfg, next, snapshot) ->
     logConfig:
       logger: logger
     csvHeaders: 'sku, quantity'
+    csvDelimiter: ','
 
   stockimport = new StockImport opts
   stockimport.elasticio msg, cfg, next, snapshot

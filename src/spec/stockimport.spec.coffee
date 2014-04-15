@@ -1,3 +1,4 @@
+Q = require 'q'
 _ = require 'underscore'
 Csv = require 'csv'
 Config = require '../config'
@@ -16,6 +17,7 @@ describe 'StockImport', ->
       logConfig:
         logger: logger
       csvHeaders: 'id, amount'
+      csvDelimiter: ','
 
   it 'should initialize', ->
     expect(@import).toBeDefined()
@@ -132,3 +134,21 @@ describe 'StockImport', ->
         expect(s.sku).toBe 'abc'
         expect(s.quantityOnStock).toBe -3
         done()
+
+  describe '#performCSV', ->
+
+    it 'should parse with a custom delimiter', (done) ->
+      rawCSV =
+        '''
+        id;amount
+        123;77
+        abc;-3
+        '''
+      @import.csvDelimiter = ';'
+      spyOn(@import, '_perform').andReturn Q()
+      spyOn(@import, '_getHeaderIndexes').andCallThrough()
+      @import.performCSV(rawCSV)
+      .then (result) =>
+        expect(@import._getHeaderIndexes).toHaveBeenCalledWith ['id', 'amount'], 'id, amount'
+        done()
+      .fail (error) -> done error

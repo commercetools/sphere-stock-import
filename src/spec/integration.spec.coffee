@@ -17,6 +17,7 @@ describe 'integration test', ->
       logConfig:
         logger: logger
       csvHeaders: 'stock,number'
+      csvDelimiter: ','
 
     @client = @stockimport.client
 

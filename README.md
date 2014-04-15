@@ -40,6 +40,7 @@ Options:
   --clientSecret  your OAuth client secret for the SPHERE.IO API                        [required]
   --file          XML or CSV file containing inventory information to import            [required]
   --csvHeaders    a list of column names to use as mapping, comma separated             [default: 'sku, quantity']
+  --csvDelimiter  the delimiter type used in the csv                                    [default: ',']
   --sftpCredentials the path to a JSON file where to read the credentials from          [*optional]
   --sftpHost      the SFTP host (overwrite value in sftpCredentials JSON, if given)     [*optional]
   --sftpUsername  the SFTP username (overwrite value in sftpCredentials JSON, if given) [*optional]
