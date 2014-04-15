@@ -16,9 +16,10 @@ argv = require('optimist')
   .describe('clientSecret', 'your OAuth client secret for the SPHERE.IO API')
   .describe('file', 'XML or CSV file containing inventory information to import')
   .describe('csvHeaders', 'a list of column names to use as mapping, comma separated')
-  .describe('sftpHost', 'the SFTP host')
-  .describe('sftpUsername', 'the SFTP username')
-  .describe('sftpPassword', 'the SFTP password')
+  .describe('sftpCredentials', 'the path to a JSON file where to read the credentials from')
+  .describe('sftpHost', 'the SFTP host (overwrite value in sftpCredentials JSON, if given)')
+  .describe('sftpUsername', 'the SFTP username (overwrite value in sftpCredentials JSON, if given)')
+  .describe('sftpPassword', 'the SFTP password (overwrite value in sftpCredentials JSON, if given)')
   .describe('sftpSource', 'path in the SFTP server from where to read the files')
   .describe('sftpTarget', 'path in the SFTP server to where to move the worked files')
   .describe('sftpFileRegex', 'a RegEx to filter files when downloading them')
@@ -80,7 +81,12 @@ createTmpDir = ->
       d.resolve path
   d.promise
 
-credentialsConfig = ProjectCredentialsConfig.create()
+readJsonFromPath = (path) ->
+  return Q({}) unless path
+  fs.read(path).then (content) ->
+    Q JSON.parse(content)
+
+ProjectCredentialsConfig.create()
 .then (credentials) ->
   options =
     config: credentials.enrichCredentials
@@ -103,33 +109,46 @@ credentialsConfig = ProjectCredentialsConfig.create()
     .fail (code) -> process.exit code
     .done()
   else
-    sftpHelper = new SftpHelper
-      host: argv.sftpHost
-      username: argv.sftpUsername
-      password: argv.sftpPassword
-      sourceFolder: argv.sftpSource
-      targetFolder: argv.sftpTarget
-      fileRegex: argv.sftpFileRegex
-      logger: logger
-
     tmp.setGracefulCleanup()
 
-    createTmpDir()
-    .then (tmpPath) ->
-      logger.debug "Tmp folder created at #{tmpPath}"
-      sftpHelper.download(tmpPath)
-      .then (files) ->
-        logger.debug files, "Processing #{files.length} files..."
-        Qutils.processList files, (file) ->
-          importFn(stockimport, "#{tmpPath}/#{file}")
-          .then ->
-            logger.debug "Finishing processing file #{file}"
-            sftpHelper.finish(file)
-      .then ->
-        logger.info 'Processing files complete'
-        process.exit(0)
-    .fail (error) ->
-      logger.error error, 'Oops, something went wrong!'
+    readJsonFromPath(argv.sftpCredentials)
+    .then (sftpCredentials) ->
+      projectSftpCredentials = sftpCredentials[argv.projectKey] or {}
+      {host, username, password} = _.defaults projectSftpCredentials,
+        host: argv.sftpHost
+        username: argv.sftpUsername
+        password: argv.sftpPassword
+      throw new Error 'Missing sftp host' unless host
+      throw new Error 'Missing sftp host' unless username
+      throw new Error 'Missing sftp host' unless password
+      sftpHelper = new SftpHelper
+        host: host
+        username: username
+        password: password
+        sourceFolder: argv.sftpSource
+        targetFolder: argv.sftpTarget
+        fileRegex: argv.sftpFileRegex
+        logger: logger
+      createTmpDir()
+      .then (tmpPath) ->
+        logger.debug "Tmp folder created at #{tmpPath}"
+        sftpHelper.download(tmpPath)
+        .then (files) ->
+          logger.debug files, "Processing #{files.length} files..."
+          Qutils.processList files, (file) ->
+            importFn(stockimport, "#{tmpPath}/#{file}")
+            .then ->
+              logger.debug "Finishing processing file #{file}"
+              sftpHelper.finish(file)
+        .then ->
+          logger.info 'Processing files complete'
+          process.exit(0)
+      .fail (error) ->
+        logger.error error, 'Oops, something went wrong!'
+        process.exit(1)
+      .done()
+    .fail (err) ->
+      logger.error err, "Problems on getting sftp credentials from config files."
       process.exit(1)
     .done()
 .fail (err) ->
