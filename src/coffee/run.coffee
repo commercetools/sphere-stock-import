@@ -119,8 +119,8 @@ ProjectCredentialsConfig.create()
         username: argv.sftpUsername
         password: argv.sftpPassword
       throw new Error 'Missing sftp host' unless host
-      throw new Error 'Missing sftp host' unless username
-      throw new Error 'Missing sftp host' unless password
+      throw new Error 'Missing sftp username' unless username
+      throw new Error 'Missing sftp password' unless password
       sftpHelper = new SftpHelper
         host: host
         username: username
