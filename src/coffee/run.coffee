@@ -5,6 +5,7 @@ path = require 'path'
 tmp = require 'tmp'
 {Logger, ProjectCredentialsConfig, Qutils} = require 'sphere-node-utils'
 package_json = require '../package.json'
+Logger = require './logger'
 StockImport = require './stockimport'
 SftpHelper = require './sftp'
 
