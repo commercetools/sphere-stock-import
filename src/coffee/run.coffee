@@ -3,7 +3,7 @@ Q = require 'q'
 _ = require 'underscore'
 path = require 'path'
 tmp = require 'tmp'
-{ProjectCredentialsConfig, Qutils} = require 'sphere-node-utils'
+{Logger, ProjectCredentialsConfig, Qutils} = require 'sphere-node-utils'
 package_json = require '../package.json'
 Logger = require './logger'
 StockImport = require './stockimport'
@@ -38,9 +38,10 @@ argv = require('optimist')
   .argv
 
 logOptions =
+  name: "#{package_json.name}-#{package_json.version}:#{argv.projectKey}"
   streams: [
     { level: 'error', stream: process.stderr }
-    { level: argv.logLevel, path: "#{argv.logDir}/sphere-stock-xml-import_#{argv.projectKey}.log" }
+    { level: argv.logLevel, path: "#{argv.logDir}/sphere-stock-xml-import.log" }
   ]
 logOptions.silent = argv.logSilent if argv.logSilent
 logger = new Logger logOptions

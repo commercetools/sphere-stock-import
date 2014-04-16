@@ -1,14 +1,16 @@
 Q = require 'q'
 _ = require 'underscore'
 Csv = require 'csv'
+{Logger} = require 'sphere-node-utils'
+package_json = require '../package.json'
 Config = require '../config'
-Logger = require '../lib/logger'
 xmlHelpers = require '../lib/xmlhelpers.js'
 StockImport = require '../lib/stockimport'
 
 describe 'StockImport', ->
   beforeEach ->
     logger = new Logger
+      name: "#{package_json.name}-#{package_json.version}:#{Config.config.project_key}"
       streams: [
         { level: 'info', stream: process.stdout }
       ]

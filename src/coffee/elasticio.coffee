@@ -1,5 +1,5 @@
 package_json = require '../package.json'
-Logger = require './logger'
+{Logger} = require 'sphere-node-utils'
 StockImport = require './stockimport'
 bunyanLogentries = require 'bunyan-logentries'
 
@@ -14,7 +14,9 @@ exports.process = (msg, cfg, next, snapshot) ->
       stream: bunyanLogentries.createStream token: cfg.logentriesToken
       type: 'raw'
 
-  logger = new Logger streams: logStreams
+  logger = new Logger
+    name: "#{package_json.name}-#{package_json.version}:#{cfg.sphereProjectKey}"
+    streams: logStreams
 
   opts =
     config:

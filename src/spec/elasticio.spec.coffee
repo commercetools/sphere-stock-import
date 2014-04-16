@@ -1,8 +1,8 @@
 _ = require 'underscore'
 Q = require 'q'
 SphereClient = require 'sphere-node-client'
-{ElasticIo} = require 'sphere-node-utils'
-Logger = require '../lib/logger'
+{ElasticIo, Logger} = require 'sphere-node-utils'
+package_json = require '../package.json'
 Config = require '../config'
 elasticio = require '../lib/elasticio'
 
@@ -10,6 +10,7 @@ describe 'elasticio integration', ->
 
   beforeEach (done) ->
     logger = new Logger
+      name: "#{package_json.name}-#{package_json.version}:#{Config.config.project_key}"
       streams: [
         { level: 'info', stream: process.stdout }
       ]
