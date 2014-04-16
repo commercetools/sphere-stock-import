@@ -1,16 +1,14 @@
 Q = require 'q'
 _ = require 'underscore'
-{Logger, _u} = require 'sphere-node-utils'
-_.mixin _u
-package_json = require '../package.json'
+_.mixin require('sphere-node-utils')._u
 Config = require '../config'
+Logger = require '../lib/logger'
 StockImport = require '../lib/stockimport'
 
 describe 'integration test', ->
 
   beforeEach (done) ->
     logger = new Logger
-      name: "#{package_json.name}-#{package_json.version}:#{Config.config.project_key}"
       streams: [
         { level: 'info', stream: process.stdout }
       ]
