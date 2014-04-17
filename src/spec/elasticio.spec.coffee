@@ -1,22 +1,26 @@
 _ = require 'underscore'
 Q = require 'q'
 SphereClient = require 'sphere-node-client'
-{ElasticIo} = require 'sphere-node-utils'
-Logger = require '../lib/logger'
+{ExtendedLogger, ElasticIo} = require 'sphere-node-utils'
+package_json = require '../package.json'
 Config = require '../config'
 elasticio = require '../lib/elasticio'
 
 describe 'elasticio integration', ->
 
   beforeEach (done) ->
-    logger = new Logger
-      streams: [
-        { level: 'info', stream: process.stdout }
-      ]
+    logger = new ExtendedLogger
+      additionalFields:
+        project_key: Config.config.project_key
+      logConfig:
+        name: "#{package_json.name}-#{package_json.version}"
+        streams: [
+          { level: 'info', stream: process.stdout }
+        ]
     @client = new SphereClient
       config: Config.config
       logConfig:
-        logger: logger
+        logger: logger.bunyanLogger
 
     logger.info 'Deleting old inventory entries...'
     @client.inventoryEntries.perPage(0).fetch()

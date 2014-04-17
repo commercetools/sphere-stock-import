@@ -1,7 +1,7 @@
-package_json = require '../package.json'
-Logger = require './logger'
-StockImport = require './stockimport'
+{ExtendedLogger} = require 'sphere-node-utils'
 bunyanLogentries = require 'bunyan-logentries'
+package_json = require '../package.json'
+StockImport = require './stockimport'
 
 exports.process = (msg, cfg, next, snapshot) ->
   logStreams = [
@@ -14,7 +14,12 @@ exports.process = (msg, cfg, next, snapshot) ->
       stream: bunyanLogentries.createStream token: cfg.logentriesToken
       type: 'raw'
 
-  logger = new Logger streams: logStreams
+  logger = new ExtendedLogger
+    additionalFields:
+      project_key: cfg.sphereProjectKey
+    logConfig:
+      name: "#{package_json.name}-#{package_json.version}"
+      streams: logStreams
 
   opts =
     config:
@@ -24,7 +29,7 @@ exports.process = (msg, cfg, next, snapshot) ->
     timeout: 60000
     user_agent: "#{package_json.name} - elasticio - #{package_json.version}",
     logConfig:
-      logger: logger
+      logger: logger.bunyanLogger
     csvHeaders: 'sku, quantity'
     csvDelimiter: ','
 

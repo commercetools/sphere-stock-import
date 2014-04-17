@@ -1,21 +1,26 @@
 Q = require 'q'
 _ = require 'underscore'
 _.mixin require('sphere-node-utils')._u
+{ExtendedLogger} = require 'sphere-node-utils'
+package_json = require '../package.json'
 Config = require '../config'
-Logger = require '../lib/logger'
 StockImport = require '../lib/stockimport'
 
 describe 'integration test', ->
 
   beforeEach (done) ->
-    logger = new Logger
-      streams: [
-        { level: 'info', stream: process.stdout }
-      ]
+    logger = new ExtendedLogger
+      additionalFields:
+        project_key: Config.config.project_key
+      logConfig:
+        name: "#{package_json.name}-#{package_json.version}"
+        streams: [
+          { level: 'info', stream: process.stdout }
+        ]
     @stockimport = new StockImport
       config: Config.config
       logConfig:
-        logger: logger
+        logger: logger.bunyanLogger
       csvHeaders: 'stock,number'
       csvDelimiter: ','
 

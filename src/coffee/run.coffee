@@ -3,9 +3,8 @@ Q = require 'q'
 _ = require 'underscore'
 path = require 'path'
 tmp = require 'tmp'
-{ProjectCredentialsConfig, Qutils} = require 'sphere-node-utils'
+{ExtendedLogger, ProjectCredentialsConfig, Qutils} = require 'sphere-node-utils'
 package_json = require '../package.json'
-Logger = require './logger'
 StockImport = require './stockimport'
 SftpHelper = require './sftp'
 
@@ -38,17 +37,22 @@ argv = require('optimist')
   .argv
 
 logOptions =
+  name: "#{package_json.name}-#{package_json.version}"
   streams: [
     { level: 'error', stream: process.stderr }
-    { level: argv.logLevel, path: "#{argv.logDir}/sphere-stock-xml-import_#{argv.projectKey}.log" }
+    { level: argv.logLevel, path: "#{argv.logDir}/sphere-stock-xml-import.log" }
   ]
 logOptions.silent = argv.logSilent if argv.logSilent
-logger = new Logger logOptions
+logger = new ExtendedLogger
+  additionalFields:
+    project_key: argv.projectKey
+  logConfig: logOptions
 if argv.logSilent
   logger.trace = -> # noop
   logger.debug = -> # noop
 
 process.on 'SIGUSR2', -> logger.reopenFileStreams()
+process.on 'exit', => process.exit(@exitCode)
 
 importFn = (importer, fileName) ->
   throw new Error 'You must provide a file to be processed' unless fileName
@@ -89,7 +93,7 @@ readJsonFromPath = (path) ->
     Q JSON.parse(content)
 
 ProjectCredentialsConfig.create()
-.then (credentials) ->
+.then (credentials) =>
   options =
     config: credentials.enrichCredentials
       project_key: argv.projectKey
@@ -98,7 +102,7 @@ ProjectCredentialsConfig.create()
     timeout: argv.timeout
     user_agent: "#{package_json.name} - #{package_json.version}"
     logConfig:
-      logger: logger
+      logger: logger.bunyanLogger
     csvHeaders: argv.csvHeaders
     csvDelimiter: argv.csvDelimiter
 
@@ -108,8 +112,8 @@ ProjectCredentialsConfig.create()
 
   if file
     importFn(stockimport, file)
-    .then -> process.exit 0
-    .fail (code) -> process.exit code
+    .then => @exitCode = 0 # process.exit 0
+    .fail (code) => @exitCode = code # process.exit code
     .done()
   else
     tmp.setGracefulCleanup()
@@ -143,18 +147,22 @@ ProjectCredentialsConfig.create()
             .then ->
               logger.debug "Finishing processing file #{file}"
               sftpHelper.finish(file)
-        .then ->
+        .then =>
           logger.info 'Processing files complete'
-          process.exit(0)
-      .fail (error) ->
+          @exitCode 0
+          # process.exit(0)
+      .fail (error) =>
         logger.error error, 'Oops, something went wrong!'
-        process.exit(1)
+        @exitCode 1
+        # process.exit(1)
       .done()
-    .fail (err) ->
+    .fail (err) =>
       logger.error err, "Problems on getting sftp credentials from config files."
-      process.exit(1)
+      @exitCode 1
+      # process.exit(1)
     .done()
-.fail (err) ->
+.fail (err) =>
   logger.error err, "Problems on getting client credentials from config files."
-  process.exit(1)
+  @exitCode 1
+  # process.exit(1)
 .done()

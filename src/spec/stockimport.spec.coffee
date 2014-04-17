@@ -1,21 +1,24 @@
 Q = require 'q'
 _ = require 'underscore'
 Csv = require 'csv'
+{ExtendedLogger} = require 'sphere-node-utils'
+package_json = require '../package.json'
 Config = require '../config'
-Logger = require '../lib/logger'
 xmlHelpers = require '../lib/xmlhelpers.js'
 StockImport = require '../lib/stockimport'
 
 describe 'StockImport', ->
   beforeEach ->
-    logger = new Logger
-      streams: [
-        { level: 'info', stream: process.stdout }
-      ]
+    logger = new ExtendedLogger
+      logConfig:
+        name: "#{package_json.name}-#{package_json.version}"
+        streams: [
+          { level: 'info', stream: process.stdout }
+        ]
     @import = new StockImport
       config: Config.config
       logConfig:
-        logger: logger
+        logger: logger.bunyanLogger
       csvHeaders: 'id, amount'
       csvDelimiter: ','
 
