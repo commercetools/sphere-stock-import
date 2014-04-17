@@ -119,7 +119,7 @@ ProjectCredentialsConfig.create()
     tmp.setGracefulCleanup()
 
     readJsonFromPath(argv.sftpCredentials)
-    .then (sftpCredentials) ->
+    .then (sftpCredentials) =>
       projectSftpCredentials = sftpCredentials[argv.projectKey] or {}
       {host, username, password} = _.defaults projectSftpCredentials,
         host: argv.sftpHost
@@ -137,7 +137,7 @@ ProjectCredentialsConfig.create()
         fileRegex: argv.sftpFileRegex
         logger: logger
       createTmpDir()
-      .then (tmpPath) ->
+      .then (tmpPath) =>
         logger.debug "Tmp folder created at #{tmpPath}"
         sftpHelper.download(tmpPath)
         .then (files) ->
