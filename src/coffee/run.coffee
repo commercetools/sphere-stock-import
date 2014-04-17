@@ -149,20 +149,20 @@ ProjectCredentialsConfig.create()
               sftpHelper.finish(file)
         .then =>
           logger.info 'Processing files complete'
-          @exitCode 0
+          @exitCode = 0
           # process.exit(0)
       .fail (error) =>
         logger.error error, 'Oops, something went wrong!'
-        @exitCode 1
+        @exitCode = 1
         # process.exit(1)
       .done()
     .fail (err) =>
       logger.error err, "Problems on getting sftp credentials from config files."
-      @exitCode 1
+      @exitCode = 1
       # process.exit(1)
     .done()
 .fail (err) =>
   logger.error err, "Problems on getting client credentials from config files."
-  @exitCode 1
+  @exitCode = 1
   # process.exit(1)
 .done()
