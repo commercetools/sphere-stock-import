@@ -19,6 +19,7 @@ class StockImport
     @client = new SphereClient options
     @csvHeaders = options.csvHeaders
     @csvDelimiter = options.csvDelimiter
+    @allRequestStatuses = []
     this
 
   getMode: (fileName) ->
@@ -28,6 +29,7 @@ class StockImport
       else throw new Error "Unsupported mode (file extension) for file #{fileName} (use csv or xml)"
 
   elasticio: (msg, cfg, next, snapshot) ->
+    @allRequestStatuses = []
     @logger.debug msg, 'Running elastic.io'
     if _.size(msg.attachments) > 0
       for attachment of msg.attachments
@@ -43,9 +45,9 @@ class StockImport
         .done()
 
     else if _.size(msg.body) > 0
-      @_initMatcher("sku=\"#{msg.body.SKU}\"")
-      .then (existingEntries) =>
-        @logger.debug existingEntries, 'Existing entries'
+      @client.inventoryEntries.where("sku=\"#{msg.body.SKU}\"").process((payload) =>
+        @logger.debug payload, 'Existing entries'
+        existingEntries = payload.body.results
         if msg.body.CHANNEL_KEY?
           @client.channels.ensure(msg.body.CHANNEL_KEY, CHANNEL_ROLES)
           .then (result) =>
@@ -53,14 +55,23 @@ class StockImport
             @_createOrUpdate [
               @createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, result.id)
             ], existingEntries
-          .then (result) =>
-            ElasticIo.returnSuccess @sumResult(result), next
+            .then (results) =>
+              # save all requests statusCode for final summary
+              @allRequestStatuses = @allRequestStatuses.concat _.map results, (r) -> _.pick r, 'statusCode'
+              @logger.debug @allRequestStatuses, 'All request statuses'
+              Q()
         else
           @_createOrUpdate [
             @createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.CHANNEL_ID)
           ], existingEntries
-          .then (result) =>
-            ElasticIo.returnSuccess @sumResult(result), next
+          .then (results) =>
+            # save all requests statusCode for final summary
+            @allRequestStatuses = @allRequestStatuses.concat _.map results, (r) -> _.pick r, 'statusCode'
+            @logger.debug @allRequestStatuses, 'All request statuses'
+            Q()
+      , {accumulate: false}) # let's not keep stuff in memory
+      .then =>
+        ElasticIo.returnSuccess @sumResult(@allRequestStatuses), next
       .fail (err) =>
         @logger.debug err, 'Failed to process inventory'
         ElasticIo.returnFailure err, next
@@ -69,6 +80,7 @@ class StockImport
       ElasticIo.returnFailure "#{LOG_PREFIX}No data found in elastic.io msg.", next
 
   run: (fileContent, mode, next) ->
+    @allRequestStatuses = []
     if mode is 'XML'
       @performXML fileContent, next
     else if mode is 'CSV'
@@ -97,7 +109,6 @@ class StockImport
 
   performCSV: (fileContent, next) ->
     deferred = Q.defer()
-
     Csv().from.string(fileContent, {delimiter: @csvDelimiter})
     .to.array (data, count) =>
       headers = data[0]
@@ -115,7 +126,6 @@ class StockImport
     # TODO: register this before!
     .on 'error', (error) ->
       deferred.reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
-
     deferred.promise
 
   _getHeaderIndexes: (headers, csvHeaders) ->
@@ -146,7 +156,6 @@ class StockImport
         .then (result) -> deferred.resolve result
         .fail (err) -> deferred.reject err
         .done()
-
     deferred.promise
 
   _mapStockFromXML: (xmljs, channelId) ->
@@ -162,7 +171,6 @@ class StockImport
             expectedDelivery = new Date(expectedDelivery).toISOString()
           d = @createInventoryEntry(sku, appointedQuantity, expectedDelivery, channelId)
           stocks.push d
-
     stocks
 
   createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
@@ -174,7 +182,6 @@ class StockImport
       entry[CHANNEL_REF_NAME] =
         typeId: 'channel'
         id: channelId
-
     entry
 
   _perform: (stocks, next) ->
@@ -192,22 +199,15 @@ class StockImport
         ElasticIo.returnSuccess msg, next
       Q "#{LOG_PREFIX}elastic.io messages sent."
     else
-      @_initMatcher().then (existingEntries) => @_createOrUpdate stocks, existingEntries
-
-  _initMatcher: (where) ->
-    deferred = Q.defer()
-    inventoryService = @client.inventoryEntries
-    if where?
-      inventoryService = inventoryService.where(where).perPage(1)
-    else
-      inventoryService = inventoryService.perPage(0)
-    inventoryService.fetch()
-    .then (results) =>
-      @logger.info "Existing entries: #{results.body.total}"
-      # Q '#{LOG_PREFIX}matcher initialized'
-      deferred.resolve results.body.results
-    .fail (error) -> deferred.reject error
-    deferred.promise
+      @client.inventoryEntries.process((payload) =>
+        existingEntries = payload.body.results
+        @_createOrUpdate stocks, existingEntries
+        .then (results) =>
+          # save all requests statusCode for final summary
+          @allRequestStatuses = @allRequestStatuses.concat _.map results, (r) -> _.pick r, 'statusCode'
+          @logger.debug @allRequestStatuses, 'All request statuses'
+          Q()
+      , {accumulate: false}) # let's not keep stuff in memory
 
   _match: (entry, existingEntries) ->
     _.find existingEntries, (existingEntry) ->

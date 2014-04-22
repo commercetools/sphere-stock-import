@@ -63,8 +63,8 @@ importFn = (importer, fileName) ->
   .then (content) ->
     logger.debug 'File read, running import'
     importer.run(content, mode)
-    .then (result) ->
-      logger.info importer.sumResult(result)
+    .then ->
+      logger.info importer.sumResult(importer.allRequestStatuses)
       d.resolve(fileName)
     .fail (e) ->
       logger.error e, "Oops, something went wrong when processing file #{fileName}"

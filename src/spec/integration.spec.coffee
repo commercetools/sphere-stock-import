@@ -58,8 +58,8 @@ describe 'integration test', ->
         </root>
         '''
       @stockimport.run(rawXml, 'XML')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 201
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 201
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -67,8 +67,8 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe '123'
         expect(stocks[0].quantityOnStock).toBe 2
         @stockimport.run(rawXml, 'XML')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 304
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 304
         @client.inventoryEntries.fetch()
       .then (result) ->
         stocks = result.body.results
@@ -91,8 +91,8 @@ describe 'integration test', ->
         '''
       rawXmlChanged = rawXml.replace('7', '19')
       @stockimport.run(rawXml, 'XML')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 201
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 201
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -100,8 +100,8 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe '234'
         expect(stocks[0].quantityOnStock).toBe 7
         @stockimport.run(rawXmlChanged, 'XML')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 200
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 200
         @client.inventoryEntries.fetch()
       .then (result) ->
         stocks = result.body.results
@@ -124,8 +124,8 @@ describe 'integration test', ->
         '''
       rawXmlChanged = rawXml.replace('77', '-13')
       @stockimport.run(rawXml, 'XML')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 201
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 201
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -133,8 +133,8 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe '1234567890'
         expect(stocks[0].quantityOnStock).toBe 77
         @stockimport.run(rawXmlChanged, 'XML')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 200
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 200
         @client.inventoryEntries.fetch()
       .then (result) ->
         stocks = result.body.results
@@ -161,9 +161,9 @@ describe 'integration test', ->
       rawXmlChangedCommittedDeliveryDate = rawXml.replace('1999-12-31T11:11:11.000Z', '2000-01-01T12:12:12.000Z')
 
       @stockimport.run(rawXml, 'XML')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 201
-        expect(result[1].statusCode).toBe 201
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 201
+        expect(@stockimport.allRequestStatuses[1].statusCode).toBe 201
         @client.inventoryEntries.sort('id').fetch()
       .then (result) =>
         stocks = result.body.results
@@ -182,9 +182,9 @@ describe 'integration test', ->
         expect(stockB.supplyChannel).toBeDefined()
         expect(stockB.expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
         @stockimport.run(rawXmlChangedAppointedQuantity, 'XML')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 304
-        expect(result[1].statusCode).toBe 200
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 304
+        expect(@stockimport.allRequestStatuses[1].statusCode).toBe 200
         @client.inventoryEntries.sort('id').fetch()
       .then (result) =>
         stocks = result.body.results
@@ -202,9 +202,9 @@ describe 'integration test', ->
         expect(stockB.supplyChannel).toBeDefined()
         expect(stockB.expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
         @stockimport.run(rawXmlChangedCommittedDeliveryDate, 'XML')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 304
-        expect(result[1].statusCode).toBe 200
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 304
+        expect(@stockimport.allRequestStatuses[1].statusCode).toBe 200
         @client.inventoryEntries.sort('id').fetch()
       .then (result) =>
         stocks = result.body.results
@@ -222,9 +222,9 @@ describe 'integration test', ->
         expect(stockB.supplyChannel).toBeDefined()
         expect(stockB.expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
         @stockimport.run(rawXmlChangedCommittedDeliveryDate, 'XML')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 304
-        expect(result[1].statusCode).toBe 304
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 304
+        expect(@stockimport.allRequestStatuses[1].statusCode).toBe 304
         @client.inventoryEntries.sort('id').fetch()
       .then (result) ->
         stocks = result.body.results
@@ -254,8 +254,8 @@ describe 'integration test', ->
         abcd,0
         '''
       @stockimport.run(raw, 'CSV')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 201
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 201
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -263,8 +263,8 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe 'abcd'
         expect(stocks[0].quantityOnStock).toBe 0
         @stockimport.run(raw, 'CSV')
-      .then (result) =>
-        expect(result[0].statusCode).toBe 304
+      .then =>
+        expect(@stockimport.allRequestStatuses[0].statusCode).toBe 304
         @client.inventoryEntries.fetch()
       .then (result) ->
         stocks = result.body.results
