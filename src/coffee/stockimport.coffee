@@ -167,8 +167,8 @@ class StockImport
 
   _mapStockFromCSV: (rows, skuIndex = 0, quantityIndex = 1) ->
     _.map rows, (row) =>
-      sku = row[skuIndex]
-      quantity = row[quantityIndex]
+      sku = row[skuIndex].trim()
+      quantity = row[quantityIndex].trim()
       @_createInventoryEntry sku, quantity
 
   _createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
@@ -201,7 +201,7 @@ class StockImport
         ie = @client.inventoryEntries.perPage(0).whereOperator('or')
         _.each stocksToProcess, (s) ->
           # TODO: query also for channel?
-          ie.where("sku = \"#{s.sku}\"")
+          ie.where("sku = \"#{s.sku}\"") if s.sku
         ie.fetch()
         .then (results) =>
           queriedEntries = results.body.results
