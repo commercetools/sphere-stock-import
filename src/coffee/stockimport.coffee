@@ -14,9 +14,7 @@ LOG_PREFIX = "[SphereStockImport] "
 
 class StockImport
 
-  constructor: (options = {}) ->
-    {logConfig} = options
-    @logger = logConfig.logger
+  constructor: (@logger, options = {}) ->
     @sync = new InventorySync options
     @client = new SphereClient options
     @csvHeaders = options.csvHeaders

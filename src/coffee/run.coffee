@@ -48,8 +48,8 @@ logger = new ExtendedLogger
     project_key: argv.projectKey
   logConfig: logOptions
 if argv.logSilent
-  logger.trace = -> # noop
-  logger.debug = -> # noop
+  logger.bunyanLogger.trace = -> # noop
+  logger.bunyanLogger.debug = -> # noop
 
 process.on 'SIGUSR2', -> logger.reopenFileStreams()
 process.on 'exit', => process.exit(@exitCode)
@@ -106,7 +106,7 @@ ProjectCredentialsConfig.create()
     csvHeaders: argv.csvHeaders
     csvDelimiter: argv.csvDelimiter
 
-  stockimport = new StockImport options
+  stockimport = new StockImport logger, options
 
   file = argv.file
 

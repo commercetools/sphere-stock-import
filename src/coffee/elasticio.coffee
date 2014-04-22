@@ -33,5 +33,5 @@ exports.process = (msg, cfg, next, snapshot) ->
     csvHeaders: 'sku, quantity'
     csvDelimiter: ','
 
-  stockimport = new StockImport opts
+  stockimport = new StockImport logger, opts
   stockimport.elasticio msg, cfg, next, snapshot

@@ -15,7 +15,7 @@ describe 'StockImport', ->
         streams: [
           { level: 'info', stream: process.stdout }
         ]
-    @import = new StockImport
+    @import = new StockImport logger,
       config: Config.config
       logConfig:
         logger: logger.bunyanLogger

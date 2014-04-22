@@ -17,7 +17,7 @@ describe 'integration test', ->
         streams: [
           { level: 'info', stream: process.stdout }
         ]
-    @stockimport = new StockImport
+    @stockimport = new StockImport logger,
       config: Config.config
       logConfig:
         logger: logger.bunyanLogger
