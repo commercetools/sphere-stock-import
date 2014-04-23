@@ -120,7 +120,7 @@ class StockImport
 
   performCSV: (fileContent, next) ->
     deferred = Q.defer()
-    Csv().from.string(fileContent, {delimiter: @csvDelimiter})
+    Csv().from.string(fileContent, {delimiter: @csvDelimiter, trim: true})
     .to.array (data, count) =>
       headers = data[0]
       @_getHeaderIndexes headers, @csvHeaders
@@ -199,6 +199,7 @@ class StockImport
     else
       Qutils.processList stocks, (stocksToProcess) =>
         ie = @client.inventoryEntries.perPage(0).whereOperator('or')
+        @logger.debug stocksToProcess, 'Stocks to process'
         _.each stocksToProcess, (s) ->
           # TODO: query also for channel?
           ie.where("sku = \"#{s.sku}\"") if s.sku

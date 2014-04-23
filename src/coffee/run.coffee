@@ -142,11 +142,14 @@ ProjectCredentialsConfig.create()
         sftpHelper.download(tmpPath)
         .then (files) ->
           logger.debug files, "Processing #{files.length} files..."
-          Qutils.processList files, (file) ->
+          Qutils.processList files, (fileParts) ->
+            throw new Error 'Files should be processed once at a time' if fileParts.length isnt 1
+            file = fileParts[0]
             importFn(stockimport, "#{tmpPath}/#{file}")
             .then ->
               logger.debug "Finishing processing file #{file}"
               sftpHelper.finish(file)
+          , {accumulate: false}
         .then =>
           logger.info 'Processing files complete'
           @exitCode = 0
