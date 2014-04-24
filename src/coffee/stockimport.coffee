@@ -87,7 +87,7 @@ class StockImport
   sumResult: (result) ->
     if _.isArray result
       if _.isEmpty result
-        'Nothing done.'
+        message = 'Summary: nothing to do, everything is fine'
       else
         nums = _.reduce result, ((memo, r) ->
           switch r.statusCode
@@ -100,6 +100,12 @@ class StockImport
           'Inventory entry created.': nums[0]
           'Inventory entry updated.': nums[1]
           'Inventory update was not necessary.': nums[2]
+        if nums[0] is 0 and nums[1] is 0
+          message = 'Summary: nothing to do, everything is fine'
+        else
+          message = "Summary: there were #{nums[0] + nums[1]} imported stocks " +
+            "(#{nums[0]} were new and #{nums[1]} were updates)"
+      return message
     else
       result
 

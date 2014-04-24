@@ -6,10 +6,20 @@ package_json = require '../package.json'
 Config = require '../config'
 StockImport = require '../lib/stockimport'
 
+cleanup = (logger, client) ->
+  logger.debug 'Deleting old inventory entries...'
+  client.inventoryEntries.perPage(0).fetch()
+  .then (result) ->
+    Q.all _.map result.body.results, (e) ->
+      client.inventoryEntries.byId(e.id).delete(e.version)
+  .then (results) ->
+    logger.debug "#{_.size results} deleted."
+    Q()
+
 describe 'integration test', ->
 
   beforeEach (done) ->
-    logger = new ExtendedLogger
+    @logger = new ExtendedLogger
       additionalFields:
         project_key: Config.config.project_key
       logConfig:
@@ -17,23 +27,25 @@ describe 'integration test', ->
         streams: [
           { level: 'info', stream: process.stdout }
         ]
-    @stockimport = new StockImport logger,
+    @stockimport = new StockImport @logger,
       config: Config.config
       logConfig:
-        logger: logger.bunyanLogger
+        logger: @logger.bunyanLogger
       csvHeaders: 'stock,number'
       csvDelimiter: ','
 
     @client = @stockimport.client
 
-    logger.info 'Deleting old inventory entries...'
-    @client.inventoryEntries.perPage(0).fetch()
-    .then (result) =>
-      Q.all _.map result.body.results, (e) =>
-        @client.inventoryEntries.byId(e.id).delete(e.version)
-    .then (results) ->
-      logger.info "#{_.size results} deleted."
-      done()
+    @logger.info 'About to setup...'
+    cleanup(@logger, @client)
+    .then -> done()
+    .fail (err) -> done(_.prettify err)
+  , 10000 # 10sec
+
+  afterEach (done) ->
+    @logger.info 'About to cleanup...'
+    cleanup(@logger, @client)
+    .then -> done()
     .fail (err) -> done(_.prettify err)
   , 10000 # 10sec
 

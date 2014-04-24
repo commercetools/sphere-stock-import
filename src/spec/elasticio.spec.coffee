@@ -6,10 +6,20 @@ package_json = require '../package.json'
 Config = require '../config'
 elasticio = require '../lib/elasticio'
 
+cleanup = (logger, client) ->
+  logger.debug 'Deleting old inventory entries...'
+  client.inventoryEntries.perPage(0).fetch()
+  .then (result) ->
+    Q.all _.map result.body.results, (e) ->
+      client.inventoryEntries.byId(e.id).delete(e.version)
+  .then (results) ->
+    logger.debug "#{_.size results} deleted."
+    Q()
+
 describe 'elasticio integration', ->
 
   beforeEach (done) ->
-    logger = new ExtendedLogger
+    @logger = new ExtendedLogger
       additionalFields:
         project_key: Config.config.project_key
       logConfig:
@@ -20,16 +30,18 @@ describe 'elasticio integration', ->
     @client = new SphereClient
       config: Config.config
       logConfig:
-        logger: logger.bunyanLogger
+        logger: @logger.bunyanLogger
 
-    logger.info 'Deleting old inventory entries...'
-    @client.inventoryEntries.perPage(0).fetch()
-    .then (result) =>
-      Q.all _.map result.body.results, (e) =>
-        @client.inventoryEntries.byId(e.id).delete(e.version)
-    .then (results) ->
-      logger.info "#{_.size results} deleted."
-      done()
+    @logger.info 'About to setup...'
+    cleanup(@logger, @client)
+    .then -> done()
+    .fail (err) -> done(_.prettify err)
+  , 10000 # 10sec
+
+  afterEach (done) ->
+    @logger.info 'About to cleanup...'
+    cleanup(@logger, @client)
+    .then -> done()
     .fail (err) -> done(_.prettify err)
   , 10000 # 10sec
 
@@ -144,20 +156,14 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(message['Inventory entry created.']).toBe 1
-        expect(message['Inventory entry updated.']).toBe 0
-        expect(message['Inventory update was not necessary.']).toBe 0
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
         msg.body.QUANTITY = '3'
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(message['Inventory entry created.']).toBe 0
-          expect(message['Inventory entry updated.']).toBe 1
-          expect(message['Inventory update was not necessary.']).toBe 0
+          expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
           elasticio.process msg, cfg, (error, message) ->
             expect(error).toBe null
-            expect(message['Inventory entry created.']).toBe 0
-            expect(message['Inventory entry updated.']).toBe 0
-            expect(message['Inventory update was not necessary.']).toBe 1
+            expect(message).toBe 'Summary: nothing to do, everything is fine'
             done()
     , 10000 # 10sec
 
@@ -176,15 +182,11 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(message['Inventory entry created.']).toBe 1
-        expect(message['Inventory entry updated.']).toBe 0
-        expect(message['Inventory update was not necessary.']).toBe 0
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
         msg.body.QUANTITY = '3'
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(message['Inventory entry created.']).toBe 0
-          expect(message['Inventory entry updated.']).toBe 1
-          expect(message['Inventory update was not necessary.']).toBe 0
+          expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
           done()
     , 10000 # 10sec
 
@@ -205,14 +207,10 @@ describe 'elasticio integration', ->
 
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(message['Inventory entry created.']).toBe 1
-          expect(message['Inventory entry updated.']).toBe 0
-          expect(message['Inventory update was not necessary.']).toBe 0
+          expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
           msg.body.QUANTITY = '3'
           elasticio.process msg, cfg, (error, message) ->
             expect(error).toBe null
-            expect(message['Inventory entry created.']).toBe 0
-            expect(message['Inventory entry updated.']).toBe 1
-            expect(message['Inventory update was not necessary.']).toBe 0
+            expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
             done()
     , 10000 # 10sec
