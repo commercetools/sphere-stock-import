@@ -63,8 +63,9 @@ importFn = (importer, fileName) ->
   .then (content) ->
     logger.debug 'File read, running import'
     importer.run(content, mode)
-    .then ->
-      logger.info importer.sumResult(importer.allRequestStatuses)
+    .then -> importer.summaryReport(fileName)
+    .then (message) ->
+      logger.withField({filename: fileName}).info message
       d.resolve(fileName)
     .fail (e) ->
       logger.error e, "Oops, something went wrong when processing file #{fileName}"
@@ -151,7 +152,7 @@ ProjectCredentialsConfig.create()
               sftpHelper.finish(file)
           , {accumulate: false}
         .then =>
-          logger.info 'Processing files complete'
+          logger.info 'Processing files to SFTP complete'
           @exitCode = 0
           # process.exit(0)
       .fail (error) =>

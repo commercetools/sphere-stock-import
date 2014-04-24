@@ -19,8 +19,13 @@ class StockImport
     @client = new SphereClient options
     @csvHeaders = options.csvHeaders
     @csvDelimiter = options.csvDelimiter
-    @allRequestStatuses = []
-    this
+    @_resetSummary()
+
+  _resetSummary: ->
+    @summary =
+      emptySKU: 0
+      created: 0
+      updated: 0
 
   getMode: (fileName) ->
     switch
@@ -41,7 +46,12 @@ class StockImport
         mode = @getMode attachment
         @run encoded, mode, next
         .then (result) =>
-          ElasticIo.returnSuccess @sumResult(result), next
+          if result
+            ElasticIo.returnSuccess result, next
+          else
+            @summaryReport()
+            .then (message) ->
+              ElasticIo.returnSuccess message, next
         .fail (err) ->
           ElasticIo.returnFailure err, next
         .done()
@@ -60,14 +70,20 @@ class StockImport
       .then (results) =>
         @logger.debug results, 'Existing entries'
         existingEntries = results.body.results
-
         _ensureChannel()
         .then (channelId) =>
           stocksToProcess = [
             @_createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, channelId)
           ]
           @_createOrUpdate stocksToProcess, existingEntries
-        .then (result) => ElasticIo.returnSuccess @sumResult(result), next
+        .then (results) =>
+          _.each results, (r) =>
+            switch r.statusCode
+              when 201 then @summary.created++
+              when 200 then @summary.updated++
+          @summaryReport()
+        .then (message) ->
+          ElasticIo.returnSuccess message, next
       .fail (err) =>
         @logger.debug err, 'Failed to process inventory'
         ElasticIo.returnFailure err, next
@@ -76,7 +92,7 @@ class StockImport
       ElasticIo.returnFailure "#{LOG_PREFIX}No data found in elastic.io msg.", next
 
   run: (fileContent, mode, next) ->
-    @allRequestStatuses = []
+    @_resetSummary()
     if mode is 'XML'
       @performXML fileContent, next
     else if mode is 'CSV'
@@ -84,30 +100,19 @@ class StockImport
     else
       Q.reject "#{LOG_PREFIX}Unknown import mode '#{mode}'!"
 
-  sumResult: (result) ->
-    if _.isArray result
-      if _.isEmpty result
-        message = 'Summary: nothing to do, everything is fine'
-      else
-        nums = _.reduce result, ((memo, r) ->
-          switch r.statusCode
-            when 201 then memo[0] = memo[0] + 1
-            when 200 then memo[1] = memo[1] + 1
-            when 304 then memo[2] = memo[2] + 1
-          memo
-          ), [0, 0, 0]
-        res =
-          'Inventory entry created.': nums[0]
-          'Inventory entry updated.': nums[1]
-          'Inventory update was not necessary.': nums[2]
-        if nums[0] is 0 and nums[1] is 0
-          message = 'Summary: nothing to do, everything is fine'
-        else
-          message = "Summary: there were #{nums[0] + nums[1]} imported stocks " +
-            "(#{nums[0]} were new and #{nums[1]} were updates)"
-      return message
+  summaryReport: (filename) ->
+    if @summary.created is 0 and @summary.updated is 0
+      message = 'Summary: nothing to do, everything is fine'
     else
-      result
+      message = "Summary: there were #{@summary.created + @summary.updated} imported stocks " +
+        "(#{@summary.created} were new and #{@summary.updated} were updates)"
+
+    if @summary.emptySKU > 0
+      warning = "Found #{@summary.emptySKU} empty SKUs from file input"
+      warning += " '#{filename}'" if filename
+      @logger.warn warning
+
+    Q(message)
 
   performXML: (fileContent, next) ->
     deferred = Q.defer()
@@ -136,10 +141,8 @@ class StockImport
 
         # TODO: ensure channel ??
         @_perform stocks, next
-        .then (result) ->
-          deferred.resolve result
-      .fail (err) ->
-        deferred.reject err
+        .then (result) -> deferred.resolve result
+      .fail (err) -> deferred.reject err
       .done()
 
     # TODO: register this before!
@@ -206,17 +209,20 @@ class StockImport
       Qutils.processList stocks, (stocksToProcess) =>
         ie = @client.inventoryEntries.perPage(0).whereOperator('or')
         @logger.debug stocksToProcess, 'Stocks to process'
-        _.each stocksToProcess, (s) ->
+        _.each stocksToProcess, (s) =>
+          @summary.emptySKU++ if _.isEmpty s.sku
           # TODO: query also for channel?
-          ie.where("sku = \"#{s.sku}\"") if s.sku
+          ie.where("sku = \"#{s.sku}\"")
         ie.fetch()
         .then (results) =>
+          @logger.debug results, 'Fetched stocks'
           queriedEntries = results.body.results
           @_createOrUpdate stocksToProcess, queriedEntries
         .then (results) =>
-          # save all requests statusCode for final summary
-          @allRequestStatuses = @allRequestStatuses.concat _.map results, (r) -> _.pick r, 'statusCode'
-          @logger.debug @allRequestStatuses, 'All request statuses'
+          _.each results, (r) =>
+            switch r.statusCode
+              when 201 then @summary.created++
+              when 200 then @summary.updated++
           Q()
       , {maxParallel: 50, accumulate: false}
 
