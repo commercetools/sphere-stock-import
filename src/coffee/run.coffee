@@ -13,6 +13,7 @@ argv = require('optimist')
   .describe('projectKey', 'your SPHERE.IO project-key')
   .describe('clientId', 'your OAuth client id for the SPHERE.IO API')
   .describe('clientSecret', 'your OAuth client secret for the SPHERE.IO API')
+  .describe('sphereHost', 'SPHERE.IO API host to connecto to')
   .describe('file', 'XML or CSV file containing inventory information to import')
   .describe('csvHeaders', 'a list of column names to use as mapping, comma separated')
   .describe('csvDelimiter', 'the delimiter type used in the csv')
@@ -106,6 +107,8 @@ ProjectCredentialsConfig.create()
       logger: logger.bunyanLogger
     csvHeaders: argv.csvHeaders
     csvDelimiter: argv.csvDelimiter
+
+  options.host = argv.sphereHost if argv.sphereHost
 
   stockimport = new StockImport logger, options
 
