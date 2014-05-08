@@ -21,6 +21,9 @@
       "url": "https://github.com/hajoeichler/sphere-stock-xml-import/blob/master/LICENSE-MIT"
     }
   ],
+  "bin": {
+    "stock-import": "bin/stock-import"
+  },
   "main": "main.js",
   "engines": {
     "node": ">= 0.8.0"
