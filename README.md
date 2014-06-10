@@ -1,6 +1,6 @@
-# sphere-stock-xml-import
+# sphere-stock-import
 
-[![Build Status](https://secure.travis-ci.org/sphereio/sphere-stock-xml-import.png?branch=master)](http://travis-ci.org/sphereio/sphere-stock-xml-import) [![Dependency Status](https://david-dm.org/sphereio/sphere-stock-xml-import.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-stock-xml-import) [![devDependency Status](https://david-dm.org/sphereio/sphere-stock-xml-import/dev-status.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-stock-xml-import#info=devDependencies)
+[![Build Status](https://secure.travis-ci.org/sphereio/sphere-stock-import.png?branch=master)](http://travis-ci.org/sphereio/sphere-stock-import) [![Dependency Status](https://david-dm.org/sphereio/sphere-stock-import.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-stock-import) [![devDependency Status](https://david-dm.org/sphereio/sphere-stock-import/dev-status.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-stock-import#info=devDependencies)
 
 This repository contains an stock updater that can handle CSV and XML files.
 
@@ -23,9 +23,9 @@ $ grunt build
 
 ### From ZIP
 
-* Just download the ready to use application as [ZIP](https://github.com/hajoeichler/sphere-stock-xml-import/archive/latest.zip)
-* Extract the latest.zip with `unzip sphere-stock-xml-import-latest.zip`
-* Change into the directory `cd sphere-stock-xml-import`
+* Just download the ready to use application as [ZIP](https://github.com/sphereio/sphere-stock-import/archive/latest.zip)
+* Extract the latest.zip with `unzip sphere-stock-import-latest.zip`
+* Change into the directory `cd sphere-stock-import`
 
 ## General Usage
 

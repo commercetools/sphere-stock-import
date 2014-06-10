@@ -37,7 +37,7 @@ echo "Installing only production deps"
 npm install --production &>/dev/null
 # push everything inside package to 'latest' branch
 git init
-git remote add origin git@github.com:hajoeichler/sphere-stock-xml-import.git
+git remote add origin git@github.com:hajoeichler/sphere-stock-import.git
 git add -A &>/dev/null
 git commit -m "Release packaged version ${VERSION} to ${LATEST_BRANCH_NAME} branch" &>/dev/null
 echo "About to push to ${LATEST_BRANCH_NAME} branch"
@@ -48,9 +48,9 @@ echo "About to download and test released package"
 cd ..
 mkdir -p tmp
 cd tmp
-curl -L https://github.com/hajoeichler/sphere-stock-xml-import/archive/latest.zip -o latest.zip
+curl -L https://github.com/hajoeichler/sphere-stock-import/archive/latest.zip -o latest.zip
 unzip -q latest.zip
-cd sphere-stock-xml-import-latest/
+cd sphere-stock-import-latest/
 node lib/run
 
 # cleanup package / tmp folder

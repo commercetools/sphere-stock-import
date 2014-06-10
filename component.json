@@ -1,5 +1,5 @@
 {
-    "title": "sphere-stock-xml-import",
+    "title": "sphere-stock-import",
     "description": "Import your stock information from XML or CSV into your SPHERE.IO project.",
     "url" : "http://www.commercetools.com",
     "credentials": {
