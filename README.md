@@ -1,6 +1,6 @@
 # sphere-stock-import
 
-[![Build Status](https://secure.travis-ci.org/sphereio/sphere-stock-import.png?branch=master)](http://travis-ci.org/sphereio/sphere-stock-import) [![Dependency Status](https://david-dm.org/sphereio/sphere-stock-import.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-stock-import) [![devDependency Status](https://david-dm.org/sphereio/sphere-stock-import/dev-status.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-stock-import#info=devDependencies)
+[![Build Status](https://secure.travis-ci.org/sphereio/sphere-stock-import.png?branch=master)](http://travis-ci.org/sphereio/sphere-stock-import) [![Dependency Status](https://david-dm.org/sphereio/sphere-stock-import.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-stock-import) [![devDependency Status](https://david-dm.org/sphereio/sphere-stock-import/dev-status.png?theme=shields.io)](https://david-dm.org/sphereio/sphere-stock-import#info=devDependencies) [![Coverage Status](https://img.shields.io/coveralls/sphereio/sphere-stock-import.svg)](https://coveralls.io/r/sphereio/sphere-stock-import?branch=master)
 
 This repository contains an stock updater that can handle CSV and XML files.
 
