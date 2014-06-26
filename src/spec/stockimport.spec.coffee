@@ -138,7 +138,7 @@ describe 'StockImport', ->
         expect(s.quantityOnStock).toBe -3
         done()
 
-    it 'shoud not crash when quantity or index is missing', (done) ->
+    it 'shoud not crash when quantity is missing', (done) ->
       rawCSV =
         '''
         foo,id,amount
@@ -147,7 +147,6 @@ describe 'StockImport', ->
         '''
       Csv().from.string(rawCSV).to.array (data, count) =>
         stocks = @import._mapStockFromCSV _.rest(data), 1, 2
-        console.log "HAJO", stocks
         expect(_.size stocks).toBe 2
         s = stocks[0]
         expect(s.sku).toBe 'abc'
@@ -155,6 +154,17 @@ describe 'StockImport', ->
         s = stocks[1]
         expect(s.sku).toBe '123'
         expect(s.quantityOnStock).toBe 77
+        done()
+
+    xit 'shoud not crash when quantity is missing', (done) ->
+      rawCSV =
+        '''
+        foo,id,amount
+        bar
+        '''
+      Csv().from.string(rawCSV).to.array (data, count) =>
+        stocks = @import._mapStockFromCSV _.rest(data), 1, 2
+        expect(_.size stocks).toBe 0
         done()
 
 
