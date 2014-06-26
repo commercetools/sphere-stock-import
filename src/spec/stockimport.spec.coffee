@@ -120,7 +120,7 @@ describe 'StockImport', ->
 
   describe '#_mapStockFromCSV', ->
 
-    it 'simple entry', (done) ->
+    it 'should map a simple entry', (done) ->
       rawCSV =
         '''
         id,amount
@@ -137,6 +137,26 @@ describe 'StockImport', ->
         expect(s.sku).toBe 'abc'
         expect(s.quantityOnStock).toBe -3
         done()
+
+    it 'shoud not crash when quantity or index is missing', (done) ->
+      rawCSV =
+        '''
+        foo,id,amount
+        bar,abc
+        bar,123,77
+        '''
+      Csv().from.string(rawCSV).to.array (data, count) =>
+        stocks = @import._mapStockFromCSV _.rest(data), 1, 2
+        console.log "HAJO", stocks
+        expect(_.size stocks).toBe 2
+        s = stocks[0]
+        expect(s.sku).toBe 'abc'
+        expect(s.quantityOnStock).toBe 0
+        s = stocks[1]
+        expect(s.sku).toBe '123'
+        expect(s.quantityOnStock).toBe 77
+        done()
+
 
   describe '#performCSV', ->
 

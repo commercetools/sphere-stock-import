@@ -177,13 +177,13 @@ class StockImport
   _mapStockFromCSV: (rows, skuIndex = 0, quantityIndex = 1) ->
     _.map rows, (row) =>
       sku = row[skuIndex].trim()
-      quantity = row[quantityIndex].trim()
+      quantity = row[quantityIndex]?.trim()
       @_createInventoryEntry sku, quantity
 
   _createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
     entry =
       sku: sku
-      quantityOnStock: parseInt(quantity)
+      quantityOnStock: parseInt(quantity) or 0 # avoid NaN
     entry.expectedDelivery = expectedDelivery if expectedDelivery?
     if channelId?
       entry[CHANNEL_REF_NAME] =
