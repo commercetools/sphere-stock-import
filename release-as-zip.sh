@@ -48,7 +48,7 @@ cd -
 echo "About to download and test released package"
 mkdir -p tmp
 cd tmp
-curl -L https://github.com/sphereio/"${PKG_NAME}"/archive/latest.zip -o latest.zip
+curl -s -L https://github.com/sphereio/"${PKG_NAME}"/archive/latest.zip -o latest.zip
 unzip -q latest.zip
 cd "${PKG_NAME}-latest"/
 node lib/run
