@@ -178,6 +178,7 @@ describe 'integration test', ->
         '''
       rawXmlChangedAppointedQuantity = rawXml.replace('10', '20')
       rawXmlChangedCommittedDeliveryDate = rawXml.replace('1999-12-31T11:11:11.000Z', '2000-01-01T12:12:12.000Z')
+      rawXmlEmptyValues = rawXml.replace('10', '').replace('1999-12-31T11:11:11.000Z', '')
 
       @stockimport.run(rawXml, 'XML')
       .then => @stockimport.summaryReport()
@@ -200,6 +201,7 @@ describe 'integration test', ->
         expect(stockB.quantityOnStock).toBe 10
         expect(stockB.supplyChannel).toBeDefined()
         expect(stockB.expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
+
         @stockimport.run(rawXmlChangedAppointedQuantity, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
@@ -220,6 +222,7 @@ describe 'integration test', ->
         expect(stockB.quantityOnStock).toBe 20
         expect(stockB.supplyChannel).toBeDefined()
         expect(stockB.expectedDelivery).toBe '1999-12-31T11:11:11.000Z'
+
         @stockimport.run(rawXmlChangedCommittedDeliveryDate, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
@@ -240,12 +243,13 @@ describe 'integration test', ->
         expect(stockB.quantityOnStock).toBe 10
         expect(stockB.supplyChannel).toBeDefined()
         expect(stockB.expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
+
         @stockimport.run(rawXmlChangedCommittedDeliveryDate, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
         expect(message).toBe 'Summary: nothing to do, everything is fine'
         @client.inventoryEntries.sort('id').fetch()
-      .then (result) ->
+      .then (result) =>
         stocks = result.body.results
 
         stockA = _.find stocks, (s) -> s.quantityOnStock is -1
@@ -260,6 +264,28 @@ describe 'integration test', ->
         expect(stockB.quantityOnStock).toBe 10
         expect(stockB.supplyChannel).toBeDefined()
         expect(stockB.expectedDelivery).toBe '2000-01-01T12:12:12.000Z'
+
+        @stockimport.run(rawXmlEmptyValues, 'XML')
+      .then => @stockimport.summaryReport()
+      .then (message) =>
+        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+        @client.inventoryEntries.sort('id').fetch()
+      .then (result) ->
+        stocks = result.body.results
+
+        stockA = _.find stocks, (s) -> s.quantityOnStock is -1
+        expect(stockA).toBeDefined()
+        expect(stockA.sku).toBe 'myEAN'
+        expect(stockA.quantityOnStock).toBe -1
+        expect(stockA.supplyChannel).toBeUndefined()
+
+        stockB = _.find stocks, (s) -> s.quantityOnStock is 0
+        expect(stockB).toBeDefined()
+        expect(stockB.sku).toBe 'myEAN'
+        expect(stockB.quantityOnStock).toBe 0
+        expect(stockB.supplyChannel).toBeDefined()
+        expect(stockB.expectedDelivery).toBeUndefined()
+
         done()
       .fail (err) -> done(_.prettify err)
     , 20000 # 20sec

@@ -167,9 +167,10 @@ class StockImport
         stocks.push @_createInventoryEntry(sku, xmlHelpers.xmlVal(row, 'quantity'))
         appointedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'
         if appointedQuantity?
-          expectedDelivery = xmlHelpers.xmlVal row, 'CommittedDeliveryDate'
-          if expectedDelivery? and not expectedDelivery is ''
-            expectedDelivery = new Date(expectedDelivery).toISOString()
+          expectedDelivery = undefined
+          committedDeliveryDate = xmlHelpers.xmlVal row, 'CommittedDeliveryDate'
+          if committedDeliveryDate
+            expectedDelivery = new Date(committedDeliveryDate).toISOString()
           d = @_createInventoryEntry(sku, appointedQuantity, expectedDelivery, channelId)
           stocks.push d
     stocks
