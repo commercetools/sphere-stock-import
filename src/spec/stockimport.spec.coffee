@@ -144,7 +144,7 @@ describe 'StockImport', ->
         s = stocks[1]
         expect(s.sku).toBe 'foo-bar-123'
         expect(s.quantityOnStock).toBe 0
-        expect(s.expectedDelivery).toBeUndefined()
+        expect(s.expectedDelivery).toBe ''
         expect(s.supplyChannel.typeId).toBe 'channel'
         expect(s.supplyChannel.id).toBe 'myChannelId'
         done()
