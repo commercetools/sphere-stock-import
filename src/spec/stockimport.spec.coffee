@@ -94,6 +94,34 @@ describe 'StockImport', ->
         expect(s.supplyChannel.id).toBe 'myChannelId'
         done()
 
+    it 'should map to zero if value for AppointedQuantity is empty', (done) ->
+      rawXml =
+        '''
+        <root>
+          <row>
+            <code>foo-bar-123</code>
+            <quantity>-14.000</quantity>
+            <AppointedQuantity></AppointedQuantity>
+          </row>
+        </root>
+        '''
+      xml = xmlHelpers.xmlFix(rawXml)
+      xmlHelpers.xmlTransform xml, (err, result) =>
+        stocks = @import._mapStockFromXML result.root, 'myChannelId'
+        expect(stocks.length).toBe 2
+        s = stocks[0]
+        expect(s.sku).toBe 'foo-bar-123'
+        expect(s.quantityOnStock).toBe -14
+        expect(s.expectedDelivery).toBeUndefined()
+        s = stocks[1]
+        expect(s.sku).toBe 'foo-bar-123'
+        expect(s.quantityOnStock).toBe 0
+        expect(s.expectedDelivery).toBeUndefined()
+        expect(s.supplyChannel.typeId).toBe 'channel'
+        expect(s.supplyChannel.id).toBe 'myChannelId'
+        done()
+
+
   describe '#_getHeaderIndexes', ->
     it 'should reject if no sku header found', (done) ->
       @import._getHeaderIndexes ['bla', 'foo', 'quantity', 'price'], 'sku, q'
