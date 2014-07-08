@@ -171,8 +171,8 @@ describe 'integration test', ->
           <row>
             <code>myEAN</code>
             <quantity>-1</quantity>
-            <AppointedQuantity>10</AppointedQuantity>
-            <CommittedDeliveryDate>1999-12-31T11:11:11.000Z</CommittedDeliveryDate>
+            <appointedquantity>10</appointedquantity>
+            <committeddeliverydate>1999-12-31T11:11:11.000Z</committeddeliverydate>
           </row>
         </root>
         '''

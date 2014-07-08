@@ -46,14 +46,14 @@ describe 'StockImport', ->
         expect(s.quantityOnStock).toBe 2
         done()
 
-    it 'should not map delivery date when no AppointedQuantity given', (done) ->
+    it 'should not map delivery date when no appointedquantity given', (done) ->
       rawXml =
         '''
         <root>
           <row>
             <code>2</code>
             <quantity>7.000</quantity>
-            <CommittedDeliveryDate>2013-11-19T00:00:00</CommittedDeliveryDate>
+            <committeddeliverydate>2013-11-19T00:00:00</committeddeliverydate>
           </row>
         </root>
         '''
@@ -67,14 +67,14 @@ describe 'StockImport', ->
         expect(s.expectedDelivery).toBeUndefined()
         done()
 
-    it 'should map an extra entry for AppointedQuantity', (done) ->
+    it 'should map an extra entry for appointedquantity', (done) ->
       rawXml =
         '''
         <root>
           <row>
             <code>foo-bar</code>
             <quantity>7.000</quantity>
-            <AppointedQuantity>12.000</AppointedQuantity>
+            <appointedquantity>12.000</appointedquantity>
           </row>
         </root>
         '''
@@ -94,14 +94,14 @@ describe 'StockImport', ->
         expect(s.supplyChannel.id).toBe 'myChannelId'
         done()
 
-    it 'should map to zero if value for AppointedQuantity is empty', (done) ->
+    it 'should map to zero if value for appointedquantity is empty', (done) ->
       rawXml =
         '''
         <root>
           <row>
             <code>foo-bar-123</code>
             <quantity>-14.000</quantity>
-            <AppointedQuantity></AppointedQuantity>
+            <appointedquantity></appointedquantity>
           </row>
         </root>
         '''
@@ -128,8 +128,8 @@ describe 'StockImport', ->
           <row>
             <code>foo-bar-123</code>
             <quantity>-14.000</quantity>
-            <AppointedQuantity></AppointedQuantity>
-            <CommittedDeliveryDate></CommittedDeliveryDate>
+            <appointedquantity></appointedquantity>
+            <committeddeliverydate></committeddeliverydate>
           </row>
         </root>
         '''

@@ -165,10 +165,10 @@ class StockImport
       _.each xmljs.row, (row) =>
         sku = xmlHelpers.xmlVal row, 'code'
         stocks.push @_createInventoryEntry(sku, xmlHelpers.xmlVal(row, 'quantity'))
-        appointedQuantity = xmlHelpers.xmlVal row, 'AppointedQuantity'
+        appointedQuantity = xmlHelpers.xmlVal row, 'appointedquantity'
         if appointedQuantity?
           expectedDelivery = undefined
-          committedDeliveryDate = xmlHelpers.xmlVal row, 'CommittedDeliveryDate'
+          committedDeliveryDate = xmlHelpers.xmlVal row, 'committeddeliverydate'
           if committedDeliveryDate
             expectedDelivery = new Date(committedDeliveryDate).toISOString()
           d = @_createInventoryEntry(sku, appointedQuantity, expectedDelivery, channelId)
