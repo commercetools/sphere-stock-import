@@ -170,7 +170,10 @@ class StockImport
           expectedDelivery = undefined
           committedDeliveryDate = xmlHelpers.xmlVal row, 'committeddeliverydate'
           if committedDeliveryDate
-            expectedDelivery = new Date(committedDeliveryDate).toISOString()
+            try
+              expectedDelivery = new Date(committedDeliveryDate).toISOString()
+            catch error
+              @logger.warn "Can't parse date '#{committedDeliveryDate}'. Creating entry without date..."
           d = @_createInventoryEntry(sku, appointedQuantity, expectedDelivery, channelId)
           stocks.push d
     stocks
