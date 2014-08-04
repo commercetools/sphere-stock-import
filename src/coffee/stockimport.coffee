@@ -245,15 +245,36 @@ class StockImport
 
   _createOrUpdate: (inventoryEntries, existingEntries) ->
     @logger.debug inventoryEntries, 'Inventory entries'
-    posts = _.map inventoryEntries, (entry) =>
+
+    allUpdates = _.chain(inventoryEntries)
+    .map (entry) =>
       existingEntry = @_match(entry, existingEntries)
       if existingEntry?
-        # TODO: we need to aggregate updates to same inventory, to avoid "concurrency modifications"
-        @sync.buildActions(entry, existingEntry).update()
+        @sync.buildActions(entry, existingEntry)._data
+    .filter (data) -> not _.isEmpty(data) and not _.isEmpty(data.update)
+    .reduce (acc, data) =>
+      foundUpdateWithId = _.find acc, (d) -> d.updateId is data.updateId
+      if foundUpdateWithId
+        # aggregate all updates for same inventory entry
+        @logger.debug foundUpdateWithId, "Found existing update for entry '#{data.updateId}'. About to merge actions..."
+        foundUpdateWithId.update.actions = foundUpdateWithId.update.actions.concat data.update.actions
       else
-        @client.inventoryEntries.create(entry)
+        @logger.debug "Update #{data.updateId} is unique, continue..."
+        acc.push data
+      acc
+    , []
+    .value()
 
-    @logger.debug "About to send #{_.size posts} requests"
+    allCreates = _.chain(inventoryEntries)
+    .map (entry) =>
+      existingEntry = @_match(entry, existingEntries)
+      @client.inventoryEntries.create(entry) unless existingEntry?
+    .filter (entry) -> not _.isEmpty entry
+    .value()
+
+    @logger.info "About to process #{_.size allUpdates} updates and #{_.size allCreates} creates"
+    posts = _.map allUpdates, (u) => @client.inventoryEntries.byId(u.updateId).update(u.update)
+    .concat allCreates
     Q.all(posts)
 
 module.exports = StockImport
