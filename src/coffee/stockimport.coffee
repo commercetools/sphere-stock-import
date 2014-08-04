@@ -213,7 +213,12 @@ class StockImport
       Qutils.processList stocks, (stocksToProcess) =>
         ie = @client.inventoryEntries.perPage(0).whereOperator('or')
         @logger.debug stocksToProcess, 'Stocks to process'
-        _.each stocksToProcess, (s) =>
+        uniqueStocksToProcessBySku = _.reduce stocksToProcess, (acc, stock) ->
+          foundStock = _.find acc, (s) -> s.sku is stock.sku
+          acc.push stock unless foundStock
+          acc
+        , []
+        _.each uniqueStocksToProcessBySku, (s) =>
           @summary.emptySKU++ if _.isEmpty s.sku
           # TODO: query also for channel?
           ie.where("sku = \"#{s.sku}\"")
@@ -243,6 +248,7 @@ class StockImport
     posts = _.map inventoryEntries, (entry) =>
       existingEntry = @_match(entry, existingEntries)
       if existingEntry?
+        # TODO: we need to aggregate updates to same inventory, to avoid "concurrency modifications"
         @sync.buildActions(entry, existingEntry).update()
       else
         @client.inventoryEntries.create(entry)
