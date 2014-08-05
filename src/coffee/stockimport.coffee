@@ -16,7 +16,7 @@ class StockImport
 
   constructor: (@logger, options = {}) ->
     @sync = new InventorySync options
-    @client = new SphereClient options
+    @client = @sync._client
     @csvHeaders = options.csvHeaders
     @csvDelimiter = options.csvDelimiter
     @_resetSummary()
@@ -187,7 +187,7 @@ class StockImport
   _createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
     entry =
       sku: sku
-      quantityOnStock: parseInt(quantity) or 0 # avoid NaN
+      quantityOnStock: parseInt(quantity, 10) or 0 # avoid NaN
     entry.expectedDelivery = expectedDelivery if expectedDelivery?
     if channelId?
       entry[CHANNEL_REF_NAME] =
@@ -213,7 +213,12 @@ class StockImport
       Qutils.processList stocks, (stocksToProcess) =>
         ie = @client.inventoryEntries.perPage(0).whereOperator('or')
         @logger.debug stocksToProcess, 'Stocks to process'
-        _.each stocksToProcess, (s) =>
+        uniqueStocksToProcessBySku = _.reduce stocksToProcess, (acc, stock) ->
+          foundStock = _.find acc, (s) -> s.sku is stock.sku
+          acc.push stock unless foundStock
+          acc
+        , []
+        _.each uniqueStocksToProcessBySku, (s) =>
           @summary.emptySKU++ if _.isEmpty s.sku
           # TODO: query also for channel?
           ie.where("sku = \"#{s.sku}\"")
@@ -232,14 +237,23 @@ class StockImport
 
   _match: (entry, existingEntries) ->
     _.find existingEntries, (existingEntry) ->
-      if existingEntry.sku is entry.sku
-        if _.has(existingEntry, CHANNEL_REF_NAME) and _.has(entry, CHANNEL_REF_NAME)
-          existingEntry[CHANNEL_REF_NAME].id is entry[CHANNEL_REF_NAME].id
+      if entry.sku is existingEntry.sku
+        # check channel
+        # - if they have the same channel, it's the same entry
+        # - if they have different channels or one of them has no channel, it's not
+        if _.has(entry, CHANNEL_REF_NAME) and _.has(existingEntry, CHANNEL_REF_NAME)
+          entry[CHANNEL_REF_NAME].id is existingEntry[CHANNEL_REF_NAME].id
         else
-          not _.has(entry, CHANNEL_REF_NAME)
+          if _.has(entry, CHANNEL_REF_NAME) or _.has(existingEntry, CHANNEL_REF_NAME)
+            false # one of them has a channel, the other not
+          else
+            true # no channel, but same sku
+      else
+        false
 
   _createOrUpdate: (inventoryEntries, existingEntries) ->
     @logger.debug inventoryEntries, 'Inventory entries'
+
     posts = _.map inventoryEntries, (entry) =>
       existingEntry = @_match(entry, existingEntries)
       if existingEntry?

@@ -66,7 +66,7 @@ bar,-1
 SKU-123,42
 ```
 
-> Please note that the header names are currenlty ignored.
+> Please note that the header names are currently ignored.
 
 #### XML Format
 
