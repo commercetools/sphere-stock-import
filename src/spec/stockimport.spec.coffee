@@ -272,7 +272,7 @@ describe 'StockImport', ->
 
   describe '#_createOrUpdate', ->
 
-    it 'should update and create inventory for same sku (matching channels)', (done) ->
+    it 'should update and create inventory for same sku', (done) ->
       inventoryEntries = [
         {sku: 'foo', quantityOnStock: 2},
         {sku: 'foo', quantityOnStock: 3, supplyChannel: {typeId: 'channel', id: '111'}}
@@ -293,8 +293,10 @@ describe 'StockImport', ->
         callback(null, {statusCode: 200}, {})
       @import._createOrUpdate inventoryEntries, existingEntries
       .then =>
-        expect(@import.client._rest.POST.calls[0].args[1]).toEqual expectedCreate
-        expect(@import.client._rest.POST.calls[1].args[1]).toEqual expectedUpdate
+        # first matched is an update (no channels)
+        # second is not a match, so it's a new entry
+        expect(@import.client._rest.POST.calls[0].args[1]).toEqual expectedUpdate
+        expect(@import.client._rest.POST.calls[1].args[1]).toEqual expectedCreate
         done()
       .fail (err) -> done _.prettify(err)
 

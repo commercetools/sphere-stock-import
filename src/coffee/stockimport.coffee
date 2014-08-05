@@ -16,7 +16,7 @@ class StockImport
 
   constructor: (@logger, options = {}) ->
     @sync = new InventorySync options
-    @client = new SphereClient options
+    @client = @sync._client
     @csvHeaders = options.csvHeaders
     @csvDelimiter = options.csvDelimiter
     @_resetSummary()
@@ -187,7 +187,7 @@ class StockImport
   _createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
     entry =
       sku: sku
-      quantityOnStock: parseInt(quantity) or 0 # avoid NaN
+      quantityOnStock: parseInt(quantity, 10) or 0 # avoid NaN
     entry.expectedDelivery = expectedDelivery if expectedDelivery?
     if channelId?
       entry[CHANNEL_REF_NAME] =
@@ -237,44 +237,30 @@ class StockImport
 
   _match: (entry, existingEntries) ->
     _.find existingEntries, (existingEntry) ->
-      if existingEntry.sku is entry.sku
-        if _.has(existingEntry, CHANNEL_REF_NAME) and _.has(entry, CHANNEL_REF_NAME)
-          existingEntry[CHANNEL_REF_NAME].id is entry[CHANNEL_REF_NAME].id
+      if entry.sku is existingEntry.sku
+        # check channel
+        # - if they have the same channel, it's the same entry
+        # - if they have different channels or one of them has no channel, it's not
+        if _.has(entry, CHANNEL_REF_NAME) and _.has(existingEntry, CHANNEL_REF_NAME)
+          entry[CHANNEL_REF_NAME].id is existingEntry[CHANNEL_REF_NAME].id
         else
-          not _.has(entry, CHANNEL_REF_NAME)
+          if _.has(entry, CHANNEL_REF_NAME) or _.has(existingEntry, CHANNEL_REF_NAME)
+            false # one of them has a channel, the other not
+          else
+            true # no channel, but same sku
+      else
+        false
 
   _createOrUpdate: (inventoryEntries, existingEntries) ->
     @logger.debug inventoryEntries, 'Inventory entries'
 
-    allUpdates = _.chain(inventoryEntries)
-    .map (entry) =>
+    posts = _.map inventoryEntries, (entry) =>
       existingEntry = @_match(entry, existingEntries)
       if existingEntry?
-        @sync.buildActions(entry, existingEntry)._data
-    .filter (data) -> not _.isEmpty(data) and not _.isEmpty(data.update)
-    .reduce (acc, data) =>
-      foundUpdateWithId = _.find acc, (d) -> d.updateId is data.updateId
-      if foundUpdateWithId
-        # aggregate all updates for same inventory entry
-        @logger.debug foundUpdateWithId, "Found existing update for entry '#{data.updateId}'. About to merge actions..."
-        foundUpdateWithId.update.actions = foundUpdateWithId.update.actions.concat data.update.actions
+        @sync.buildActions(entry, existingEntry).update()
       else
-        @logger.debug "Update #{data.updateId} is unique, continue..."
-        acc.push data
-      acc
-    , []
-    .value()
+        @client.inventoryEntries.create(entry)
 
-    allCreates = _.chain(inventoryEntries)
-    .map (entry) =>
-      existingEntry = @_match(entry, existingEntries)
-      @client.inventoryEntries.create(entry) unless existingEntry?
-    .filter (entry) -> not _.isEmpty entry
-    .value()
-
-    @logger.info "About to process #{_.size allUpdates} updates and #{_.size allCreates} creates"
-    posts = _.map allUpdates, (u) => @client.inventoryEntries.byId(u.updateId).update(u.update)
-    .concat allCreates
     Q.all(posts)
 
 module.exports = StockImport
