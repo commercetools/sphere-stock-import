@@ -2,6 +2,7 @@ Q = require 'q'
 _ = require 'underscore'
 Csv = require 'csv'
 {ExtendedLogger} = require 'sphere-node-utils'
+_.mixin require('sphere-node-utils')._u
 package_json = require '../package.json'
 Config = require '../config'
 xmlHelpers = require '../lib/xmlhelpers.js'
@@ -268,3 +269,66 @@ describe 'StockImport', ->
         expect(@import._getHeaderIndexes).toHaveBeenCalledWith ['id', 'amount'], 'id, amount'
         done()
       .fail (error) -> done error
+
+  describe '#_createOrUpdate', ->
+
+    it 'should update and create inventory for same sku (matching channels)', (done) ->
+      inventoryEntries = [
+        {sku: 'foo', quantityOnStock: 2},
+        {sku: 'foo', quantityOnStock: 3, supplyChannel: {typeId: 'channel', id: '111'}}
+      ]
+      existingEntries = [{id: '123', version: 1, sku: 'foo', quantityOnStock: 1}]
+      expectedUpdate =
+        version: 1
+        actions: [
+          {action: 'addQuantity', quantity: 1}
+        ]
+      expectedCreate =
+        sku: 'foo'
+        quantityOnStock: 3
+        supplyChannel:
+          typeId: 'channel'
+          id: '111'
+      spyOn(@import.client._rest, 'POST').andCallFake (endpoint, payload, callback) ->
+        callback(null, {statusCode: 200}, {})
+      @import._createOrUpdate inventoryEntries, existingEntries
+      .then =>
+        expect(@import.client._rest.POST.calls[0].args[1]).toEqual expectedCreate
+        expect(@import.client._rest.POST.calls[1].args[1]).toEqual expectedUpdate
+        done()
+      .fail (err) -> done _.prettify(err)
+
+  describe '#_match', ->
+
+    it 'should match correct entry if there is more then one with same SKU', ->
+      existingEntries = [
+        {
+          id: '3da09201-33c8-4b68-8719-6760a94e74b7'
+          version: 4
+          sku: '22009978'
+          supplyChannel:
+            typeId: 'channel'
+            id: '239772e4-15b4-48d1-b2ad-3ac6e2c3cb21'
+          quantityOnStock: 43,
+          availableQuantity: 43
+        },
+        {
+          id: '4b5b83a2-6da7-45a4-b63d-90adb719ba15',
+          version: 9,
+          sku: '22009978',
+          quantityOnStock: 43,
+          availableQuantity: 43
+        }
+      ]
+      matchingEntry =
+        sku: '22009978'
+        quantityOnStock: 42
+      matchingEntryWithChannel =
+        sku: '22009978'
+        quantityOnStock: 0
+        supplyChannel:
+          typeId: 'channel'
+          id: '239772e4-15b4-48d1-b2ad-3ac6e2c3cb21'
+
+      expect(@import._match(matchingEntry, existingEntries)).toEqual existingEntries[1]
+      expect(@import._match(matchingEntryWithChannel, existingEntries)).toEqual existingEntries[0]
