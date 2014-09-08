@@ -25,6 +25,7 @@ argv = require('optimist')
   .describe('sftpTarget', 'path in the SFTP server to where to move the worked files')
   .describe('sftpFileRegex', 'a RegEx to filter files when downloading them')
   .describe('sftpMaxFilesToProcess', 'how many files need to be processed, if more then one is found')
+  .describe('sftpContinueOnProblems', 'ignore errors when processing a file and continue with the next one')
   .describe('logLevel', 'log level for file logging')
   .describe('logDir', 'directory to store logs')
   .describe('logSilent', 'use console to print messages')
@@ -35,6 +36,7 @@ argv = require('optimist')
   .default('logDir', '.')
   .default('logSilent', false)
   .default('timeout', 60000)
+  .default('sftpContinueOnProblems', false)
   .demand(['projectKey'])
   .argv
 
@@ -160,6 +162,12 @@ ProjectCredentialsConfig.create()
             .then ->
               logger.debug "Finishing processing file #{file}"
               sftpHelper.finish(file)
+            .fail (err) ->
+              if argv.sftpContinueOnProblems
+                logger.warn err "There was an error processing the file #{file}, skipping and continue"
+                Q()
+              else
+                Q.reject err
           , {accumulate: false}
         .then =>
           logger.info 'Processing files to SFTP complete'

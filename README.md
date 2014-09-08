@@ -48,6 +48,8 @@ Options:
   --sftpSource    path in the SFTP server from where to read the files                  [*optional]
   --sftpTarget    path in the SFTP server to where to move the worked files             [*optional]
   --sftpFileRegex a RegEx to filter files when downloading them                         [*optional]
+  --sftpMaxFilesToProcess   how many files need to be processed, if more then one is found
+  --sftpContinueOnProblems  ignore errors when processing a file and continue with the next one    [default: false]
   --logDir        log level for file logging                                            [default: 'info']
   --logLevel      directory to store logs                                               [default: '.']
   --logSilent     use console to print messages                                         [default: false]
