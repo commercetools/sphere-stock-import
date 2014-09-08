@@ -24,6 +24,7 @@ argv = require('optimist')
   .describe('sftpSource', 'path in the SFTP server from where to read the files')
   .describe('sftpTarget', 'path in the SFTP server to where to move the worked files')
   .describe('sftpFileRegex', 'a RegEx to filter files when downloading them')
+  .describe('sftpMaxFilesToProcess', 'how many files need to be processed, if more then one is found')
   .describe('logLevel', 'log level for file logging')
   .describe('logDir', 'directory to store logs')
   .describe('logSilent', 'use console to print messages')
@@ -146,7 +147,13 @@ ProjectCredentialsConfig.create()
         sftpHelper.download(tmpPath)
         .then (files) ->
           logger.debug files, "Processing #{files.length} files..."
-          Qutils.processList files, (fileParts) ->
+          filesToProcess =
+            if argv.sftpMaxFilesToProcess and _.isNumber(argv.sftpMaxFilesToProcess) and argv.sftpMaxFilesToProcess > 0
+              logger.info "Processing max #{argv.sftpMaxFilesToProcess} files"
+              _.first files, argv.sftpMaxFilesToProcess
+            else
+              files
+          Qutils.processList filesToProcess, (fileParts) ->
             throw new Error 'Files should be processed once at a time' if fileParts.length isnt 1
             file = fileParts[0]
             importFn(stockimport, "#{tmpPath}/#{file}")
