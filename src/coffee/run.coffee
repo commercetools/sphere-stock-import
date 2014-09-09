@@ -60,24 +60,16 @@ process.on 'exit', => process.exit(@exitCode)
 
 importFn = (importer, fileName) ->
   throw new Error 'You must provide a file to be processed' unless fileName
-  d = Q.defer()
   logger.debug "About to process file #{fileName}"
   mode = importer.getMode fileName
   fs.read fileName
   .then (content) ->
     logger.debug 'File read, running import'
     importer.run(content, mode)
-    .then -> importer.summaryReport(fileName)
-    .then (message) ->
-      logger.withField({filename: fileName}).info message
-      d.resolve(fileName)
-    .fail (e) ->
-      logger.error e, "Oops, something went wrong when processing file #{fileName}"
-      d.reject 1
-  .fail (e) ->
-    logger.error e, "Cannot read file #{fileName}"
-    d.reject 2
-  d.promise
+  .then -> importer.summaryReport(fileName)
+  .then (message) ->
+    logger.withField({filename: fileName}).info message
+    Q(fileName)
 
 ###*
  * Simple temporary directory creation, it will be removed on process exit.
@@ -119,8 +111,10 @@ ProjectCredentialsConfig.create()
 
   if file
     importFn(stockimport, file)
-    .then => @exitCode = 0 # process.exit 0
-    .fail (code) => @exitCode = code # process.exit code
+    .then => @exitCode = 0
+    .fail (error) =>
+      logger.error error, 'Oops, something went wrong when processing file (no SFTP)!'
+      @exitCode = 1
     .done()
   else
     tmp.setGracefulCleanup()
@@ -164,7 +158,7 @@ ProjectCredentialsConfig.create()
               sftpHelper.finish(file)
             .fail (err) ->
               if argv.sftpContinueOnProblems
-                logger.warn err "There was an error processing the file #{file}, skipping and continue"
+                logger.warn err, "There was an error processing the file #{file}, skipping and continue"
                 Q()
               else
                 Q.reject err
