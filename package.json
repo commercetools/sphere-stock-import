@@ -1,7 +1,7 @@
 {
   "name": "sphere-stock-import",
   "description": "Import your stock data into SPHERE.IO's inventory from XML or CSV.",
-  "version": "0.5.15",
+  "version": "0.5.16",
   "homepage": "https://github.com/sphereio/sphere-stock-import",
   "private": false,
   "author": {
