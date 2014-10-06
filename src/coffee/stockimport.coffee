@@ -1,4 +1,5 @@
 _ = require 'underscore'
+_.mixin require('underscore-mixins')
 Csv = require 'csv'
 Promise = require 'bluebird'
 {ElasticIo} = require 'sphere-node-utils'
@@ -207,13 +208,8 @@ class StockImport
         ElasticIo.returnSuccess msg, next
       Promise.resolve "#{LOG_PREFIX}elastic.io messages sent."
     else
-      _batchList = (tickList, acc = []) ->
-        return acc if _.isEmpty tickList
-        acc.push _.head tickList, 30 # max parallel elem to process
-        tail = _.tail tickList, 30 # max parallel elem to process
-        _batchList tail, acc
-
-      Promise.map _batchList(stocks), (stocksToProcess) =>
+      batchedList = _.batchList(stocks, 30) # max parallel elem to process
+      Promise.map batchedList, (stocksToProcess) =>
         ie = @client.inventoryEntries.all().whereOperator('or')
         @logger.debug stocksToProcess, 'Stocks to process'
         uniqueStocksToProcessBySku = _.reduce stocksToProcess, (acc, stock) ->
