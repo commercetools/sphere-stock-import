@@ -1,9 +1,8 @@
-Q = require 'q'
 _ = require 'underscore'
 Csv = require 'csv'
-{ElasticIo, Qutils} = require 'sphere-node-utils'
-{InventorySync} = require 'sphere-node-sync'
-SphereClient = require 'sphere-node-client'
+Promise = require 'bluebird'
+{ElasticIo} = require 'sphere-node-utils'
+{SphereClient, InventorySync} = require 'sphere-node-sdk'
 package_json = require '../package.json'
 xmlHelpers = require './xmlhelpers'
 
@@ -15,8 +14,8 @@ LOG_PREFIX = "[SphereStockImport] "
 class StockImport
 
   constructor: (@logger, options = {}) ->
-    @sync = new InventorySync options
-    @client = @sync._client
+    @sync = new InventorySync
+    @client = new SphereClient options
     @csvHeaders = options.csvHeaders
     @csvDelimiter = options.csvDelimiter
     @_resetSummary()
@@ -52,7 +51,7 @@ class StockImport
             @summaryReport()
             .then (message) ->
               ElasticIo.returnSuccess message, next
-        .fail (err) ->
+        .catch (err) ->
           ElasticIo.returnFailure err, next
         .done()
 
@@ -62,9 +61,9 @@ class StockImport
           @client.channels.ensure(msg.body.CHANNEL_KEY, CHANNEL_ROLES)
           .then (result) =>
             @logger.debug result, 'Channel ensured, about to create or update'
-            Q(result.body.id)
+            Promise.resolve(result.body.id)
         else
-          Q(msg.body.CHANNEL_ID)
+          Promise.resolve(msg.body.CHANNEL_ID)
 
       @client.inventoryEntries.where("sku=\"#{msg.body.SKU}\"").perPage(1).fetch()
       .then (results) =>
@@ -84,7 +83,7 @@ class StockImport
           @summaryReport()
         .then (message) ->
           ElasticIo.returnSuccess message, next
-      .fail (err) =>
+      .catch (err) =>
         @logger.debug err, 'Failed to process inventory'
         ElasticIo.returnFailure err, next
       .done()
@@ -98,7 +97,7 @@ class StockImport
     else if mode is 'CSV'
       @performCSV fileContent, next
     else
-      Q.reject "#{LOG_PREFIX}Unknown import mode '#{mode}'!"
+      Promise.reject "#{LOG_PREFIX}Unknown import mode '#{mode}'!"
 
   summaryReport: (filename) ->
     if @summary.created is 0 and @summary.updated is 0
@@ -112,52 +111,50 @@ class StockImport
       warning += " '#{filename}'" if filename
       @logger.warn warning
 
-    Q(message)
+    Promise.resolve(message)
 
   performXML: (fileContent, next) ->
-    deferred = Q.defer()
-    xmlHelpers.xmlTransform xmlHelpers.xmlFix(fileContent), (err, xml) =>
-      if err?
-        deferred.reject "#{LOG_PREFIX}Error on parsing XML: #{err}"
-      else
-        @client.channels.ensure(CHANNEL_KEY_FOR_XML_MAPPING, CHANNEL_ROLES)
-        .then (result) =>
-          stocks = @_mapStockFromXML xml.root, result.body.id
-          @_perform stocks, next
-        .then (result) -> deferred.resolve result
-        .fail (err) -> deferred.reject err
-        .done()
-    deferred.promise
+    new Promise (resolve, reject) =>
+      xmlHelpers.xmlTransform xmlHelpers.xmlFix(fileContent), (err, xml) =>
+        if err?
+          reject "#{LOG_PREFIX}Error on parsing XML: #{err}"
+        else
+          @client.channels.ensure(CHANNEL_KEY_FOR_XML_MAPPING, CHANNEL_ROLES)
+          .then (result) =>
+            stocks = @_mapStockFromXML xml.root, result.body.id
+            @_perform stocks, next
+          .then (result) -> resolve result
+          .catch (err) -> reject err
+          .done()
 
   performCSV: (fileContent, next) ->
-    deferred = Q.defer()
-    Csv().from.string(fileContent, {delimiter: @csvDelimiter, trim: true})
-    .to.array (data, count) =>
-      headers = data[0]
-      @_getHeaderIndexes headers, @csvHeaders
-      .then (mappedHeaderIndexes) =>
-        stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes[0], mappedHeaderIndexes[1]
-        @logger.debug stocks, "Stock mapped from csv for headers #{mappedHeaderIndexes}"
+    new Promise (resolve, reject) =>
+      Csv().from.string(fileContent, {delimiter: @csvDelimiter, trim: true})
+      .to.array (data, count) =>
+        headers = data[0]
+        @_getHeaderIndexes headers, @csvHeaders
+        .then (mappedHeaderIndexes) =>
+          stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes[0], mappedHeaderIndexes[1]
+          @logger.debug stocks, "Stock mapped from csv for headers #{mappedHeaderIndexes}"
 
-        # TODO: ensure channel ??
-        @_perform stocks, next
-        .then (result) -> deferred.resolve result
-      .fail (err) -> deferred.reject err
-      .done()
-
-    # TODO: register this before!
-    .on 'error', (error) ->
-      deferred.reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
-    deferred.promise
+          # TODO: ensure channel ??
+          @_perform stocks, next
+          .then (result) -> resolve result
+        .catch (err) -> reject err
+        .done()
+      .on 'error', (error) ->
+        reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
 
   _getHeaderIndexes: (headers, csvHeaders) ->
-    Q.all _.map csvHeaders.split(','), (h) =>
+    Promise.all _.map csvHeaders.split(','), (h) =>
       cleanHeader = h.trim()
       mappedHeader = _.find headers, (header) -> header.toLowerCase() is cleanHeader.toLowerCase()
-      return Q.reject "Can't find header '#{cleanHeader}' in '#{headers}'." unless mappedHeader
-      headerIndex = _.indexOf headers, mappedHeader
-      @logger.debug headers, "Found index #{headerIndex} for header #{cleanHeader}"
-      Q(headerIndex)
+      if mappedHeader
+        headerIndex = _.indexOf headers, mappedHeader
+        @logger.debug headers, "Found index #{headerIndex} for header #{cleanHeader}"
+        Promise.resolve(headerIndex)
+      else
+        Promise.reject "Can't find header '#{cleanHeader}' in '#{headers}'."
 
   _mapStockFromXML: (xmljs, channelId) ->
     stocks = []
@@ -208,10 +205,16 @@ class StockImport
         if entry[CHANNEL_REF_NAME]?
           msg.body.CHANNEL_ID = entry[CHANNEL_REF_NAME].id
         ElasticIo.returnSuccess msg, next
-      Q "#{LOG_PREFIX}elastic.io messages sent."
+      Promise.resolve "#{LOG_PREFIX}elastic.io messages sent."
     else
-      Qutils.processList stocks, (stocksToProcess) =>
-        ie = @client.inventoryEntries.perPage(0).whereOperator('or')
+      _batchList = (tickList, acc = []) ->
+        return acc if _.isEmpty tickList
+        acc.push _.head tickList, 30 # max parallel elem to process
+        tail = _.tail tickList, 30 # max parallel elem to process
+        _batchList tail, acc
+
+      Promise.map _batchList(stocks), (stocksToProcess) =>
+        ie = @client.inventoryEntries.all().whereOperator('or')
         @logger.debug stocksToProcess, 'Stocks to process'
         uniqueStocksToProcessBySku = _.reduce stocksToProcess, (acc, stock) ->
           foundStock = _.find acc, (s) -> s.sku is stock.sku
@@ -232,8 +235,8 @@ class StockImport
             switch r.statusCode
               when 201 then @summary.created++
               when 200 then @summary.updated++
-          Q()
-      , {maxParallel: 50, accumulate: false}
+          Promise.resolve()
+      , {concurrency: 1} # run 1 batch at a time
 
   _match: (entry, existingEntries) ->
     _.find existingEntries, (existingEntry) ->
@@ -257,11 +260,15 @@ class StockImport
     posts = _.map inventoryEntries, (entry) =>
       existingEntry = @_match(entry, existingEntries)
       if existingEntry?
-        @sync.buildActions(entry, existingEntry).update()
+        synced = @sync.buildActions(entry, existingEntry)
+        if synced.shouldUpdate()
+          @client.inventoryEntries.byId(synced.getUpdateId()).update(synced.getUpdatePayload())
+        else
+          Promise.resolve statusCode: 304
       else
         @client.inventoryEntries.create(entry)
 
     @logger.debug "About to send #{_.size posts} requests"
-    Q.all(posts)
+    Promise.all(posts)
 
 module.exports = StockImport

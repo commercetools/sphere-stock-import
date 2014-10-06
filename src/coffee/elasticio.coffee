@@ -28,8 +28,6 @@ exports.process = (msg, cfg, next, snapshot) ->
       project_key: cfg.sphereProjectKey
     timeout: 60000
     user_agent: "#{package_json.name} - elasticio - #{package_json.version}",
-    logConfig:
-      logger: logger.bunyanLogger
     csvHeaders: 'sku, quantity'
     csvDelimiter: ','
 

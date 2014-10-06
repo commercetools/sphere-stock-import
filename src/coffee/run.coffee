@@ -1,9 +1,9 @@
-fs = require 'q-io/fs'
-Q = require 'q'
-_ = require 'underscore'
 path = require 'path'
-tmp = require 'tmp'
-{ExtendedLogger, ProjectCredentialsConfig, Qutils} = require 'sphere-node-utils'
+_ = require 'underscore'
+Promise = require 'bluebird'
+fs = Promise.promisifyAll require('fs')
+tmp = Promise.promisifyAll require('tmp')
+{ExtendedLogger, ProjectCredentialsConfig} = require 'sphere-node-utils'
 package_json = require '../package.json'
 StockImport = require './stockimport'
 SftpHelper = require './sftp'
@@ -62,32 +62,19 @@ importFn = (importer, fileName) ->
   throw new Error 'You must provide a file to be processed' unless fileName
   logger.debug "About to process file #{fileName}"
   mode = importer.getMode fileName
-  fs.read fileName
+  fs.readFileAsync fileName
   .then (content) ->
     logger.debug 'File read, running import'
     importer.run(content, mode)
   .then -> importer.summaryReport(fileName)
   .then (message) ->
     logger.withField({filename: fileName}).info message
-    Q(fileName)
-
-###*
- * Simple temporary directory creation, it will be removed on process exit.
-###
-createTmpDir = ->
-  d = Q.defer()
-  # unsafeCleanup: recursively removes the created temporary directory, even when it's not empty
-  tmp.dir {unsafeCleanup: true}, (err, path) ->
-    if err
-      d.reject err
-    else
-      d.resolve path
-  d.promise
+    Promise.resolve fileName
 
 readJsonFromPath = (path) ->
-  return Q({}) unless path
-  fs.read(path).then (content) ->
-    Q JSON.parse(content)
+  return Promise.resolve({}) unless path
+  fs.readFileAsync(path).then (content) ->
+    Promise.resolve JSON.parse(content)
 
 ProjectCredentialsConfig.create()
 .then (credentials) =>
@@ -98,8 +85,6 @@ ProjectCredentialsConfig.create()
       client_secret: argv.clientSecret
     timeout: argv.timeout
     user_agent: "#{package_json.name} - #{package_json.version}"
-    logConfig:
-      logger: logger.bunyanLogger
     csvHeaders: argv.csvHeaders
     csvDelimiter: argv.csvDelimiter
 
@@ -112,7 +97,7 @@ ProjectCredentialsConfig.create()
   if file
     importFn(stockimport, file)
     .then => @exitCode = 0
-    .fail (error) =>
+    .catch (error) =>
       logger.error error, 'Oops, something went wrong when processing file (no SFTP)!'
       @exitCode = 1
     .done()
@@ -129,6 +114,7 @@ ProjectCredentialsConfig.create()
       throw new Error 'Missing sftp host' unless host
       throw new Error 'Missing sftp username' unless username
       throw new Error 'Missing sftp password' unless password
+
       sftpHelper = new SftpHelper
         host: host
         username: username
@@ -137,7 +123,9 @@ ProjectCredentialsConfig.create()
         targetFolder: argv.sftpTarget
         fileRegex: argv.sftpFileRegex
         logger: logger
-      createTmpDir()
+
+      # unsafeCleanup: recursively removes the created temporary directory, even when it's not empty
+      tmp.dirAsync {unsafeCleanup: true}
       .then (tmpPath) =>
         logger.debug "Tmp folder created at #{tmpPath}"
         sftpHelper.download(tmpPath)
@@ -149,36 +137,30 @@ ProjectCredentialsConfig.create()
               _.first files, argv.sftpMaxFilesToProcess
             else
               files
-          Qutils.processList filesToProcess, (fileParts) ->
-            throw new Error 'Files should be processed once at a time' if fileParts.length isnt 1
-            file = fileParts[0]
+          Promise.map filesToProcess, (file) ->
             importFn(stockimport, "#{tmpPath}/#{file}")
             .then ->
               logger.debug "Finishing processing file #{file}"
               sftpHelper.finish(file)
-            .fail (err) ->
+            .catch (err) ->
               if argv.sftpContinueOnProblems
                 logger.warn err, "There was an error processing the file #{file}, skipping and continue"
-                Q()
+                Promise.resolve()
               else
-                Q.reject err
-          , {accumulate: false}
+                Promise.reject err
+          , {concurrency: 1}
         .then =>
           logger.info 'Processing files to SFTP complete'
           @exitCode = 0
-          # process.exit(0)
-      .fail (error) =>
+      .catch (error) =>
         logger.error error, 'Oops, something went wrong!'
         @exitCode = 1
-        # process.exit(1)
       .done()
-    .fail (err) =>
+    .catch (err) =>
       logger.error err, "Problems on getting sftp credentials from config files."
       @exitCode = 1
-      # process.exit(1)
     .done()
-.fail (err) =>
+.catch (err) =>
   logger.error err, "Problems on getting client credentials from config files."
   @exitCode = 1
-  # process.exit(1)
 .done()

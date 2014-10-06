@@ -30,24 +30,23 @@
   "bin": {
     "stock-import": "bin/stock-import"
   },
-  "main": "main.js",
+  "main": "lib/run",
   "engines": {
-    "node": ">= 0.8.0"
+    "node": ">= 0.10.0"
   },
   "scripts": {
     "test": "grunt coverage"
   },
   "dependencies": {
+    "bluebird": "2.3.x",
     "bunyan-logentries": "0.1.0",
     "csv": "0.3.7",
     "optimist": "0.6.1",
-    "q": "1.0.0",
-    "q-io": "1.11.0",
-    "sphere-node-client": "0.8.1",
-    "sphere-node-sync": "0.5.14",
-    "sphere-node-utils": "0.4.13",
+    "sphere-node-sdk": "1.0.0-rc1",
+    "sphere-node-utils": "0.5.0",
     "tmp": "0.0.23",
     "underscore": "1.7.0",
+    "underscore-mixins": "*",
     "xml2js": "0.4.2"
   },
   "devDependencies": {

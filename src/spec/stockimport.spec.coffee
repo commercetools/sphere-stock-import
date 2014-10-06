@@ -1,8 +1,8 @@
-Q = require 'q'
 _ = require 'underscore'
+_.mixin require('underscore-mixins')
+Promise = require 'bluebird'
 Csv = require 'csv'
 {ExtendedLogger} = require 'sphere-node-utils'
-_.mixin require('sphere-node-utils')._u
 package_json = require '../package.json'
 Config = require '../config'
 xmlHelpers = require '../lib/xmlhelpers.js'
@@ -18,8 +18,6 @@ describe 'StockImport', ->
         ]
     @import = new StockImport logger,
       config: Config.config
-      logConfig:
-        logger: logger.bunyanLogger
       csvHeaders: 'id, amount'
       csvDelimiter: ','
 
@@ -182,13 +180,13 @@ describe 'StockImport', ->
     it 'should reject if no sku header found', (done) ->
       @import._getHeaderIndexes ['bla', 'foo', 'quantity', 'price'], 'sku, q'
       .then (msg) -> done msg
-      .fail (err) ->
+      .catch (err) ->
         expect(err).toBe "Can't find header 'sku' in 'bla,foo,quantity,price'."
         done()
 
     it 'should reject if no quantity header found', (done) ->
       @import._getHeaderIndexes ['sku', 'price', 'quality'], 'sku, quantity'
-      .fail (err) ->
+      .catch (err) ->
         expect(err).toBe "Can't find header 'quantity' in 'sku,price,quality'."
         done()
       .then (msg) -> done msg
@@ -199,8 +197,7 @@ describe 'StockImport', ->
         expect(indexes[0]).toBe 3
         expect(indexes[1]).toBe 1
         done()
-      .fail (err) ->
-        done err
+      .catch (err) -> done(_.prettify err)
 
   describe '#_mapStockFromCSV', ->
 
@@ -262,13 +259,13 @@ describe 'StockImport', ->
         abc;-3
         '''
       @import.csvDelimiter = ';'
-      spyOn(@import, '_perform').andReturn Q()
+      spyOn(@import, '_perform').andReturn Promise.resolve()
       spyOn(@import, '_getHeaderIndexes').andCallThrough()
       @import.performCSV(rawCSV)
       .then (result) =>
         expect(@import._getHeaderIndexes).toHaveBeenCalledWith ['id', 'amount'], 'id, amount'
         done()
-      .fail (error) -> done error
+      .catch (err) -> done(_.prettify err)
 
   describe '#_createOrUpdate', ->
 
@@ -298,7 +295,7 @@ describe 'StockImport', ->
         expect(@import.client._rest.POST.calls[0].args[1]).toEqual expectedUpdate
         expect(@import.client._rest.POST.calls[1].args[1]).toEqual expectedCreate
         done()
-      .fail (err) -> done _.prettify(err)
+      .catch (err) -> done(_.prettify err)
 
   describe '#_match', ->
 

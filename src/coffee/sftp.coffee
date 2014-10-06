@@ -1,7 +1,15 @@
-fs = require 'q-io/fs'
 _ = require 'underscore'
-Q = require 'q'
+Promise = require 'bluebird'
+fs = Promise.promisifyAll require('fs')
 {Sftp} = require 'sphere-node-utils'
+
+fsExistsAsync = (path) ->
+  new Promise (resolve, reject) ->
+    fs.exists path, (exists) ->
+      if exists
+        resolve(true)
+      else
+        resolve(false)
 
 module.exports = class
 
@@ -20,44 +28,39 @@ module.exports = class
       logger: @logger
 
   download: (tmpFolder) ->
-    d = Q.defer()
-
-    fs.exists(tmpFolder)
+    fsExistsAsync(tmpFolder)
     .then (exists) =>
       if exists
-        Q()
+        Promise.resolve()
       else
         @logger.debug 'Creating new tmp folder'
-        fs.makeDirectory tmpFolder
+        fs.mkdirAsync tmpFolder
     .then => @sftpClient.openSftp()
     .then (sftp) =>
       @logger.debug 'New connection opened'
       @_sftp = sftp
       @sftpClient.downloadAllFiles(sftp, tmpFolder, @sourceFolder, @fileRegex)
-    .then -> fs.list(tmpFolder)
+    .then -> fs.readdirAsync(tmpFolder)
     .then (files) ->
-      d.resolve _.filter files, (fileName) ->
+      Promise.resolve _.filter files, (fileName) ->
         switch
           when fileName.match /\.csv$/i then true
           when fileName.match /\.xml$/i then true
           else false
-    .fail (error) -> d.reject error
-    .fin =>
+    .finally =>
+      # TODO: # use .using() + .disposer() to close connection
       @logger.debug 'Closing connection'
       @sftpClient.close(@_sftp)
-    d.promise
 
   finish: (fileName) ->
-    d = Q.defer()
     @sftpClient.openSftp()
     .then (sftp) =>
       @logger.debug 'New connection opened'
       @_sftp = sftp
       @logger.debug "Renaming file #{fileName} on the remote server"
       @sftpClient.safeRenameFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
-    .then -> d.resolve()
-    .fail (error) -> d.reject error
-    .fin =>
+    .then -> Promise.resolve()
+    .finally =>
+      # TODO: # use .using() + .disposer() to close connection
       @logger.debug 'Closing connection'
       @sftpClient.close(@_sftp)
-    d.promise
