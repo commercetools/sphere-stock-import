@@ -62,7 +62,7 @@ importFn = (importer, fileName) ->
   throw new Error 'You must provide a file to be processed' unless fileName
   logger.debug "About to process file #{fileName}"
   mode = importer.getMode fileName
-  fs.readFileAsync fileName
+  fs.readFileAsync fileName, {encoding: 'utf-8'}
   .then (content) ->
     logger.debug 'File read, running import'
     importer.run(content, mode)
@@ -73,7 +73,7 @@ importFn = (importer, fileName) ->
 
 readJsonFromPath = (path) ->
   return Promise.resolve({}) unless path
-  fs.readFileAsync(path).then (content) ->
+  fs.readFileAsync(path, {encoding: 'utf-8'}).then (content) ->
     Promise.resolve JSON.parse(content)
 
 ProjectCredentialsConfig.create()
