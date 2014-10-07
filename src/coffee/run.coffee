@@ -142,6 +142,9 @@ ProjectCredentialsConfig.create()
             .then ->
               logger.debug "Finishing processing file #{file}"
               sftpHelper.finish(file)
+            .then ->
+              logger.info "File #{file} was successfully processed and marked as done on remote SFTP server"
+              Promise.resolve()
             .catch (err) ->
               if argv.sftpContinueOnProblems
                 logger.warn err, "There was an error processing the file #{file}, skipping and continue"
@@ -149,9 +152,13 @@ ProjectCredentialsConfig.create()
               else
                 Promise.reject err
           , {concurrency: 1}
-        .then =>
-          logger.info 'Processing files to SFTP complete'
-          @exitCode = 0
+          .then =>
+            totFiles = _.size(filesToProcess)
+            if totFiles > 0
+              logger.info "Import successfully finished: #{totFiles} files were processed"
+            else
+              logger.info "Import successfully finished: there were no new files to be processed"
+            @exitCode = 0
       .catch (error) =>
         logger.error error, 'Oops, something went wrong!'
         @exitCode = 1
