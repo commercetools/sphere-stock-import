@@ -26,6 +26,7 @@ argv = require('optimist')
   .describe('sftpFileRegex', 'a RegEx to filter files when downloading them')
   .describe('sftpMaxFilesToProcess', 'how many files need to be processed, if more then one is found')
   .describe('sftpContinueOnProblems', 'ignore errors when processing a file and continue with the next one')
+  .describe('sftpFileWithTimestamp', 'whether the processed file should be renamed by appending a timestamp')
   .describe('logLevel', 'log level for file logging')
   .describe('logDir', 'directory to store logs')
   .describe('logSilent', 'use console to print messages')
@@ -37,6 +38,7 @@ argv = require('optimist')
   .default('logSilent', false)
   .default('timeout', 60000)
   .default('sftpContinueOnProblems', false)
+  .default('sftpFileWithTimestamp', false)
   .demand(['projectKey'])
   .argv
 
@@ -141,11 +143,20 @@ ProjectCredentialsConfig.create()
           Promise.map filesToProcess, (file) ->
             importFn(stockimport, "#{tmpPath}/#{file}")
             .then ->
+              if argv.sftpFileWithTimestamp
+                ts = (new Date()).getTime()
+                filename = switch
+                  when file.match /\.csv$/i then file.substring(0, file.length - 4) + "_#{ts}.csv"
+                  when file.match /\.xml$/i then file.substring(0, file.length - 4) + "_#{ts}.xml"
+                  else file
+              else
+                filename = file
+
               logger.debug "Finishing processing file #{file}"
-              sftpHelper.finish(file)
-            .then ->
-              logger.info "File #{file} was successfully processed and marked as done on remote SFTP server"
-              Promise.resolve()
+              sftpHelper.finish(file, filename)
+              .then ->
+                logger.info "File #{filename} was successfully processed and marked as done on remote SFTP server"
+                Promise.resolve()
             .catch (err) ->
               if argv.sftpContinueOnProblems
                 filesSkipped++

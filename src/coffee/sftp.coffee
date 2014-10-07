@@ -52,13 +52,13 @@ module.exports = class
       @logger.debug 'Closing connection'
       @sftpClient.close(@_sftp)
 
-  finish: (fileName) ->
+  finish: (originalFileName, renamedFileName) ->
     @sftpClient.openSftp()
     .then (sftp) =>
       @logger.debug 'New connection opened'
       @_sftp = sftp
-      @logger.debug "Renaming file #{fileName} on the remote server"
-      @sftpClient.safeRenameFile(sftp, "#{@sourceFolder}/#{fileName}", "#{@targetFolder}/#{fileName}")
+      @logger.debug "Renaming file #{originalFileName} to #{renamedFileName} on the remote server"
+      @sftpClient.safeRenameFile(sftp, "#{@sourceFolder}/#{originalFileName}", "#{@targetFolder}/#{renamedFileName}")
     .then -> Promise.resolve()
     .finally =>
       # TODO: # use .using() + .disposer() to close connection
