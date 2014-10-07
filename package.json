@@ -1,6 +1,6 @@
 {
   "name": "sphere-stock-import",
-  "description": "Import your stock data into SPHERE.IO's inventory from XML or CSV.",
+  "description": "Import your stock information into SPHERE.IO's inventory from CSV or XML, with SFTP support!",
   "version": "0.5.17",
   "homepage": "https://github.com/sphereio/sphere-stock-import",
   "private": false,
@@ -63,5 +63,13 @@
     "jasmine-node": "1.13.0",
     "sphere-coffeelint": "git://github.com/sphereio/sphere-coffeelint.git#master"
   },
-  "keywords": []
+  "keywords": [
+    "sphere",
+    "sphereio",
+    "stock",
+    "import",
+    "csv",
+    "xml",
+    "sftp"
+  ]
 }
