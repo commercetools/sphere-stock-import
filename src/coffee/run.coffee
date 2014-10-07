@@ -137,6 +137,7 @@ ProjectCredentialsConfig.create()
               _.first files, argv.sftpMaxFilesToProcess
             else
               files
+          filesSkipped = 0
           Promise.map filesToProcess, (file) ->
             importFn(stockimport, "#{tmpPath}/#{file}")
             .then ->
@@ -147,6 +148,7 @@ ProjectCredentialsConfig.create()
               Promise.resolve()
             .catch (err) ->
               if argv.sftpContinueOnProblems
+                filesSkipped++
                 logger.warn err, "There was an error processing the file #{file}, skipping and continue"
                 Promise.resolve()
               else
@@ -155,7 +157,7 @@ ProjectCredentialsConfig.create()
           .then =>
             totFiles = _.size(filesToProcess)
             if totFiles > 0
-              logger.info "Import successfully finished: #{totFiles} files were processed"
+              logger.info "Import successfully finished: #{totFiles - filesSkipped} out of #{totFiles} files were processed"
             else
               logger.info "Import successfully finished: there were no new files to be processed"
             @exitCode = 0

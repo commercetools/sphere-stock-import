@@ -251,7 +251,7 @@ class StockImport
         false
 
   _createOrUpdate: (inventoryEntries, existingEntries) ->
-    @logger.debug inventoryEntries, 'Inventory entries'
+    @logger.debug {toProcess: inventoryEntries, existing: existingEntries}, 'Inventory entries'
 
     posts = _.map inventoryEntries, (entry) =>
       existingEntry = @_match(entry, existingEntries)
