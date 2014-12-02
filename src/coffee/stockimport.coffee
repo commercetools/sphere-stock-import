@@ -221,7 +221,7 @@ class StockImport
           @summary.emptySKU++ if _.isEmpty s.sku
           # TODO: query also for channel?
           ie.where("sku = \"#{s.sku}\"")
-        ie.fetch()
+        ie.sort('sku').fetch()
         .then (results) =>
           @logger.debug results, 'Fetched stocks'
           queriedEntries = results.body.results
