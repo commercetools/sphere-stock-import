@@ -22,7 +22,7 @@ class StockImport
     @_resetSummary()
 
   _resetSummary: ->
-    @summary =
+    @_summary =
       emptySKU: 0
       created: 0
       updated: 0
@@ -79,8 +79,8 @@ class StockImport
         .then (results) =>
           _.each results, (r) =>
             switch r.statusCode
-              when 201 then @summary.created++
-              when 200 then @summary.updated++
+              when 201 then @_summary.created++
+              when 200 then @_summary.updated++
           @summaryReport()
         .then (message) ->
           ElasticIo.returnSuccess message, next
@@ -101,16 +101,15 @@ class StockImport
       Promise.reject "#{LOG_PREFIX}Unknown import mode '#{mode}'!"
 
   summaryReport: (filename) ->
-    if @summary.created is 0 and @summary.updated is 0
+    if @_summary.created is 0 and @_summary.updated is 0
       message = 'Summary: nothing to do, everything is fine'
     else
-      message = "Summary: there were #{@summary.created + @summary.updated} imported stocks " +
-        "(#{@summary.created} were new and #{@summary.updated} were updates)"
+      message = "Summary: there were #{@_summary.created + @_summary.updated} imported stocks " +
+        "(#{@_summary.created} were new and #{@_summary.updated} were updates)"
 
-    if @summary.emptySKU > 0
-      warning = "Found #{@summary.emptySKU} empty SKUs from file input"
-      warning += " '#{filename}'" if filename
-      @logger.warn warning
+    if @_summary.emptySKU > 0
+      message += "\nFound #{@_summary.emptySKU} empty SKUs from file input"
+      message += " '#{filename}'" if filename
 
     Promise.resolve(message)
 
@@ -216,17 +215,15 @@ class StockImport
   _processBatches: (stocks) ->
     batchedList = _.batchList(stocks, 30) # max parallel elem to process
     Promise.map batchedList, (stocksToProcess) =>
-      ie = @client.inventoryEntries.all().whereOperator('or')
       @logger.debug stocksToProcess, 'Stocks to process'
-      uniqueStocksToProcessBySku = _.reduce stocksToProcess, (acc, stock) ->
-        foundStock = _.find acc, (s) -> s.sku is stock.sku
-        acc.push stock unless foundStock
-        acc
-      , []
+      uniqueStocksToProcessBySku = @_uniqueStocksBySku(stocksToProcess)
+
+      ie = @client.inventoryEntries.all().whereOperator('or')
       _.each uniqueStocksToProcessBySku, (s) =>
-        @summary.emptySKU++ if _.isEmpty s.sku
+        @_summary.emptySKU++ if _.isEmpty s.sku
         # TODO: query also for channel?
         ie.where("sku = \"#{s.sku}\"")
+
       ie.sort('sku').fetch()
       .then (results) =>
         @logger.debug results, 'Fetched stocks'
@@ -235,10 +232,17 @@ class StockImport
       .then (results) =>
         _.each results, (r) =>
           switch r.statusCode
-            when 201 then @summary.created++
-            when 200 then @summary.updated++
+            when 201 then @_summary.created++
+            when 200 then @_summary.updated++
         Promise.resolve()
     , {concurrency: 1} # run 1 batch at a time
+
+  _uniqueStocksBySku: (stocks) ->
+    _.reduce stocks, (acc, stock) ->
+      foundStock = _.find acc, (s) -> s.sku is stock.sku
+      acc.push stock unless foundStock
+      acc
+    , []
 
   _match: (entry, existingEntries) ->
     _.find existingEntries, (existingEntry) ->

@@ -23,8 +23,46 @@ describe 'StockImport', ->
 
   it 'should initialize', ->
     expect(@import).toBeDefined()
+    expect(@import.client).toBeDefined()
+    expect(@import.client.constructor.name).toBe 'SphereClient'
+    expect(@import.sync).toBeDefined()
+    expect(@import.sync.constructor.name).toBe 'InventorySync'
 
-  describe '#_mapStockFromXML', ->
+
+  describe '::summaryReport', ->
+
+    it 'should return a report (nothing to do)', (done) ->
+      @import.summaryReport('./foo.json')
+      .then (message) ->
+        expect(message).toEqual 'Summary: nothing to do, everything is fine'
+        done()
+      .catch (err) -> done(_.prettify err)
+
+    it 'should return a report (with updates)', (done) ->
+      @import._summary =
+        emptySKU: 2
+        created: 5
+        updated: 10
+      expectedMessage = 'Summary: there were 15 imported stocks (5 were new and 10 were updates)' +
+       '\nFound 2 empty SKUs from file input \'./foo.json\''
+
+      @import.summaryReport('./foo.json')
+      .then (message) ->
+        expect(message).toEqual expectedMessage
+        done()
+      .catch (err) -> done(_.prettify err)
+
+
+  describe '::_uniqueStocksBySku', ->
+
+    it 'should filter duplicate skus', ->
+      stocks = [{sku: 'foo'}, {sku: 'bar'}, {sku: 'baz'}, {sku: 'foo'}]
+      uniqueStocks = @import._uniqueStocksBySku(stocks)
+      expect(uniqueStocks.length).toBe 3
+      expect(_.pluck(uniqueStocks, 'sku')).toEqual ['foo', 'bar', 'baz']
+
+
+  describe '::_mapStockFromXML', ->
 
     it 'simple entry', (done) ->
       rawXml =
@@ -176,7 +214,8 @@ describe 'StockImport', ->
         expect(s.supplyChannel.id).toBe 'myChannelId'
         done()
 
-  describe '#_getHeaderIndexes', ->
+
+  describe '::_getHeaderIndexes', ->
     it 'should reject if no sku header found', (done) ->
       @import._getHeaderIndexes ['bla', 'foo', 'quantity', 'price'], 'sku, q'
       .then (msg) -> done msg
@@ -199,7 +238,8 @@ describe 'StockImport', ->
         done()
       .catch (err) -> done(_.prettify err)
 
-  describe '#_mapStockFromCSV', ->
+
+  describe '::_mapStockFromCSV', ->
 
     it 'should map a simple entry', (done) ->
       rawCSV =
@@ -249,7 +289,7 @@ describe 'StockImport', ->
         done()
 
 
-  describe '#performCSV', ->
+  describe '::performCSV', ->
 
     it 'should parse with a custom delimiter', (done) ->
       rawCSV =
@@ -267,7 +307,35 @@ describe 'StockImport', ->
         done()
       .catch (err) -> done(_.prettify err)
 
-  describe '#_createOrUpdate', ->
+
+  describe '::_processBatches', ->
+
+    it 'should process list of stocks in batches', (done) ->
+      chunk = [
+        {sku: 'foo-1', quantityOnStock: 5},
+        {sku: 'foo-2', quantityOnStock: 20}
+      ]
+      existingEntries = [
+        {sku: 'foo-1', quantityOnStock: 5},
+        {sku: 'foo-2', quantityOnStock: 10}
+      ]
+
+      spyOn(@import, '_uniqueStocksBySku').andCallThrough()
+      spyOn(@import, '_createOrUpdate').andCallFake -> Promise.all([Promise.resolve({statusCode: 201}), Promise.resolve({statusCode: 200})])
+      spyOn(@import.client.inventoryEntries, 'fetch').andCallFake -> new Promise (resolve, reject) -> resolve({body: {results: existingEntries}})
+
+      @import._processBatches(chunk)
+      .then =>
+        expect(@import._uniqueStocksBySku).toHaveBeenCalled()
+        expect(@import._summary).toEqual
+          emptySKU: 0
+          created: 1
+          updated: 1
+        done()
+      .catch (err) -> done(_.prettify err)
+
+
+  describe '::_createOrUpdate', ->
 
     it 'should update and create inventory for same sku', (done) ->
       inventoryEntries = [
@@ -297,7 +365,8 @@ describe 'StockImport', ->
         done()
       .catch (err) -> done(_.prettify err)
 
-  describe '#_match', ->
+
+  describe '::_match', ->
 
     it 'should match correct entry if there is more then one with same SKU', ->
       existingEntries = [
