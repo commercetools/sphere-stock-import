@@ -41,6 +41,7 @@
     "bluebird": "2.3.x",
     "bunyan-logentries": "0.1.0",
     "csv": "0.3.x",
+    "debug": "2.1.x",
     "optimist": "0.6.1",
     "sphere-node-sdk": "1.0.0-rc5",
     "sphere-node-utils": "0.6.0",

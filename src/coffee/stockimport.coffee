@@ -1,3 +1,4 @@
+debug = require('debug')('sphere-stock-import')
 _ = require 'underscore'
 _.mixin require('underscore-mixins')
 Csv = require 'csv'
@@ -37,7 +38,7 @@ class StockImport
   Elastic.io calls this for each csv row, so each inventory entry will be processed at a time
   ###
   elasticio: (msg, cfg, next, snapshot) ->
-    @logger.debug msg, 'Running elastic.io'
+    debug 'Running elastic.io: %j', msg
     if _.size(msg.attachments) > 0
       for attachment of msg.attachments
         content = msg.attachments[attachment].content
@@ -60,15 +61,15 @@ class StockImport
       _ensureChannel = =>
         if msg.body.CHANNEL_KEY?
           @client.channels.ensure(msg.body.CHANNEL_KEY, CHANNEL_ROLES)
-          .then (result) =>
-            @logger.debug result, 'Channel ensured, about to create or update'
+          .then (result) ->
+            debug 'Channel ensured, about to create or update: %j', result
             Promise.resolve(result.body.id)
         else
           Promise.resolve(msg.body.CHANNEL_ID)
 
       @client.inventoryEntries.where("sku=\"#{msg.body.SKU}\"").perPage(1).fetch()
       .then (results) =>
-        @logger.debug results, 'Existing entries'
+        debug 'Existing entries: %j', results
         existingEntries = results.body.results
         _ensureChannel()
         .then (channelId) =>
@@ -84,8 +85,8 @@ class StockImport
           @summaryReport()
         .then (message) ->
           ElasticIo.returnSuccess message, next
-      .catch (err) =>
-        @logger.debug err, 'Failed to process inventory'
+      .catch (err) ->
+        debug 'Failed to process inventory: %j', err
         ElasticIo.returnFailure err, next
       .done()
     else
@@ -135,7 +136,7 @@ class StockImport
         @_getHeaderIndexes headers, @csvHeaders
         .then (mappedHeaderIndexes) =>
           stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes[0], mappedHeaderIndexes[1]
-          @logger.debug stocks, "Stock mapped from csv for headers #{mappedHeaderIndexes}"
+          debug "Stock mapped from csv for headers #{mappedHeaderIndexes}: %j", stocks
 
           # TODO: ensure channel ??
           @_perform stocks, next
@@ -154,7 +155,7 @@ class StockImport
       mappedHeader = _.find headers, (header) -> header.toLowerCase() is cleanHeader.toLowerCase()
       if mappedHeader
         headerIndex = _.indexOf headers, mappedHeader
-        @logger.debug headers, "Found index #{headerIndex} for header #{cleanHeader}"
+        debug "Found index #{headerIndex} for header #{cleanHeader}: %j", headers
         Promise.resolve(headerIndex)
       else
         Promise.reject "Can't find header '#{cleanHeader}' in '#{headers}'."
@@ -215,8 +216,9 @@ class StockImport
   _processBatches: (stocks) ->
     batchedList = _.batchList(stocks, 30) # max parallel elem to process
     Promise.map batchedList, (stocksToProcess) =>
-      @logger.debug stocksToProcess, 'Stocks to process'
+      debug 'Chunk: %j', stocksToProcess
       uniqueStocksToProcessBySku = @_uniqueStocksBySku(stocksToProcess)
+      debug 'Chunk (unique stocks): %j', uniqueStocksToProcessBySku
 
       ie = @client.inventoryEntries.all().whereOperator('or')
       _.each uniqueStocksToProcessBySku, (s) =>
@@ -226,7 +228,7 @@ class StockImport
 
       ie.sort('sku').fetch()
       .then (results) =>
-        @logger.debug results, 'Fetched stocks'
+        debug 'Fetched stocks: %j', results
         queriedEntries = results.body.results
         @_createOrUpdate stocksToProcess, queriedEntries
       .then (results) =>
@@ -261,7 +263,7 @@ class StockImport
         false
 
   _createOrUpdate: (inventoryEntries, existingEntries) ->
-    @logger.debug {toProcess: inventoryEntries, existing: existingEntries}, 'Inventory entries'
+    debug 'Inventory entries: %j', {toProcess: inventoryEntries, existing: existingEntries}
 
     posts = _.map inventoryEntries, (entry) =>
       existingEntry = @_match(entry, existingEntries)
@@ -274,7 +276,7 @@ class StockImport
       else
         @client.inventoryEntries.create(entry)
 
-    @logger.debug "About to send #{_.size posts} requests"
+    debug 'About to send %s requests', _.size(posts)
     Promise.all(posts)
 
 module.exports = StockImport
