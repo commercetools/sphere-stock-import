@@ -146,6 +146,9 @@ class StockImport
       .on 'error', (error) ->
         reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
 
+  performStream: (chunk, cb) ->
+    _processBatches(chunk).then -> cb()
+
   _getHeaderIndexes: (headers, csvHeaders) ->
     Promise.all _.map csvHeaders.split(','), (h) =>
       cleanHeader = h.trim()
@@ -208,31 +211,34 @@ class StockImport
         ElasticIo.returnSuccess msg, next
       Promise.resolve "#{LOG_PREFIX}elastic.io messages sent."
     else
-      batchedList = _.batchList(stocks, 30) # max parallel elem to process
-      Promise.map batchedList, (stocksToProcess) =>
-        ie = @client.inventoryEntries.all().whereOperator('or')
-        @logger.debug stocksToProcess, 'Stocks to process'
-        uniqueStocksToProcessBySku = _.reduce stocksToProcess, (acc, stock) ->
-          foundStock = _.find acc, (s) -> s.sku is stock.sku
-          acc.push stock unless foundStock
-          acc
-        , []
-        _.each uniqueStocksToProcessBySku, (s) =>
-          @summary.emptySKU++ if _.isEmpty s.sku
-          # TODO: query also for channel?
-          ie.where("sku = \"#{s.sku}\"")
-        ie.sort('sku').fetch()
-        .then (results) =>
-          @logger.debug results, 'Fetched stocks'
-          queriedEntries = results.body.results
-          @_createOrUpdate stocksToProcess, queriedEntries
-        .then (results) =>
-          _.each results, (r) =>
-            switch r.statusCode
-              when 201 then @summary.created++
-              when 200 then @summary.updated++
-          Promise.resolve()
-      , {concurrency: 1} # run 1 batch at a time
+      @_processBatches(stocks)
+
+  _processBatches: (stocks) ->
+    batchedList = _.batchList(stocks, 30) # max parallel elem to process
+    Promise.map batchedList, (stocksToProcess) =>
+      ie = @client.inventoryEntries.all().whereOperator('or')
+      @logger.debug stocksToProcess, 'Stocks to process'
+      uniqueStocksToProcessBySku = _.reduce stocksToProcess, (acc, stock) ->
+        foundStock = _.find acc, (s) -> s.sku is stock.sku
+        acc.push stock unless foundStock
+        acc
+      , []
+      _.each uniqueStocksToProcessBySku, (s) =>
+        @summary.emptySKU++ if _.isEmpty s.sku
+        # TODO: query also for channel?
+        ie.where("sku = \"#{s.sku}\"")
+      ie.sort('sku').fetch()
+      .then (results) =>
+        @logger.debug results, 'Fetched stocks'
+        queriedEntries = results.body.results
+        @_createOrUpdate stocksToProcess, queriedEntries
+      .then (results) =>
+        _.each results, (r) =>
+          switch r.statusCode
+            when 201 then @summary.created++
+            when 200 then @summary.updated++
+        Promise.resolve()
+    , {concurrency: 1} # run 1 batch at a time
 
   _match: (entry, existingEntries) ->
     _.find existingEntries, (existingEntry) ->
