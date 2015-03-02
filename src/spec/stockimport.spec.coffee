@@ -31,26 +31,17 @@ describe 'StockImport', ->
 
   describe '::summaryReport', ->
 
-    it 'should return a report (nothing to do)', (done) ->
-      @import.summaryReport('./foo.json')
-      .then (message) ->
-        expect(message).toEqual 'Summary: nothing to do, everything is fine'
-        done()
-      .catch (err) -> done(_.prettify err)
+    it 'should return a report (nothing to do)', ->
+      expect(@import.summaryReport('./foo.json')).toEqual 'Summary: nothing to do, everything is fine'
 
-    it 'should return a report (with updates)', (done) ->
+    it 'should return a report (with updates)', ->
       @import._summary =
         emptySKU: 2
         created: 5
         updated: 10
-      expectedMessage = 'Summary: there were 15 imported stocks (5 were new and 10 were updates)' +
+      message = 'Summary: there were 15 imported stocks (5 were new and 10 were updates)' +
        '\nFound 2 empty SKUs from file input \'./foo.json\''
-
-      @import.summaryReport('./foo.json')
-      .then (message) ->
-        expect(message).toEqual expectedMessage
-        done()
-      .catch (err) -> done(_.prettify err)
+      expect(@import.summaryReport('./foo.json')).toEqual message
 
 
   describe '::_uniqueStocksBySku', ->
@@ -312,7 +303,7 @@ describe 'StockImport', ->
 
     it 'should execute callback after finished processing batches', (done) ->
       spyOn(@import, '_processBatches').andCallFake -> Promise.resolve()
-      @import.performStream([1, 2, 3]).then(done)
+      @import.performStream [1, 2, 3], done
       .catch (err) -> done(_.prettify err)
 
 
