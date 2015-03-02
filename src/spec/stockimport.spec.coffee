@@ -308,6 +308,14 @@ describe 'StockImport', ->
       .catch (err) -> done(_.prettify err)
 
 
+  describe '::performStream', ->
+
+    it 'should execute callback after finished processing batches', (done) ->
+      spyOn(@import, '_processBatches').andCallFake -> Promise.resolve()
+      @import.performStream([1, 2, 3]).then(done)
+      .catch (err) -> done(_.prettify err)
+
+
   describe '::_processBatches', ->
 
     it 'should process list of stocks in batches', (done) ->

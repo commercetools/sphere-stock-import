@@ -146,7 +146,7 @@ class StockImport
         reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
 
   performStream: (chunk, cb) ->
-    _processBatches(chunk).then -> cb()
+    @_processBatches(chunk).then(cb)
 
   _getHeaderIndexes: (headers, csvHeaders) ->
     Promise.all _.map csvHeaders.split(','), (h) =>
