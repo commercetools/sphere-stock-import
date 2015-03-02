@@ -68,8 +68,8 @@ importFn = (importer, fileName) ->
   .then (content) ->
     logger.debug 'File read, running import'
     importer.run(content, mode)
-  .then -> importer.summaryReport(fileName)
-  .then (message) ->
+  .then ->
+    message = importer.summaryReport(fileName)
     logger.withField({filename: fileName}).info message
     Promise.resolve fileName
 

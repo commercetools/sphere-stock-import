@@ -1,3 +1,4 @@
+debug = require('debug')('sphere-stock-import')
 _ = require 'underscore'
 _.mixin require('underscore-mixins')
 Csv = require 'csv'
@@ -22,7 +23,7 @@ class StockImport
     @_resetSummary()
 
   _resetSummary: ->
-    @summary =
+    @_summary =
       emptySKU: 0
       created: 0
       updated: 0
@@ -37,7 +38,7 @@ class StockImport
   Elastic.io calls this for each csv row, so each inventory entry will be processed at a time
   ###
   elasticio: (msg, cfg, next, snapshot) ->
-    @logger.debug msg, 'Running elastic.io'
+    debug 'Running elastic.io: %j', msg
     if _.size(msg.attachments) > 0
       for attachment of msg.attachments
         content = msg.attachments[attachment].content
@@ -60,15 +61,15 @@ class StockImport
       _ensureChannel = =>
         if msg.body.CHANNEL_KEY?
           @client.channels.ensure(msg.body.CHANNEL_KEY, CHANNEL_ROLES)
-          .then (result) =>
-            @logger.debug result, 'Channel ensured, about to create or update'
+          .then (result) ->
+            debug 'Channel ensured, about to create or update: %j', result
             Promise.resolve(result.body.id)
         else
           Promise.resolve(msg.body.CHANNEL_ID)
 
       @client.inventoryEntries.where("sku=\"#{msg.body.SKU}\"").perPage(1).fetch()
       .then (results) =>
-        @logger.debug results, 'Existing entries'
+        debug 'Existing entries: %j', results
         existingEntries = results.body.results
         _ensureChannel()
         .then (channelId) =>
@@ -79,13 +80,13 @@ class StockImport
         .then (results) =>
           _.each results, (r) =>
             switch r.statusCode
-              when 201 then @summary.created++
-              when 200 then @summary.updated++
+              when 201 then @_summary.created++
+              when 200 then @_summary.updated++
           @summaryReport()
         .then (message) ->
           ElasticIo.returnSuccess message, next
-      .catch (err) =>
-        @logger.debug err, 'Failed to process inventory'
+      .catch (err) ->
+        debug 'Failed to process inventory: %j', err
         ElasticIo.returnFailure err, next
       .done()
     else
@@ -101,18 +102,17 @@ class StockImport
       Promise.reject "#{LOG_PREFIX}Unknown import mode '#{mode}'!"
 
   summaryReport: (filename) ->
-    if @summary.created is 0 and @summary.updated is 0
+    if @_summary.created is 0 and @_summary.updated is 0
       message = 'Summary: nothing to do, everything is fine'
     else
-      message = "Summary: there were #{@summary.created + @summary.updated} imported stocks " +
-        "(#{@summary.created} were new and #{@summary.updated} were updates)"
+      message = "Summary: there were #{@_summary.created + @_summary.updated} imported stocks " +
+        "(#{@_summary.created} were new and #{@_summary.updated} were updates)"
 
-    if @summary.emptySKU > 0
-      warning = "Found #{@summary.emptySKU} empty SKUs from file input"
-      warning += " '#{filename}'" if filename
-      @logger.warn warning
+    if @_summary.emptySKU > 0
+      message += "\nFound #{@_summary.emptySKU} empty SKUs from file input"
+      message += " '#{filename}'" if filename
 
-    Promise.resolve(message)
+    message
 
   performXML: (fileContent, next) ->
     new Promise (resolve, reject) =>
@@ -136,7 +136,7 @@ class StockImport
         @_getHeaderIndexes headers, @csvHeaders
         .then (mappedHeaderIndexes) =>
           stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes[0], mappedHeaderIndexes[1]
-          @logger.debug stocks, "Stock mapped from csv for headers #{mappedHeaderIndexes}"
+          debug "Stock mapped from csv for headers #{mappedHeaderIndexes}: %j", stocks
 
           # TODO: ensure channel ??
           @_perform stocks, next
@@ -146,13 +146,16 @@ class StockImport
       .on 'error', (error) ->
         reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
 
+  performStream: (chunk, cb) ->
+    @_processBatches(chunk).then -> cb()
+
   _getHeaderIndexes: (headers, csvHeaders) ->
     Promise.all _.map csvHeaders.split(','), (h) =>
       cleanHeader = h.trim()
       mappedHeader = _.find headers, (header) -> header.toLowerCase() is cleanHeader.toLowerCase()
       if mappedHeader
         headerIndex = _.indexOf headers, mappedHeader
-        @logger.debug headers, "Found index #{headerIndex} for header #{cleanHeader}"
+        debug "Found index #{headerIndex} for header #{cleanHeader}: %j", headers
         Promise.resolve(headerIndex)
       else
         Promise.reject "Can't find header '#{cleanHeader}' in '#{headers}'."
@@ -208,31 +211,40 @@ class StockImport
         ElasticIo.returnSuccess msg, next
       Promise.resolve "#{LOG_PREFIX}elastic.io messages sent."
     else
-      batchedList = _.batchList(stocks, 30) # max parallel elem to process
-      Promise.map batchedList, (stocksToProcess) =>
-        ie = @client.inventoryEntries.all().whereOperator('or')
-        @logger.debug stocksToProcess, 'Stocks to process'
-        uniqueStocksToProcessBySku = _.reduce stocksToProcess, (acc, stock) ->
-          foundStock = _.find acc, (s) -> s.sku is stock.sku
-          acc.push stock unless foundStock
-          acc
-        , []
-        _.each uniqueStocksToProcessBySku, (s) =>
-          @summary.emptySKU++ if _.isEmpty s.sku
-          # TODO: query also for channel?
-          ie.where("sku = \"#{s.sku}\"")
-        ie.sort('sku').fetch()
-        .then (results) =>
-          @logger.debug results, 'Fetched stocks'
-          queriedEntries = results.body.results
-          @_createOrUpdate stocksToProcess, queriedEntries
-        .then (results) =>
-          _.each results, (r) =>
-            switch r.statusCode
-              when 201 then @summary.created++
-              when 200 then @summary.updated++
-          Promise.resolve()
-      , {concurrency: 1} # run 1 batch at a time
+      @_processBatches(stocks)
+
+  _processBatches: (stocks) ->
+    batchedList = _.batchList(stocks, 30) # max parallel elem to process
+    Promise.map batchedList, (stocksToProcess) =>
+      debug 'Chunk: %j', stocksToProcess
+      uniqueStocksToProcessBySku = @_uniqueStocksBySku(stocksToProcess)
+      debug 'Chunk (unique stocks): %j', uniqueStocksToProcessBySku
+
+      ie = @client.inventoryEntries.all().whereOperator('or')
+      _.each uniqueStocksToProcessBySku, (s) =>
+        @_summary.emptySKU++ if _.isEmpty s.sku
+        # TODO: query also for channel?
+        ie.where("sku = \"#{s.sku}\"")
+
+      ie.sort('sku').fetch()
+      .then (results) =>
+        debug 'Fetched stocks: %j', results
+        queriedEntries = results.body.results
+        @_createOrUpdate stocksToProcess, queriedEntries
+      .then (results) =>
+        _.each results, (r) =>
+          switch r.statusCode
+            when 201 then @_summary.created++
+            when 200 then @_summary.updated++
+        Promise.resolve()
+    , {concurrency: 1} # run 1 batch at a time
+
+  _uniqueStocksBySku: (stocks) ->
+    _.reduce stocks, (acc, stock) ->
+      foundStock = _.find acc, (s) -> s.sku is stock.sku
+      acc.push stock unless foundStock
+      acc
+    , []
 
   _match: (entry, existingEntries) ->
     _.find existingEntries, (existingEntry) ->
@@ -251,7 +263,7 @@ class StockImport
         false
 
   _createOrUpdate: (inventoryEntries, existingEntries) ->
-    @logger.debug {toProcess: inventoryEntries, existing: existingEntries}, 'Inventory entries'
+    debug 'Inventory entries: %j', {toProcess: inventoryEntries, existing: existingEntries}
 
     posts = _.map inventoryEntries, (entry) =>
       existingEntry = @_match(entry, existingEntries)
@@ -264,7 +276,7 @@ class StockImport
       else
         @client.inventoryEntries.create(entry)
 
-    @logger.debug "About to send #{_.size posts} requests"
+    debug 'About to send %s requests', _.size(posts)
     Promise.all(posts)
 
 module.exports = StockImport
