@@ -30,7 +30,7 @@
   "bin": {
     "stock-import": "bin/stock-import"
   },
-  "main": "lib/run",
+  "main": "lib/stockimport",
   "engines": {
     "node": ">= 0.10.0"
   },
