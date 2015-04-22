@@ -220,14 +220,11 @@ class StockImport
       uniqueStocksToProcessBySku = @_uniqueStocksBySku(stocksToProcess)
       debug 'Chunk (unique stocks): %j', uniqueStocksToProcessBySku
 
-      predicate = "sku in ("
       skus = _.map uniqueStocksToProcessBySku, (s) =>
         @_summary.emptySKU++ if _.isEmpty s.sku
         # TODO: query also for channel?
         "\"#{s.sku}\""
-      predicate += _.reduce skus, (s1, s2) =>
-        s1 + ", " + s2
-      predicate += ")"
+      predicate = "sku in (#{skus.join(', ')})"
 
       @client.inventoryEntries.all()
       .where(predicate)
