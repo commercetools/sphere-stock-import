@@ -220,13 +220,15 @@ class StockImport
       uniqueStocksToProcessBySku = @_uniqueStocksBySku(stocksToProcess)
       debug 'Chunk (unique stocks): %j', uniqueStocksToProcessBySku
 
-      ie = @client.inventoryEntries.all().whereOperator('or')
-      _.each uniqueStocksToProcessBySku, (s) =>
+      skus = _.map uniqueStocksToProcessBySku, (s) =>
         @_summary.emptySKU++ if _.isEmpty s.sku
         # TODO: query also for channel?
-        ie.where("sku = \"#{s.sku}\"")
+        "\"#{s.sku}\""
+      predicate = "sku in (#{skus.join(', ')})"
 
-      ie.sort('sku').fetch()
+      @client.inventoryEntries.all()
+      .where(predicate)
+      .fetch()
       .then (results) =>
         debug 'Fetched stocks: %j', results
         queriedEntries = results.body.results
