@@ -35,7 +35,10 @@
     "node": ">= 0.10.0"
   },
   "scripts": {
-    "test": "./node_modules/grunt-cli/bin/grunt test"
+    "build": "grunt build",
+    "test": "grunt test",
+    "coverage": "grunt coverage",
+    "watchChanges": "grunt watch:test"
   },
   "dependencies": {
     "bluebird": "2.3.x",

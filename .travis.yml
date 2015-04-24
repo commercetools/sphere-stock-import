@@ -6,10 +6,9 @@ branches:
     - latest
     - production
 before_script:
-  - npm install -g grunt-cli
   - ./create_config.sh
 script:
-  - npm test
+  - npm coverage
   - ./bin/stock-import --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID} --clientSecret ${SPHERE_CLIENT_SECRET} --file data/example.xml
   - ./bin/stock-import --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID} --clientSecret ${SPHERE_CLIENT_SECRET} --file data/example.csv
 env:

@@ -13,7 +13,7 @@ First, ensure that you have the latest [Node.js](http://nodejs.org/) and [npm](h
 1. Run `npm install` to install all dependencies (including Grunt).
 1. Run `npm test` to build the JavaScript code and test it.
 
-Assuming that you don't see any red, you're ready to go. Just be sure to run `npm test` after making any changes, to ensure that nothing is broken. You can also use grunt to do this automatically for you: `./node_modules/grunt-cli/bin/grunt watch:test`
+Assuming that you don't see any red, you're ready to go. Just be sure to run `npm test` after making any changes, to ensure that nothing is broken. You can also use grunt to do this automatically for you: `npm run watchChanges`
 
 ## Submitting pull requests
 
