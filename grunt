@@ -1,8 +1,0 @@
-#!/bin/sh
-
-if [ ! -f ./node_modules/.bin/grunt ]
-then
-    npm install
-fi
-
-./node_modules/.bin/grunt "$@"

@@ -11,16 +11,16 @@ First, ensure that you have the latest [Node.js](http://nodejs.org/) and [npm](h
 
 1. Fork and clone the repo.
 1. Run `npm install` to install all dependencies (including Grunt).
-1. Run `./node_modules/.bin/grunt` to grunt this project.
+1. Run `npm test` to build the JavaScript code and test it.
 
-Assuming that you don't see any red, you're ready to go. Just be sure to run `./node_modules/.bin/grunt` after making any changes, to ensure that nothing is broken.
+Assuming that you don't see any red, you're ready to go. Just be sure to run `npm test` after making any changes, to ensure that nothing is broken. You can also use grunt to do this automatically for you: `./node_modules/grunt-cli/bin/grunt watch:test`
 
 ## Submitting pull requests
 
 1. Create a new branch, please don't work in your `master` branch directly.
-1. Add failing tests for the change you want to make. Run `grunt test` to see the tests fail.
+1. Add failing tests for the change you want to make. Run `npm test` to see the tests fail.
 1. Fix stuff.
-1. Run `./node_modules/.bin/grunt test` to see if the tests pass. Repeat steps 2-4 until done.
+1. Run `npm test` to see if the tests pass. Repeat steps 2-4 until done.
 1. Update the documentation to reflect any changes.
 1. Push to your fork and submit a pull request.
 
