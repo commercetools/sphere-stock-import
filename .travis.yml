@@ -5,6 +5,7 @@ branches:
   except:
     - latest
     - production
+    - /^v[0-9]\.[0-9]\.[0-9]$/
 before_script:
   - ./create_config.sh
 script:
