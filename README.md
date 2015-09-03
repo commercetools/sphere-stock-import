@@ -8,6 +8,8 @@
 
 This module allows to import stock information from CSV and XML files, with SFTP support.
 
+> Make sure to check out the new [`sphere-node-cli`](https://github.com/sphereio/sphere-node-cli) for performant imports using JSON.
+
 ## Getting started
 
 ```bash
