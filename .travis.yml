@@ -20,7 +20,7 @@ env:
 notifications:
   hipchat:
     rooms:
-      - secure: xci7WLgwTxv3i0IbrXaIHv7lvTgSBkpUp9RGRKpQysHjWMaDJozCvUomM5MWdjBUFnHuDZYcJfWhL7rZj7hU3aBmy7wFlYKe2fNnbLaZw1sSFO/pyTtBjcp3u/AeP32EQpizhzmmOLT/gTOhTNPQth7wB4gIRg7ZHINToXYTQDo=
+      - secure: LpkIzsJIyPtoQVWpcvlkCySGj7D92hOAY278lukFpUMfm0tmFeytWwvIetvPPfYxfAkqDg2IJhkmgMD0txQ1h+A/d0aEJLSrwpmktudxtP6o0X8nuYIYI26yA5VCkbMubWshyWctNyu3awjHB6N+pznyRoqqgPHJmrQULyP0oOg=
     template:
       - '%{repository}#%{build_number} (%{author}): %{message} (<a href="%{build_url}">Details</a>/<a href="%{compare_url}">Compare</a>)'
     format: html
