@@ -79,14 +79,24 @@ readJsonFromPath = (path) ->
   fs.readFileAsync(path, {encoding: 'utf-8'}).then (content) ->
     Promise.resolve JSON.parse(content)
 
-ProjectCredentialsConfig.create()
+ensureCredentials = (argv) ->
+  if argv.accessToken
+    Promise.resolve
+      config:
+        project_key: argv.projectKey
+      access_token: argv.accessToken
+  else
+    ProjectCredentialsConfig.create()
+    .then (credentials) ->
+      Promise.resolve
+        config: credentials.enrichCredentials
+          project_key: argv.projectKey
+          client_id: argv.clientId
+          client_secret: argv.clientSecret
+
+ensureCredentials(argv)
 .then (credentials) =>
-  options =
-    config: credentials.enrichCredentials
-      project_key: argv.projectKey
-      client_id: argv.clientId
-      client_secret: argv.clientSecret
-    access_token: argv.accessToken
+  options = _.extend credentials,
     timeout: argv.timeout
     user_agent: "#{package_json.name} - #{package_json.version}"
     csvHeaders: argv.csvHeaders
