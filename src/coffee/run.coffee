@@ -15,7 +15,9 @@ argv = require('optimist')
   .describe('clientSecret', 'your OAuth client secret for the SPHERE.IO API')
   .describe('accessToken', 'an OAuth access token for the SPHERE.IO API')
   .describe('sphereHost', 'SPHERE.IO API host to connecto to')
-  .describe('sphereProtocol', 'SPHERE.IO API protocol to connecto to')
+  .describe('sphereProtocol', 'SPHERE.IO API protocol to connect to')
+  .describe('sphereAuthHost', 'SPHERE.IO OAuth host to connect to')
+  .describe('sphereAuthProtocol', 'SPHERE.IO OAuth protocol to connect to')
   .describe('file', 'XML or CSV file containing inventory information to import')
   .describe('csvHeaders', 'a list of column names to use as mapping, comma separated')
   .describe('csvDelimiter', 'the delimiter type used in the csv')
@@ -105,6 +107,10 @@ ensureCredentials(argv)
 
   options.host = argv.sphereHost if argv.sphereHost
   options.protocol = argv.sphereProtocol if argv.sphereProtocol
+  if argv.sphereAuthHost
+    options.oauth_host = argv.sphereAuthHost
+    options.rejectUnauthorized = false
+  options.oauth_protocol = argv.sphereAuthProtocol if argv.sphereAuthProtocol
 
   stockimport = new StockImport logger, options
 
