@@ -13,6 +13,7 @@ argv = require('optimist')
   .describe('projectKey', 'your SPHERE.IO project-key')
   .describe('clientId', 'your OAuth client id for the SPHERE.IO API')
   .describe('clientSecret', 'your OAuth client secret for the SPHERE.IO API')
+  .describe('accessToken', 'an OAuth access token for the SPHERE.IO API')
   .describe('sphereHost', 'SPHERE.IO API host to connecto to')
   .describe('file', 'XML or CSV file containing inventory information to import')
   .describe('csvHeaders', 'a list of column names to use as mapping, comma separated')
@@ -85,6 +86,7 @@ ProjectCredentialsConfig.create()
       project_key: argv.projectKey
       client_id: argv.clientId
       client_secret: argv.clientSecret
+    access_token: argv.accessToken
     timeout: argv.timeout
     user_agent: "#{package_json.name} - #{package_json.version}"
     csvHeaders: argv.csvHeaders
