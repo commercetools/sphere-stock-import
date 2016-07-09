@@ -1,6 +1,10 @@
+sudo: required
+services:
+  - docker
 language: node_js
 node_js:
-  - '0.10'
+  - '0.12'
+  - 4
 branches:
   except:
     - latest
@@ -12,6 +16,7 @@ script:
   - grunt coverage
   - ./bin/stock-import --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID} --clientSecret ${SPHERE_CLIENT_SECRET} --file data/example.xml
   - ./bin/stock-import --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID} --clientSecret ${SPHERE_CLIENT_SECRET} --file data/example.csv
+  - docker build -t commercetools/stock-import .
 env:
   global:
     - secure: HYwKMrJ7h5Sz7E1OJf3jv0NOsgvYQ60Kl6qlZUjahoHgYDe//cVLpNJrMPZhAeyTGbpxeeqKxDXorQ6oMn9wqYbQGAXcAWYb0aw0oQH1q9XNteLiW+xVb+PDPRouSCh/cJTjtKdfa/C5L+rb8n6P3TuAI8qooBV9WY8f21IU7aM=
