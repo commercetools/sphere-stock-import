@@ -19,8 +19,8 @@ module.exports = (grunt) ->
       default: ['Gruntfile.coffee', 'src/**/*.coffee']
 
     clean:
-      default: "lib"
-      test: "test"
+      default: "lib/*"
+      test: "test/*"
 
     coffee:
       options:
@@ -54,7 +54,7 @@ module.exports = (grunt) ->
     # watching for changes
     watch:
       default:
-        files: ["src/coffee/*.coffee"]
+        files: ["src/coffee/*.coffee", "src/spec/*.spec.coffee"]
         tasks: ["build"]
       test:
         files: ["src/**/*.coffee"]
