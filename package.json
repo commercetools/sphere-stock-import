@@ -43,7 +43,7 @@
   "dependencies": {
     "bluebird": "2.9.33",
     "bunyan-logentries": "0.1.0",
-    "csv": "0.3.7",
+    "csv": "^1.1.0",
     "debug": "2.2.0",
     "optimist": "0.6.1",
     "sphere-node-sdk": "^1.14.0",

@@ -1,7 +1,7 @@
 _ = require 'underscore'
 _.mixin require('underscore-mixins')
 Promise = require 'bluebird'
-Csv = require 'csv'
+csv = require 'csv'
 {ExtendedLogger} = require 'sphere-node-utils'
 package_json = require '../package.json'
 Config = require '../config'
@@ -239,7 +239,7 @@ describe 'StockImport', ->
         123,77
         abc,-3
         '''
-      Csv().from.string(rawCSV).to.array (data, count) =>
+      csv.parse rawCSV, (err, data) =>
         stocks = @import._mapStockFromCSV _.rest(data)
         expect(_.size stocks).toBe 2
         s = stocks[0]
@@ -250,14 +250,14 @@ describe 'StockImport', ->
         expect(s.quantityOnStock).toBe -3
         done()
 
-    it 'shoud not crash when quantity is missing', (done) ->
+    it 'should not crash when quantity is missing', (done) ->
       rawCSV =
         '''
         foo,id,amount
-        bar,abc
+        bar,abc,
         bar,123,77
         '''
-      Csv().from.string(rawCSV).to.array (data, count) =>
+      csv.parse rawCSV, (err, data) =>
         stocks = @import._mapStockFromCSV _.rest(data), 1, 2
         expect(_.size stocks).toBe 2
         s = stocks[0]
@@ -268,13 +268,28 @@ describe 'StockImport', ->
         expect(s.quantityOnStock).toBe 77
         done()
 
+    it 'should crash when csv columns is inconsistent', (done) ->
+      # Empty columns should be represented with empty delimiter
+      rawCSV =
+        '''
+        foo,id,amount
+        bar,abc
+        bar,123,77
+        '''
+      csv.parse rawCSV, (err, data) =>
+        console.log err.message,'=-----'
+        expect(err).toBeDefined()
+        expect(err.message).toBe('Number of columns is inconsistent on line 2')
+        expect(data).not.toBeDefined()
+        done()
+
     xit 'shoud not crash when quantity is missing', (done) ->
       rawCSV =
         '''
         foo,id,amount
         bar
         '''
-      Csv().from.string(rawCSV).to.array (data, count) =>
+      csv.parse rawCSV, (err, data) =>
         stocks = @import._mapStockFromCSV _.rest(data), 1, 2
         expect(_.size stocks).toBe 0
         done()

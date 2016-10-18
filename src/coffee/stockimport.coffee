@@ -1,7 +1,7 @@
 debug = require('debug')('sphere-stock-import')
 _ = require 'underscore'
 _.mixin require('underscore-mixins')
-Csv = require 'csv'
+csv = require 'csv'
 Promise = require 'bluebird'
 {ElasticIo} = require 'sphere-node-utils'
 {SphereClient, InventorySync} = require 'sphere-node-sdk'
@@ -130,8 +130,7 @@ class StockImport
 
   performCSV: (fileContent, next) ->
     new Promise (resolve, reject) =>
-      Csv().from.string(fileContent, {delimiter: @csvDelimiter, trim: true})
-      .to.array (data, count) =>
+      csv.parse fileContent, {delimiter: @csvDelimiter, trim: true}, (err, data) =>
         headers = data[0]
         @_getHeaderIndexes headers, @csvHeaders
         .then (mappedHeaderIndexes) =>
