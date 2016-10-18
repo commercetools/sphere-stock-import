@@ -13,6 +13,12 @@ CHANNEL_REF_NAME = 'supplyChannel'
 CHANNEL_ROLES = ['InventorySupply', 'OrderExport', 'OrderImport']
 LOG_PREFIX = "[SphereStockImport] "
 
+HEADER_SKU = 'sku'
+HEADER_QUANTITY = 'quantityOnStock'
+HEADER_CUSTOM_TYPE = 'customType'
+HEADER_CUSTOM_SEPERATOR = '.'
+HEADER_CUSTOM_REGEX = new RegExp /^customField\./
+
 class StockImport
 
   constructor: (@logger, options = {}) ->
@@ -134,7 +140,7 @@ class StockImport
         headers = data[0]
         @_getHeaderIndexes headers, @csvHeaders
         .then (mappedHeaderIndexes) =>
-          stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes[0], mappedHeaderIndexes[1]
+          stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes
           debug "Stock mapped from csv for headers #{mappedHeaderIndexes}: %j", stocks
 
           # TODO: ensure channel ??
@@ -178,11 +184,47 @@ class StockImport
           stocks.push d
     stocks
 
-  _mapStockFromCSV: (rows, skuIndex = 0, quantityIndex = 1) ->
+  _mapStockFromCSV: (rows, mappedHeaderIndexes) ->
+    # _.map rows, (row) =>
+    #   sku = row[skuIndex].trim()
+    #   quantity = row[quantityIndex]?.trim()
+    #   @_createInventoryEntry sku, quantity
     _.map rows, (row) =>
-      sku = row[skuIndex].trim()
-      quantity = row[quantityIndex]?.trim()
-      @_createInventoryEntry sku, quantity
+      _data = {}
+      _.each row, (cell, index) =>
+        headerName = mappedHeaderIndexes[index]
+
+        if HEADER_CUSTOM_REGEX.test headerName
+          # check if custom type ID or key exists, else > error
+          @_mapCustomField(_data, cell, headerName)
+        else
+          _data[headerName] = @_mapCellData(cell, headerName)
+      _data
+
+  _mapCellData: (data, headerName) ->
+    data = data?.trim()
+
+    switch on
+      when HEADER_QUANTITY is headerName then parseInt(data, 10) or 0
+      when HEADER_CUSTOM_TYPE is headerName then @_getCustomTypeDefinition(data)
+      else data
+
+  _mapCustomField: (data, cell, headerName) ->
+    keyName = headerName.split(HEADER_CUSTOM_SEPERATOR)[1]
+
+    if !isNaN(cell)
+      cell = parseInt(cell, 10)
+
+    if data.custom
+      data.custom[keyName] = cell
+    else
+      # coffeelint: disable=coffeescript_error
+      data.custom = {"#{keyName}": cell}
+      # coffeelint: enable=coffeescript_error
+
+  _getCustomTypeDefinition: (data) ->
+    # modify global state or put output in data structure
+    # memoize API call so already fetched fieldTypes don't get fetched again
 
   _createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
     entry =

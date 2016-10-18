@@ -41,6 +41,15 @@ SKU-123,42
 
 > Please note that the header names are currently ignored.
 
+### Custom fields
+'''
+sku,quantityOnStock,customType,customField.foo,customField.bar
+123,77,my-type,12,nac
+abc,-3,my-type,5,ho
+'''
+
+Note that for fields we only support strings and numbers.
+
 ### XML Format
 
 ```xml
