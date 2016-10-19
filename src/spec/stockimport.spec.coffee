@@ -280,17 +280,20 @@ describe 'StockImport', ->
 
     iit 'should memoize customTypeDefinition result', (done) ->
       stub = sinon.stub(@import, '__getCustomTypeDefinition')
-        .onFirstCall('first').returns('first Call')
-        .onSecondCall('second').returns('second Call')
-      @import._getCustomTypeDefinition('first')
-      @import._getCustomTypeDefinition('first')
-      @import._getCustomTypeDefinition('second')
-      @import._getCustomTypeDefinition('second')
-      @import._getCustomTypeDefinition('first')
-      expect(stub.stub.calledTwice).toBeTruthy(
-        'Only two calls are made, cached result is returned for other calls'
-      )
-      done()
+        .onFirstCall('first').returns(Promise.resolve('first call'))
+        .onSecondCall('second').returns(Promise.resolve('second call'))
+      Promise.all([
+        @import._getCustomTypeDefinition('first'),
+        @import._getCustomTypeDefinition('first'),
+        @import._getCustomTypeDefinition('second'),
+        @import._getCustomTypeDefinition('second'),
+        @import._getCustomTypeDefinition('first'),
+      ]).then (result)->
+        expect(result.length).toBe(5)
+        expect(stub.stub.calledTwice).toBeTruthy(
+          'Only two calls are made, cached result is returned for other calls'
+        )
+        done()
 
 
   describe '::_mapStockFromCSV', ->
