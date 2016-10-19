@@ -186,25 +186,26 @@ class StockImport
     stocks
 
   _mapStockFromCSV: (rows, mappedHeaderIndexes) ->
-    # _.map rows, (row) =>
-    #   sku = row[skuIndex].trim()
-    #   quantity = row[quantityIndex]?.trim()
-    #   @_createInventoryEntry sku, quantity
-    _.map rows, (row) =>
-      _data = {}
-      _.each row, (cell, index) =>
-        headerName = mappedHeaderIndexes[index]
-
-        if HEADER_CUSTOM_REGEX.test headerName
-          # check if custom type ID or key exists, else > error
-          @_mapCustomField(_data, cell, headerName)
-        else
-          _data[headerName] = @_mapCellData(cell, headerName)
-      _data
+    return new Promise (resolve, reject) =>
+      csv.transform(rows,(row, cb) =>
+        _data = {}
+        Promise.each(row, (cell, index) =>
+          headerName = mappedHeaderIndexes[index]
+          if HEADER_CUSTOM_REGEX.test headerName
+            # check if custom type ID or key exists, else > error
+            @_mapCustomField(_data, cell, headerName)
+          else
+            _data[headerName] = @_mapCellData(cell, headerName)
+        ).then ->
+          cb null,_data
+      , (err, data) ->
+        if err
+          reject(err)
+        resolve(data)
+      )
 
   _mapCellData: (data, headerName) ->
     data = data?.trim()
-
     switch on
       when HEADER_QUANTITY is headerName then parseInt(data, 10) or 0
       when HEADER_CUSTOM_TYPE is headerName then @_getCustomTypeDefinition(data)
