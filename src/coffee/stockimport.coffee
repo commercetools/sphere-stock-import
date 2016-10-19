@@ -22,6 +22,7 @@ HEADER_CUSTOM_REGEX = new RegExp /^customField\./
 class StockImport
 
   constructor: (@logger, options = {}) ->
+    options = _.defaults options, {user_agent: 'sphere-stock-import'}
     @sync = new InventorySync
     @client = new SphereClient options
     @csvHeaders = options.csvHeaders

@@ -26,6 +26,8 @@ describe 'StockImport', ->
     expect(@import.client).toBeDefined()
     expect(@import.client.constructor.name).toBe 'SphereClient'
     expect(@import.sync).toBeDefined()
+    expect(@import.client?._rest?._options?.headers?['User-Agent'])
+      .toBe('sphere-stock-import')
     expect(@import.sync.constructor.name).toBe 'InventorySync'
 
 
