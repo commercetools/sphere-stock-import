@@ -189,16 +189,24 @@ class StockImport
     return new Promise (resolve, reject) =>
       csv.transform(rows,(row, cb) =>
         _data = {}
+        customTypeDefinition = null
+
         Promise.each(row, (cell, index) =>
           headerName = mappedHeaderIndexes[index]
           if HEADER_CUSTOM_REGEX.test headerName
-            # check if custom type ID or key exists, else > error
-            @_mapCustomField(_data, cell, headerName)
+            @_getCustomTypeDefinition(row[HEADER_CUSTOM_TYPE]).then (response) =>
+              if (response.body.results[0])
+                customTypeDefinition = response.body.results[0]
+
+              console.log 'customTypeDefinition', response
+              @_mapCustomField(_data, cell, headerName, customTypeDefinition)
           else
             _data[headerName] = @_mapCellData(cell, headerName)
         ).then ->
-          cb null,_data
+          cb null, _data
       , (err, data) ->
+        Promise.resolve(data[0].customType).then (data) ->
+          console.log 'finally', data
         if err
           reject(err)
         resolve(data)
@@ -208,25 +216,34 @@ class StockImport
     data = data?.trim()
     switch on
       when HEADER_QUANTITY is headerName then parseInt(data, 10) or 0
-      when HEADER_CUSTOM_TYPE is headerName then @_getCustomTypeDefinition(data)
+      # when HEADER_CUSTOM_TYPE is headerName then @_getCustomTypeDefinition(data)
       else data
 
-  _mapCustomField: (data, cell, headerName) ->
+  _mapCustomField: (data, cell, headerName, customTypeDefinition) ->
+    # Promise ()
+    # wait for data[HEADER_CUSTOM_TYPE] to resolve > then
+      # do stuff
     keyName = headerName.split(HEADER_CUSTOM_SEPERATOR)[1]
 
-    if !isNaN(cell)
-      cell = parseInt(cell, 10)
+    # if customTypeDefinition is number, e.g:
+    # if !isNaN(cell)
+    #   cell = parseInt(cell, 10)
 
-    if data.custom
-      data.custom[keyName] = cell
-    else
-      # coffeelint: disable=coffeescript_error
-      data.custom = {"#{keyName}": cell}
-      # coffeelint: enable=coffeescript_error
+    # set data.custom once per row with the type defined
+    if !data.custom
+      data.custom = {
+        "type": {
+          "key": customTypeDefinition.key
+        },
+        "fields": {}
+      }
+
+    # data.custom.fields[keyName]: cell
+
   _getCustomTypeDefinition: _.memoize (customTypeKey) ->
     @__getCustomTypeDefinition customTypeKey
 
-  # Should not be called directed.
+  # Should not be called directly.
   __getCustomTypeDefinition: (customTypeKey) ->
     @client.types.where("key = \"#{customTypeKey}\"").fetch()
 

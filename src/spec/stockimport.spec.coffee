@@ -295,6 +295,28 @@ describe 'StockImport', ->
         )
         done()
 
+    iit 'should map custom fields', (done) ->
+      rawCSV =
+        '''
+        sku,quantityOnStock,customType,customField.foo,customField.bar
+        123,77,my-type,12,nac
+        abc,-3,my-type,5,ho
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks)->
+          expect(_.size stocks).toBe 2
+          s = stocks[0]
+          expect(s.sku).toBe '123'
+          expect(s.quantityOnStock).toBe 77
+          expect(s.custom.foo).toBe 12
+          expect(s.custom.bar).toBe 'nac'
+          s = stocks[1]
+          expect(s.sku).toBe 'abc'
+          expect(s.quantityOnStock).toBe -3
+          expect(s.custom.foo).toBe 5
+          expect(s.custom.bar).toBe 'ho'
+          done()
+
 
   describe '::_mapStockFromCSV', ->
     it 'should map a simple entry', (done) ->
@@ -315,7 +337,7 @@ describe 'StockImport', ->
         expect(s.quantityOnStock).toBe -3
         done()
 
-    iit 'should map custom fields', (done) ->
+    it 'should map custom fields', (done) ->
       rawCSV =
         '''
         sku,quantityOnStock,customType,customField.foo,customField.bar
