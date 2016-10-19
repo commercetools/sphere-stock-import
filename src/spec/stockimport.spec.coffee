@@ -2,6 +2,7 @@ _ = require 'underscore'
 _.mixin require('underscore-mixins')
 Promise = require 'bluebird'
 csv = require 'csv'
+sinon = require 'sinon'
 {ExtendedLogger} = require 'sphere-node-utils'
 package_json = require '../package.json'
 Config = require '../config'
@@ -268,13 +269,28 @@ describe 'StockImport', ->
         .then ->
           done()
 
-    iit 'should fetch customTypeDefinition', (done) ->
+    it 'should fetch customTypeDefinition', (done) ->
+
       @import._getCustomTypeDefinition(customType.key).then (data) ->
         result = data.body.results[0]
         expect(result).toBeDefined()
         expect(result.key).toBe(customType.key)
         expect(result.fieldDefinitions).toBeDefined()
         done()
+
+    iit 'should memoize customTypeDefinition result', (done) ->
+      stub = sinon.stub(@import, '__getCustomTypeDefinition')
+        .onFirstCall('first').returns('first Call')
+        .onSecondCall('second').returns('second Call')
+      @import._getCustomTypeDefinition('first')
+      @import._getCustomTypeDefinition('first')
+      @import._getCustomTypeDefinition('second')
+      @import._getCustomTypeDefinition('second')
+      @import._getCustomTypeDefinition('first')
+      expect(stub.stub.calledTwice).toBeTruthy(
+        'Only two calls are made, cached result is returned for other calls'
+      )
+      done()
 
 
   describe '::_mapStockFromCSV', ->

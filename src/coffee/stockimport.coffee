@@ -222,11 +222,12 @@ class StockImport
       # coffeelint: disable=coffeescript_error
       data.custom = {"#{keyName}": cell}
       # coffeelint: enable=coffeescript_error
+  _getCustomTypeDefinition: _.memoize (customTypeKey) ->
+    @__getCustomTypeDefinition customTypeKey
 
-  _getCustomTypeDefinition: (customTypeKey) ->
+  # Should not be called directed.
+  __getCustomTypeDefinition: (customTypeKey) ->
     @client.types.where("key = \"#{customTypeKey}\"").fetch()
-    # modify global state or put output in data structure
-    # memoize API call so already fetched fieldTypes don't get fetched again
 
   _createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
     entry =
