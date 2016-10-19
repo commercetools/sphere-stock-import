@@ -231,9 +231,53 @@ describe 'StockImport', ->
         done()
       .catch (err) -> done(_.prettify err)
 
+  describe '::_getCustomTypeDefinition', ->
+    types = undefined
+    customType = undefined
+
+    beforeEach (done) ->
+      types = @import.client.types
+      customTypePayload = {
+        "key": "my-category",
+        "name": { "en": "customized fields" },
+        "description": { "en": "customized fields definition" },
+        "resourceTypeIds": ["inventory-entry"],
+        "fieldDefinitions": [
+          {
+            "name": "description",
+            "type": { "name": "String" },
+            "required": true,
+            "label": { "en": "size" },
+            "inputHint": "SingleLine"
+          },
+          {
+            "name": "color",
+            "type": {"name": "String"},
+            "required": false,
+            "label": { "en": "color" },
+            "inputHint": "SingleLine"
+          }
+        ]
+      }
+      types.create(customTypePayload).then (result) ->
+        customType = result.body
+        done()
+
+    afterEach (done) ->
+      types.byId(customType.id).delete(customType.version)
+        .then ->
+          done()
+
+    iit 'should fetch customTypeDefinition', (done) ->
+      @import._getCustomTypeDefinition(customType.key).then (data) ->
+        result = data.body.results[0]
+        expect(result).toBeDefined()
+        expect(result.key).toBe(customType.key)
+        expect(result.fieldDefinitions).toBeDefined()
+        done()
+
 
   describe '::_mapStockFromCSV', ->
-
     it 'should map a simple entry', (done) ->
       rawCSV =
         '''
@@ -252,7 +296,7 @@ describe 'StockImport', ->
         expect(s.quantityOnStock).toBe -3
         done()
 
-    iit 'should map custom fields', (done) ->
+    it 'should map custom fields', (done) ->
       rawCSV =
         '''
         sku,quantityOnStock,customType,customField.foo,customField.bar

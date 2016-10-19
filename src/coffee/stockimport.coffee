@@ -223,7 +223,8 @@ class StockImport
       data.custom = {"#{keyName}": cell}
       # coffeelint: enable=coffeescript_error
 
-  _getCustomTypeDefinition: (data) ->
+  _getCustomTypeDefinition: (customTypeKey) ->
+    @client.types.where("key = \"#{customTypeKey}\"").fetch()
     # modify global state or put output in data structure
     # memoize API call so already fetched fieldTypes don't get fetched again
 
