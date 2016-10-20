@@ -239,7 +239,7 @@ describe 'StockImport', ->
     beforeEach (done) ->
       types = @import.client.types
       customTypePayload = {
-        "key": "my-category",
+        "key": "my-type",
         "name": { "en": "customized fields" },
         "description": { "en": "customized fields definition" },
         "resourceTypeIds": ["inventory-entry"],
@@ -295,7 +295,7 @@ describe 'StockImport', ->
         )
         done()
 
-    iit 'should map custom fields', (done) ->
+    it 'should map custom fields', (done) ->
       rawCSV =
         '''
         sku,quantityOnStock,customType,customField.foo,customField.bar
@@ -308,13 +308,15 @@ describe 'StockImport', ->
           s = stocks[0]
           expect(s.sku).toBe '123'
           expect(s.quantityOnStock).toBe 77
-          expect(s.custom.foo).toBe 12
-          expect(s.custom.bar).toBe 'nac'
+          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.fields.foo).toBe 12
+          expect(s.custom.fields.bar).toBe 'nac'
           s = stocks[1]
           expect(s.sku).toBe 'abc'
           expect(s.quantityOnStock).toBe -3
-          expect(s.custom.foo).toBe 5
-          expect(s.custom.bar).toBe 'ho'
+          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.fields.foo).toBe 5
+          expect(s.custom.fields.bar).toBe 'ho'
           done()
 
 

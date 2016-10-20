@@ -140,15 +140,15 @@ class StockImport
       csv.parse fileContent, {delimiter: @csvDelimiter, trim: true}, (err, data) =>
         headers = data[0]
         @_getHeaderIndexes headers, @csvHeaders
-        .then (mappedHeaderIndexes) =>
-          stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes
-          debug "Stock mapped from csv for headers #{mappedHeaderIndexes}: %j", stocks
+          .then (mappedHeaderIndexes) =>
+            stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes
+            debug "Stock mapped from csv for headers #{mappedHeaderIndexes}: %j", stocks
 
-          # TODO: ensure channel ??
-          @_perform stocks, next
-          .then (result) -> resolve result
-        .catch (err) -> reject err
-        .done()
+            # TODO: ensure channel ??
+            @_perform stocks, next
+            .then (result) -> resolve result
+          .catch (err) -> reject err
+          .done()
       .on 'error', (error) ->
         reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
 
@@ -189,24 +189,23 @@ class StockImport
     return new Promise (resolve, reject) =>
       csv.transform(rows,(row, cb) =>
         _data = {}
-        customTypeDefinition = null
 
         Promise.each(row, (cell, index) =>
           headerName = mappedHeaderIndexes[index]
-          if HEADER_CUSTOM_REGEX.test headerName
-            @_getCustomTypeDefinition(row[HEADER_CUSTOM_TYPE]).then (response) =>
-              if (response.body.results[0])
-                customTypeDefinition = response.body.results[0]
 
-              console.log 'customTypeDefinition', response
+          if HEADER_CUSTOM_REGEX.test headerName
+            customTypeKey = row[mappedHeaderIndexes.indexOf(HEADER_CUSTOM_TYPE)]
+
+            @_getCustomTypeDefinition(customTypeKey).then (response) =>
+              customTypeDefinition = response.body.results[0]
               @_mapCustomField(_data, cell, headerName, customTypeDefinition)
+
           else
             _data[headerName] = @_mapCellData(cell, headerName)
+
         ).then ->
           cb null, _data
       , (err, data) ->
-        Promise.resolve(data[0].customType).then (data) ->
-          console.log 'finally', data
         if err
           reject(err)
         resolve(data)
@@ -220,14 +219,7 @@ class StockImport
       else data
 
   _mapCustomField: (data, cell, headerName, customTypeDefinition) ->
-    # Promise ()
-    # wait for data[HEADER_CUSTOM_TYPE] to resolve > then
-      # do stuff
-    keyName = headerName.split(HEADER_CUSTOM_SEPERATOR)[1]
-
-    # if customTypeDefinition is number, e.g:
-    # if !isNaN(cell)
-    #   cell = parseInt(cell, 10)
+    fieldName = headerName.split(HEADER_CUSTOM_SEPERATOR)[1]
 
     # set data.custom once per row with the type defined
     if !data.custom
@@ -238,7 +230,7 @@ class StockImport
         "fields": {}
       }
 
-    # data.custom.fields[keyName]: cell
+    data.custom.fields[fieldName] = cell
 
   _getCustomTypeDefinition: _.memoize (customTypeKey) ->
     @__getCustomTypeDefinition customTypeKey
