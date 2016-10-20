@@ -105,7 +105,7 @@ describe 'elasticio integration', ->
         sphereProjectKey: Config.config.project_key
       csv =
         '''
-        sku,quantity
+        sku,quantityOnStock
         c1,1
         c2,2
         c3,3
@@ -117,6 +117,7 @@ describe 'elasticio integration', ->
             content: enc
 
       spyOn(ElasticIo, 'returnSuccess').andCallThrough()
+      debugger
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
         if message is '[SphereStockImport] elastic.io messages sent.'

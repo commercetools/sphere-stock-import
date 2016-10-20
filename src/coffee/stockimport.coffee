@@ -62,6 +62,7 @@ class StockImport
               ElasticIo.returnSuccess message, next
         .catch (err) ->
           ElasticIo.returnFailure err, next
+          # debugger
         .done()
 
     else if _.size(msg.body) > 0
@@ -136,21 +137,22 @@ class StockImport
           .done()
 
   performCSV: (fileContent, next) ->
+    debugger
     new Promise (resolve, reject) =>
-      csv.parse fileContent, {delimiter: @csvDelimiter, trim: true}, (err, data) =>
+      csv.parse fileContent, {delimiter: @csvDelimiter, trim: true}, (error, data) =>
+        if (error)
+          reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
+
         headers = data[0]
         @_getHeaderIndexes headers, @csvHeaders
           .then (mappedHeaderIndexes) =>
-            stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes
-            debug "Stock mapped from csv for headers #{mappedHeaderIndexes}: %j", stocks
+            @_mapStockFromCSV(_.rest(data), headers).then (stocks) =>
+              debug "Stock mapped from csv for headers #{mappedHeaderIndexes}: %j", stocks
 
-            # TODO: ensure channel ??
-            @_perform stocks, next
-            .then (result) -> resolve result
-          .catch (err) -> reject err
-          .done()
-      .on 'error', (error) ->
-        reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
+              @_perform stocks, next
+                .then (result) -> resolve result
+            .catch (err) -> reject err
+            .done()
 
   performStream: (chunk, cb) ->
     @_processBatches(chunk).then -> cb()
@@ -220,6 +222,9 @@ class StockImport
 
   _mapCustomField: (data, cell, headerName, customTypeDefinition) ->
     fieldName = headerName.split(HEADER_CUSTOM_SEPERATOR)[1]
+
+    if !isNaN(cell)
+      cell = parseInt(cell, 10)
 
     # set data.custom once per row with the type defined
     if !data.custom

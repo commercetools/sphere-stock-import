@@ -29,7 +29,7 @@ describe 'integration test', ->
         ]
     @stockimport = new StockImport @logger,
       config: Config.config
-      csvHeaders: 'stock,number'
+      csvHeaders: 'sku,quantityOnStock'
       csvDelimiter: ','
 
     @client = @stockimport.client
@@ -293,11 +293,12 @@ describe 'integration test', ->
     it 'CSV - one new stock', (done) ->
       raw =
         '''
-        stock,number
+        sku,quantityOnStock
         abcd,0
         '''
       @stockimport.run(raw, 'CSV')
-      .then => @stockimport.summaryReport()
+      .then =>
+        @stockimport.summaryReport()
       .then (message) =>
         expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
         @client.inventoryEntries.fetch()

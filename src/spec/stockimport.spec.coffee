@@ -19,7 +19,7 @@ describe 'StockImport', ->
         ]
     @import = new StockImport logger,
       config: Config.config
-      csvHeaders: 'id, amount'
+      csvHeaders: 'sku, quantityOnStock'
       csvDelimiter: ','
 
   it 'should initialize', ->
@@ -303,13 +303,13 @@ describe 'StockImport', ->
         abc,-3,my-type,5,ho
         '''
       csv.parse rawCSV, (err, data) =>
-        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks)->
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
           expect(_.size stocks).toBe 2
           s = stocks[0]
           expect(s.sku).toBe '123'
-          expect(s.quantityOnStock).toBe 77
+          expect(s.quantityOnStock).toBe(77)
           expect(s.custom.type).toEqual {key: 'my-type'}
-          expect(s.custom.fields.foo).toBe 12
+          expect(s.custom.fields.foo).toBe(12)
           expect(s.custom.fields.bar).toBe 'nac'
           s = stocks[1]
           expect(s.sku).toBe 'abc'
@@ -324,20 +324,20 @@ describe 'StockImport', ->
     it 'should map a simple entry', (done) ->
       rawCSV =
         '''
-        id,amount
+        sku,quantityOnStock
         123,77
         abc,-3
         '''
       csv.parse rawCSV, (err, data) =>
-        stocks = @import._mapStockFromCSV _.rest(data)
-        expect(_.size stocks).toBe 2
-        s = stocks[0]
-        expect(s.sku).toBe '123'
-        expect(s.quantityOnStock).toBe 77
-        s = stocks[1]
-        expect(s.sku).toBe 'abc'
-        expect(s.quantityOnStock).toBe -3
-        done()
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(_.size stocks).toBe 2
+          s = stocks[0]
+          expect(s.sku).toBe '123'
+          expect(s.quantityOnStock).toBe 77
+          s = stocks[1]
+          expect(s.sku).toBe 'abc'
+          expect(s.quantityOnStock).toBe -3
+          done()
 
     it 'should map custom fields', (done) ->
       rawCSV =
@@ -347,43 +347,43 @@ describe 'StockImport', ->
         abc,-3,my-type,5,ho
         '''
       csv.parse rawCSV, (err, data) =>
-        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks)->
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
           expect(_.size stocks).toBe 2
           s = stocks[0]
           expect(s.sku).toBe '123'
           expect(s.quantityOnStock).toBe 77
-          expect(s.custom.foo).toBe 12
-          expect(s.custom.bar).toBe 'nac'
+          expect(s.custom.fields.foo).toBe 12
+          expect(s.custom.fields.bar).toBe 'nac'
           s = stocks[1]
           expect(s.sku).toBe 'abc'
           expect(s.quantityOnStock).toBe -3
-          expect(s.custom.foo).toBe 5
-          expect(s.custom.bar).toBe 'ho'
+          expect(s.custom.fields.foo).toBe 5
+          expect(s.custom.fields.bar).toBe 'ho'
           done()
 
     it 'should not crash when quantity is missing', (done) ->
       rawCSV =
         '''
-        foo,id,amount
+        foo,sku,quantityOnStock
         bar,abc,
         bar,123,77
         '''
       csv.parse rawCSV, (err, data) =>
-        stocks = @import._mapStockFromCSV _.rest(data), 1, 2
-        expect(_.size stocks).toBe 2
-        s = stocks[0]
-        expect(s.sku).toBe 'abc'
-        expect(s.quantityOnStock).toBe 0
-        s = stocks[1]
-        expect(s.sku).toBe '123'
-        expect(s.quantityOnStock).toBe 77
-        done()
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(_.size stocks).toBe 2
+          s = stocks[0]
+          expect(s.sku).toBe 'abc'
+          expect(s.quantityOnStock).toBe 0
+          s = stocks[1]
+          expect(s.sku).toBe '123'
+          expect(s.quantityOnStock).toBe 77
+          done()
 
     it 'should crash when csv columns is inconsistent', (done) ->
       # Empty columns should be represented with empty delimiter
       rawCSV =
         '''
-        foo,id,amount
+        foo,sku,quantityOnStock
         bar,abc
         bar,123,77
         '''
@@ -397,13 +397,13 @@ describe 'StockImport', ->
     xit 'shoud not crash when quantity is missing', (done) ->
       rawCSV =
         '''
-        foo,id,amount
+        foo,sku,quantityOnStock
         bar
         '''
       csv.parse rawCSV, (err, data) =>
-        stocks = @import._mapStockFromCSV _.rest(data), 1, 2
-        expect(_.size stocks).toBe 0
-        done()
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(_.size stocks).toBe 0
+          done()
 
 
   describe '::performCSV', ->
@@ -411,7 +411,7 @@ describe 'StockImport', ->
     it 'should parse with a custom delimiter', (done) ->
       rawCSV =
         '''
-        id;amount
+        sku;quantityOnStock
         123;77
         abc;-3
         '''
@@ -419,10 +419,10 @@ describe 'StockImport', ->
       spyOn(@import, '_perform').andReturn Promise.resolve()
       spyOn(@import, '_getHeaderIndexes').andCallThrough()
       @import.performCSV(rawCSV)
-      .then (result) =>
-        expect(@import._getHeaderIndexes).toHaveBeenCalledWith ['id', 'amount'], 'id, amount'
-        done()
-      .catch (err) -> done(_.prettify err)
+        .then (result) =>
+          expect(@import._getHeaderIndexes).toHaveBeenCalledWith ['sku', 'quantityOnStock'], 'sku, quantityOnStock'
+          done()
+        .catch (err) -> done(_.prettify err)
 
 
   describe '::performStream', ->

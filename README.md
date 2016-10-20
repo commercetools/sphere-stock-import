@@ -30,10 +30,10 @@ When using SFTP, you should not use the `--file` option, instead you need to pro
 
 ### CSV Format
 
-Column 1 will be used as `SKU` identifier, whereas column 2 will be used as `quantity`.
+Column 1 will be used as `SKU` identifier, whereas column 2 will be used as `quantityOnStock`.
 An example:
 ```
-sku,quantity
+sku,quantityOnStock
 foo,9
 bar,-1
 SKU-123,42
@@ -57,11 +57,11 @@ Note that for fields we only support strings and numbers.
 <root>
   <row>
     <code>foo</code>
-    <quantity>7</quantity>
+    <quantityOnStock>7</quantityOnStock>
   </row>
   <row>
     <code>bar</code>
-    <quantity>1</quantity>
+    <quantityOnStock>1</quantityOnStock>
   </row>
 </root>
 ```
