@@ -30,8 +30,7 @@ When using SFTP, you should not use the `--file` option, instead you need to pro
 
 ### CSV Format
 
-Column 1 will be used as `SKU` identifier, whereas column 2 will be used as `quantityOnStock`.
-An example:
+A simple example:
 ```
 sku,quantityOnStock
 foo,9
@@ -39,16 +38,12 @@ bar,-1
 SKU-123,42
 ```
 
-> Please note that the header names are currently ignored.
-
 ### Custom fields
-'''
+```
 sku,quantityOnStock,customType,customField.foo,customField.bar
 123,77,my-type,12,nac
 abc,-3,my-type,5,ho
-'''
-
-Note that for fields we only support strings and numbers.
+```
 
 ### XML Format
 
