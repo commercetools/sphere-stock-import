@@ -6,6 +6,7 @@ Promise = require 'bluebird'
 {ElasticIo} = require 'sphere-node-utils'
 {SphereClient, InventorySync} = require 'sphere-node-sdk'
 package_json = require '../package.json'
+CustomFieldMappings = require './mappings'
 xmlHelpers = require './xmlhelpers'
 
 CHANNEL_KEY_FOR_XML_MAPPING = 'expectedStock'
@@ -27,6 +28,7 @@ class StockImport
     @client = new SphereClient options
     @csvHeaders = options.csvHeaders
     @csvDelimiter = options.csvDelimiter
+    @customFieldMappings = new CustomFieldMappings()
     @_resetSummary()
 
   _resetSummary: ->
@@ -189,7 +191,9 @@ class StockImport
 
   _mapStockFromCSV: (rows, mappedHeaderIndexes) ->
     return new Promise (resolve, reject) =>
+      rowIndex = 0 # very weird that csv does not support this internally
       csv.transform(rows,(row, cb) =>
+        rowIndex++
         _data = {}
 
         Promise.each(row, (cell, index) =>
@@ -200,7 +204,7 @@ class StockImport
 
             @_getCustomTypeDefinition(customTypeKey).then (response) =>
               customTypeDefinition = response.body.results[0]
-              @_mapCustomField(_data, cell, headerName, customTypeDefinition)
+              @_mapCustomField(_data, cell, headerName, customTypeDefinition, rowIndex)
 
           else
             _data[headerName] = @_mapCellData(cell, headerName)
@@ -220,11 +224,8 @@ class StockImport
       # when HEADER_CUSTOM_TYPE is headerName then @_getCustomTypeDefinition(data)
       else data
 
-  _mapCustomField: (data, cell, headerName, customTypeDefinition) ->
+  _mapCustomField: (data, cell, headerName, customTypeDefinition, rowIndex) ->
     fieldName = headerName.split(HEADER_CUSTOM_SEPERATOR)[1]
-
-    if !isNaN(cell)
-      cell = parseInt(cell, 10)
 
     # set data.custom once per row with the type defined
     if !data.custom
@@ -235,7 +236,7 @@ class StockImport
         "fields": {}
       }
 
-    data.custom.fields[fieldName] = cell
+    data.custom.fields[fieldName] = @customFieldMappings.mapFieldTypes customTypeDefinition.fieldDefinitions,customTypeDefinition.key,rowIndex,fieldName,cell
 
   _getCustomTypeDefinition: _.memoize (customTypeKey) ->
     @__getCustomTypeDefinition customTypeKey

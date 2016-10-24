@@ -257,6 +257,13 @@ describe 'StockImport', ->
             "required": false,
             "label": { "en": "color" },
             "inputHint": "SingleLine"
+          },
+          {
+            "name": "quantityFactor",
+            "type": {"name": "Number"},
+            "required": false,
+            "label": { "en": "quantityFactor" },
+            "inputHint": "SingleLine"
           }
         ]
       }
@@ -288,17 +295,17 @@ describe 'StockImport', ->
         @import._getCustomTypeDefinition('second'),
         @import._getCustomTypeDefinition('second'),
         @import._getCustomTypeDefinition('first'),
-      ]).then (result)->
+      ]).then (result) ->
         expect(result.length).toBe(5)
         expect(stub.stub.calledTwice).toBeTruthy(
           'Only two calls are made, cached result is returned for other calls'
         )
         done()
 
-    it 'should map custom fields', (done) ->
+    iit 'should map custom fields', (done) ->
       rawCSV =
         '''
-        sku,quantityOnStock,customType,customField.foo,customField.bar
+        sku,quantityOnStock,customType,customField.quantityFactor,customField.color
         123,77,my-type,12,nac
         abc,-3,my-type,5,ho
         '''
@@ -309,14 +316,14 @@ describe 'StockImport', ->
           expect(s.sku).toBe '123'
           expect(s.quantityOnStock).toBe(77)
           expect(s.custom.type).toEqual {key: 'my-type'}
-          expect(s.custom.fields.foo).toBe(12)
-          expect(s.custom.fields.bar).toBe 'nac'
+          expect(s.custom.fields.quantityFactor).toBe(12)
+          expect(s.custom.fields.color).toBe 'nac'
           s = stocks[1]
           expect(s.sku).toBe 'abc'
           expect(s.quantityOnStock).toBe -3
           expect(s.custom.type).toEqual {key: 'my-type'}
-          expect(s.custom.fields.foo).toBe 5
-          expect(s.custom.fields.bar).toBe 'ho'
+          expect(s.custom.fields.quantityFactor).toBe 5
+          expect(s.custom.fields.color).toBe 'ho'
           done()
 
 
