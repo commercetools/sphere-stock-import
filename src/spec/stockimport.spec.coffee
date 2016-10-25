@@ -264,6 +264,13 @@ describe 'StockImport', ->
             "required": false,
             "label": { "en": "quantityFactor" },
             "inputHint": "SingleLine"
+          },
+          {
+            "name": "price",
+            "type": {"name": "Money"},
+            "required": false,
+            "label": { "en": "price" },
+            "inputHint": "SingleLine"
           }
         ]
       }
@@ -302,7 +309,7 @@ describe 'StockImport', ->
         )
         done()
 
-    iit 'should map custom fields', (done) ->
+    it 'should map custom fields with type String', (done) ->
       rawCSV =
         '''
         sku,quantityOnStock,customType,customField.quantityFactor,customField.color
@@ -326,6 +333,45 @@ describe 'StockImport', ->
           expect(s.custom.fields.color).toBe 'ho'
           done()
 
+    it 'should map custom fields with type Money', (done) ->
+      rawCSV =
+        '''
+        sku,quantityOnStock,customType,customField.price,customField.color
+        123,77,my-type,EUR 120,nac
+        abc,-3,my-type,EUR 230,ho
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(_.size stocks).toBe 2
+          s = stocks[0]
+          expect(s.sku).toBe '123'
+          expect(s.quantityOnStock).toBe(77)
+          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.fields.price).toEqual {currencyCode: 'EUR', centAmount: 120}
+          expect(s.custom.fields.color).toBe 'nac'
+          s = stocks[1]
+          expect(s.sku).toBe 'abc'
+          expect(s.quantityOnStock).toBe -3
+          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.fields.price).toEqual {currencyCode: 'EUR', centAmount: 230}
+          expect(s.custom.fields.color).toBe 'ho'
+          done()
+
+    it 'should report errors on data', (done) ->
+      rawCSV =
+        '''
+        sku,quantityOnStock,customType,customField.price,customField.color
+        123,77,my-type,EUR 120,nac
+        abc,-3,my-type,EUR,ho
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then((stocks) ->
+          expect(stocks).not.toBeDefined()
+        ).catch (err) ->
+          expect(err.length).toBe 1
+          expect(err.join()).toContain('Can not parse money')
+          done()
+
 
   describe '::_mapStockFromCSV', ->
     it 'should map a simple entry', (done) ->
@@ -344,28 +390,6 @@ describe 'StockImport', ->
           s = stocks[1]
           expect(s.sku).toBe 'abc'
           expect(s.quantityOnStock).toBe -3
-          done()
-
-    it 'should map custom fields', (done) ->
-      rawCSV =
-        '''
-        sku,quantityOnStock,customType,customField.foo,customField.bar
-        123,77,my-type,12,nac
-        abc,-3,my-type,5,ho
-        '''
-      csv.parse rawCSV, (err, data) =>
-        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
-          expect(_.size stocks).toBe 2
-          s = stocks[0]
-          expect(s.sku).toBe '123'
-          expect(s.quantityOnStock).toBe 77
-          expect(s.custom.fields.foo).toBe 12
-          expect(s.custom.fields.bar).toBe 'nac'
-          s = stocks[1]
-          expect(s.sku).toBe 'abc'
-          expect(s.quantityOnStock).toBe -3
-          expect(s.custom.fields.foo).toBe 5
-          expect(s.custom.fields.bar).toBe 'ho'
           done()
 
     it 'should not crash when quantity is missing', (done) ->

@@ -209,13 +209,16 @@ class StockImport
           else
             _data[headerName] = @_mapCellData(cell, headerName)
 
-        ).then ->
+        ).then =>
+          if _.size(@customFieldMappings.errors) isnt 0
+            return cb @customFieldMappings.errors
           cb null, _data
       , (err, data) ->
         if err
           reject(err)
         resolve(data)
       )
+
 
   _mapCellData: (data, headerName) ->
     data = data?.trim()
