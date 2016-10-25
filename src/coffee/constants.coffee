@@ -22,11 +22,20 @@ constants =
   HEADER_IMAGES: 'images'
   HEADER_IMAGE_LABELS: 'imageLabels'
   HEADER_IMAGE_DIMENSIONS: 'imageDimensions'
+  HEADER_QUANTITY: 'quantityOnStock'
+  HEADER_CUSTOM_TYPE: 'customType'
+  HEADER_CUSTOM_SEPERATOR: '.'
+  HEADER_CUSTOM_REGEX: new RegExp /^customField\./
 
   HEADER_PUBLISHED: '_published'
   HEADER_HAS_STAGED_CHANGES: '_hasStagedChanges'
   HEADER_CREATED_AT: '_createdAt'
   HEADER_LAST_MODIFIED_AT: '_lastModifiedAt'
+
+  CHANNEL_KEY_FOR_XML_MAPPING: 'expectedStock'
+  CHANNEL_REF_NAME: 'supplyChannel'
+  CHANNEL_ROLES: ['InventorySupply', 'OrderExport', 'OrderImport']
+  LOG_PREFIX: "[SphereStockImport] "
 
   ATTRIBUTE_TYPE_SET: 'set'
   ATTRIBUTE_TYPE_LTEXT: 'ltext'

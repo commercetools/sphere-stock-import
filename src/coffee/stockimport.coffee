@@ -6,19 +6,9 @@ Promise = require 'bluebird'
 {ElasticIo} = require 'sphere-node-utils'
 {SphereClient, InventorySync} = require 'sphere-node-sdk'
 package_json = require '../package.json'
+CONS = require './constants'
 CustomFieldMappings = require './mappings'
 xmlHelpers = require './xmlhelpers'
-
-CHANNEL_KEY_FOR_XML_MAPPING = 'expectedStock'
-CHANNEL_REF_NAME = 'supplyChannel'
-CHANNEL_ROLES = ['InventorySupply', 'OrderExport', 'OrderImport']
-LOG_PREFIX = "[SphereStockImport] "
-
-HEADER_SKU = 'sku'
-HEADER_QUANTITY = 'quantityOnStock'
-HEADER_CUSTOM_TYPE = 'customType'
-HEADER_CUSTOM_SEPERATOR = '.'
-HEADER_CUSTOM_REGEX = new RegExp /^customField\./
 
 class StockImport
 
@@ -70,7 +60,7 @@ class StockImport
     else if _.size(msg.body) > 0
       _ensureChannel = =>
         if msg.body.CHANNEL_KEY?
-          @client.channels.ensure(msg.body.CHANNEL_KEY, CHANNEL_ROLES)
+          @client.channels.ensure(msg.body.CHANNEL_KEY, CONS.CHANNEL_ROLES)
           .then (result) ->
             debug 'Channel ensured, about to create or update: %j', result
             Promise.resolve(result.body.id)
@@ -100,7 +90,7 @@ class StockImport
         ElasticIo.returnFailure err, next
       .done()
     else
-      ElasticIo.returnFailure "#{LOG_PREFIX}No data found in elastic.io msg.", next
+      ElasticIo.returnFailure "#{CONS.LOG_PREFIX}No data found in elastic.io msg.", next
 
   run: (fileContent, mode, next) ->
     @_resetSummary()
@@ -109,7 +99,7 @@ class StockImport
     else if mode is 'CSV'
       @performCSV fileContent, next
     else
-      Promise.reject "#{LOG_PREFIX}Unknown import mode '#{mode}'!"
+      Promise.reject "#{CONS.LOG_PREFIX}Unknown import mode '#{mode}'!"
 
   summaryReport: (filename) ->
     if @_summary.created is 0 and @_summary.updated is 0
@@ -128,9 +118,9 @@ class StockImport
     new Promise (resolve, reject) =>
       xmlHelpers.xmlTransform xmlHelpers.xmlFix(fileContent), (err, xml) =>
         if err?
-          reject "#{LOG_PREFIX}Error on parsing XML: #{err}"
+          reject "#{CONS.LOG_PREFIX}Error on parsing XML: #{err}"
         else
-          @client.channels.ensure(CHANNEL_KEY_FOR_XML_MAPPING, CHANNEL_ROLES)
+          @client.channels.ensure(CONS.CHANNEL_KEY_FOR_XML_MAPPING, CONS.CHANNEL_ROLES)
           .then (result) =>
             stocks = @_mapStockFromXML xml.root, result.body.id
             @_perform stocks, next
@@ -143,7 +133,7 @@ class StockImport
     new Promise (resolve, reject) =>
       csv.parse fileContent, {delimiter: @csvDelimiter, trim: true}, (error, data) =>
         if (error)
-          reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
+          reject "#{CONS.LOG_PREFIX}Problem in parsing CSV: #{error}"
 
         headers = data[0]
         @_getHeaderIndexes headers, @csvHeaders
@@ -199,8 +189,8 @@ class StockImport
         Promise.each(row, (cell, index) =>
           headerName = mappedHeaderIndexes[index]
 
-          if HEADER_CUSTOM_REGEX.test headerName
-            customTypeKey = row[mappedHeaderIndexes.indexOf(HEADER_CUSTOM_TYPE)]
+          if CONS.HEADER_CUSTOM_REGEX.test headerName
+            customTypeKey = row[mappedHeaderIndexes.indexOf(CONS.HEADER_CUSTOM_TYPE)]
 
             @_getCustomTypeDefinition(customTypeKey).then (response) =>
               customTypeDefinition = response.body.results[0]
@@ -223,12 +213,12 @@ class StockImport
   _mapCellData: (data, headerName) ->
     data = data?.trim()
     switch on
-      when HEADER_QUANTITY is headerName then parseInt(data, 10) or 0
-      # when HEADER_CUSTOM_TYPE is headerName then @_getCustomTypeDefinition(data)
+      when CONS.HEADER_QUANTITY is headerName then parseInt(data, 10) or 0
+      # when CONS.HEADER_CUSTOM_TYPE is headerName then @_getCustomTypeDefinition(data)
       else data
 
   _mapCustomField: (data, cell, headerName, customTypeDefinition, rowIndex) ->
-    fieldName = headerName.split(HEADER_CUSTOM_SEPERATOR)[1]
+    fieldName = headerName.split(CONS.HEADER_CUSTOM_SEPERATOR)[1]
 
     # set data.custom once per row with the type defined
     if !data.custom
@@ -254,7 +244,7 @@ class StockImport
       quantityOnStock: parseInt(quantity, 10) or 0 # avoid NaN
     entry.expectedDelivery = expectedDelivery if expectedDelivery?
     if channelId?
-      entry[CHANNEL_REF_NAME] =
+      entry[CONS.CHANNEL_REF_NAME] =
         typeId: 'channel'
         id: channelId
     entry
@@ -269,10 +259,10 @@ class StockImport
             QUANTITY: entry.quantityOnStock
         if entry.expectedDelivery?
           msg.body.EXPECTED_DELIVERY = entry.expectedDelivery
-        if entry[CHANNEL_REF_NAME]?
-          msg.body.CHANNEL_ID = entry[CHANNEL_REF_NAME].id
+        if entry[CONS.CHANNEL_REF_NAME]?
+          msg.body.CHANNEL_ID = entry[CONS.CHANNEL_REF_NAME].id
         ElasticIo.returnSuccess msg, next
-      Promise.resolve "#{LOG_PREFIX}elastic.io messages sent."
+      Promise.resolve "#{CONS.LOG_PREFIX}elastic.io messages sent."
     else
       @_processBatches(stocks)
 
@@ -317,10 +307,10 @@ class StockImport
         # check channel
         # - if they have the same channel, it's the same entry
         # - if they have different channels or one of them has no channel, it's not
-        if _.has(entry, CHANNEL_REF_NAME) and _.has(existingEntry, CHANNEL_REF_NAME)
-          entry[CHANNEL_REF_NAME].id is existingEntry[CHANNEL_REF_NAME].id
+        if _.has(entry, CONS.CHANNEL_REF_NAME) and _.has(existingEntry, CONS.CHANNEL_REF_NAME)
+          entry[CONS.CHANNEL_REF_NAME].id is existingEntry[CONS.CHANNEL_REF_NAME].id
         else
-          if _.has(entry, CHANNEL_REF_NAME) or _.has(existingEntry, CHANNEL_REF_NAME)
+          if _.has(entry, CONS.CHANNEL_REF_NAME) or _.has(existingEntry, CONS.CHANNEL_REF_NAME)
             false # one of them has a channel, the other not
           else
             true # no channel, but same sku
