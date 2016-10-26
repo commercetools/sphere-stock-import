@@ -121,19 +121,14 @@ describe 'Mappings', ->
 
   describe '::mapLocalizedString', =>
     it 'should convert to localizedString', ->
-      result = @map.mapLocalizedString 'foo.en',@customTypeDefinition.key,2
+      result = @map.mapLocalizedString 'foo',@customTypeDefinition.key,2,'de'
 
-      expect(result).toEqual {en: 'foo'}
+      expect(result).toEqual {de: 'foo'}
 
     it 'should add error if value is not valid', ->
-      result = @map.mapLocalizedString 'invalid',@customTypeDefinition.key,2
+      result = @map.mapLocalizedString 'blue',@customTypeDefinition.key,2,'invalid'
       expect(result).not.toBeDefined()
-      expect(@map.errors[0]).toBe "[row 2:my-category] The value \'invalid\' isn\'t valid!. Supported format is \'foo.de\'"
-
-    it 'should convert multiple localizedStrings', ->
-      result = @map.mapLocalizedString 'foo.en;bar.de',@customTypeDefinition.key,2
-
-      expect(result).toEqual {en: 'foo', de: 'bar'}
+      expect(@map.errors[0]).toBe "[row 2:my-category] localisedString  header 'invalid' format is not valid!"
 
   describe '::mapBoolean', =>
     it 'should convert to boolean', ->
@@ -169,7 +164,7 @@ describe 'Mappings', ->
       expect(@map.errors).toEqual []
 
     it 'should map localizedenumtype type', ->
-      result = @map.mapFieldTypes @customTypeDefinition.fieldDefinitions,@customTypeDefinition.key,2,'localizedstringtype','la.de'
+      result = @map.mapFieldTypes @customTypeDefinition.fieldDefinitions,@customTypeDefinition.key,2,'localizedstringtype','la','de'
       expect(result).toEqual de: 'la'
       expect(@map.errors).toEqual []
 

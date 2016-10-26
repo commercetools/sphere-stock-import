@@ -8,7 +8,7 @@ class CustomFieldMappings
   constructor: (options = {}) ->
     @errors = []
 
-  mapFieldTypes: (fieldDefinitions, typeDefinitionKey, rowIndex, key, value) ->
+  mapFieldTypes: (fieldDefinitions, typeDefinitionKey, rowIndex, key, value,langHeader) ->
     result = undefined
     _.each fieldDefinitions, (fieldDefinition) =>
       if fieldDefinition.name is key
@@ -16,10 +16,9 @@ class CustomFieldMappings
           when 'Number' then result = @mapNumber value,typeDefinitionKey,rowIndex
           when 'Boolean' then result = @mapBoolean value,typeDefinitionKey,rowIndex
           when 'Money' then result = @mapMoney value,typeDefinitionKey,rowIndex
-          when 'LocalizedString' then result = @mapLocalizedString value, typeDefinitionKey, rowIndex
+          when 'LocalizedString' then result = @mapLocalizedString value, typeDefinitionKey, rowIndex,langHeader
           when 'Set' then result = @mapSet value,typeDefinitionKey,rowIndex,fieldDefinition.type.elementType
           else result = value
-      # throw new Error "Field definition for '#{key}' does not exist on type '#{typeDefinitionKey}'."
     result
 
   isValidValue: (rawValue) ->
@@ -32,21 +31,24 @@ class CustomFieldMappings
       @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] The number '#{rawNumber}' isn't valid!"
       return
     parseInt matchedNumber[0],10
-
-  # 123,77,my-type,12,"nac.de;eafe.en"
-  mapLocalizedString: (value, typeDefinitionKey, rowIndex, regEx = CONS.REGEX_LANGUAGE) ->
-    result = {}
-    value = value.split(';')
-    _.each value, (str) =>
-      matchedLocalisedString = regEx.exec str
-      if matchedLocalisedString
-        str = str.split('.')
-        result[str[1]] = str[0]
-      else
-        @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] The value '#{value}' isn't valid!. Supported format is 'foo.de'"
-
-    return if _.isEmpty result
-    result
+  ###
+  custom,customField.name.de,customField.name.en
+  my-type,Hajo,Abi
+  //- {
+    custom: {
+      name: {
+        de: 'Hajo',
+        en: 'Abi'
+      }
+    }
+  }
+  ###
+  mapLocalizedString: (value, typeDefinitionKey, rowIndex, langHeader, regEx = CONS.REGEX_LANGUAGE) ->
+    if !regEx.test langHeader
+      @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] localisedString  header '#{langHeader}' format is not valid!" unless regEx.test langHeader
+      return
+    else
+      "#{langHeader}": value
 
   mapSet: (values, typeDefinitionKey, rowIndex, elementType) ->
     result = undefined

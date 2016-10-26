@@ -271,6 +271,20 @@ describe 'StockImport', ->
             "required": false,
             "label": { "en": "price" },
             "inputHint": "SingleLine"
+          },
+          {
+            "name": "localizedString",
+            "type": { "name": "LocalizedString" },
+            "required": true,
+            "label": { "en": "size" },
+            "inputHint": "SingleLine"
+          },
+          {
+            "name": "name",
+            "type": { "name": "LocalizedString" },
+            "required": true,
+            "label": { "en": "name" },
+            "inputHint": "SingleLine"
           }
         ]
       }
@@ -331,6 +345,35 @@ describe 'StockImport', ->
           expect(s.custom.type).toEqual {key: 'my-type'}
           expect(s.custom.fields.quantityFactor).toBe 5
           expect(s.custom.fields.color).toBe 'ho'
+          done()
+
+    it 'should map custom fields with type LocalizedString', (done) ->
+      rawCSV =
+        '''
+        sku,quantityOnStock,customType,customField.localizedString.en,customField.localizedString.de,customField.name.de
+        123,77,my-type,english,deutsch,abi
+        abc,-3,my-type,blue,automat,sil
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then((stocks) ->
+          expect(_.size stocks).toBe 2
+          s = stocks[0]
+          expect(s.sku).toBe '123'
+          expect(s.quantityOnStock).toBe(77)
+          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.fields.localizedString.en).toBe 'english'
+          expect(s.custom.fields.localizedString.de).toBe 'deutsch'
+          expect(s.custom.fields.name.de).toBe 'abi'
+          s = stocks[1]
+          expect(s.sku).toBe 'abc'
+          expect(s.quantityOnStock).toBe -3
+          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.fields.localizedString.en).toBe 'blue'
+          expect(s.custom.fields.localizedString.de).toBe 'automat'
+          expect(s.custom.fields.name.de).toBe 'sil'
+          done()
+        ).catch (err)->
+          expect(err).not.toBeDefined()
           done()
 
     it 'should map custom fields with type Money', (done) ->
@@ -419,7 +462,6 @@ describe 'StockImport', ->
         bar,123,77
         '''
       csv.parse rawCSV, (err, data) =>
-        console.log err.message,'=-----'
         expect(err).toBeDefined()
         expect(err.message).toBe('Number of columns is inconsistent on line 2')
         expect(data).not.toBeDefined()

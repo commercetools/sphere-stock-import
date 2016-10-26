@@ -219,6 +219,7 @@ class StockImport
 
   _mapCustomField: (data, cell, headerName, customTypeDefinition, rowIndex) ->
     fieldName = headerName.split(CONS.HEADER_CUSTOM_SEPERATOR)[1]
+    lang = headerName.split(CONS.HEADER_CUSTOM_SEPERATOR)[2]
 
     # set data.custom once per row with the type defined
     if !data.custom
@@ -228,8 +229,12 @@ class StockImport
         },
         "fields": {}
       }
+    # Set localized object if present
+    if lang
+      data.custom.fields[fieldName] = _.defaults (data.custom.fields[fieldName]||{}), @customFieldMappings.mapFieldTypes customTypeDefinition.fieldDefinitions,customTypeDefinition.key,rowIndex,fieldName,cell,lang
+    else
+      data.custom.fields[fieldName] = @customFieldMappings.mapFieldTypes customTypeDefinition.fieldDefinitions,customTypeDefinition.key,rowIndex,fieldName,cell
 
-    data.custom.fields[fieldName] = @customFieldMappings.mapFieldTypes customTypeDefinition.fieldDefinitions,customTypeDefinition.key,rowIndex,fieldName,cell
 
   _getCustomTypeDefinition: _.memoize (customTypeKey) ->
     @__getCustomTypeDefinition customTypeKey
