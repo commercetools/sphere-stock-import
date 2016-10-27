@@ -336,13 +336,13 @@ describe 'StockImport', ->
           s = stocks[0]
           expect(s.sku).toBe '123'
           expect(s.quantityOnStock).toBe(77)
-          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.type.id).toBeDefined()
           expect(s.custom.fields.quantityFactor).toBe(12)
           expect(s.custom.fields.color).toBe 'nac'
           s = stocks[1]
           expect(s.sku).toBe 'abc'
           expect(s.quantityOnStock).toBe -3
-          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.type.id).toBeDefined()
           expect(s.custom.fields.quantityFactor).toBe 5
           expect(s.custom.fields.color).toBe 'ho'
           done()
@@ -360,14 +360,14 @@ describe 'StockImport', ->
           s = stocks[0]
           expect(s.sku).toBe '123'
           expect(s.quantityOnStock).toBe(77)
-          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.type.id).toBeDefined()
           expect(s.custom.fields.localizedString.en).toBe 'english'
           expect(s.custom.fields.localizedString.de).toBe 'deutsch'
           expect(s.custom.fields.name.de).toBe 'abi'
           s = stocks[1]
           expect(s.sku).toBe 'abc'
           expect(s.quantityOnStock).toBe -3
-          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.type.id).toBeDefined()
           expect(s.custom.fields.localizedString.en).toBe 'blue'
           expect(s.custom.fields.localizedString.de).toBe 'automat'
           expect(s.custom.fields.name.de).toBe 'sil'
@@ -389,13 +389,13 @@ describe 'StockImport', ->
           s = stocks[0]
           expect(s.sku).toBe '123'
           expect(s.quantityOnStock).toBe(77)
-          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.type.id).toBeDefined()
           expect(s.custom.fields.price).toEqual {currencyCode: 'EUR', centAmount: 120}
           expect(s.custom.fields.color).toBe 'nac'
           s = stocks[1]
           expect(s.sku).toBe 'abc'
           expect(s.quantityOnStock).toBe -3
-          expect(s.custom.type).toEqual {key: 'my-type'}
+          expect(s.custom.type.id).toBeDefined()
           expect(s.custom.fields.price).toEqual {currencyCode: 'EUR', centAmount: 230}
           expect(s.custom.fields.color).toBe 'ho'
           done()
@@ -533,7 +533,7 @@ describe 'StockImport', ->
       .catch (err) -> done(_.prettify err)
 
 
-  describe '::_createOrUpdate', ->
+  describe '::_createOrUpdate', =>
 
     it 'should update and create inventory for same sku', (done) ->
       inventoryEntries = [

@@ -23,6 +23,9 @@ constants =
   HEADER_IMAGE_LABELS: 'imageLabels'
   HEADER_IMAGE_DIMENSIONS: 'imageDimensions'
   HEADER_QUANTITY: 'quantityOnStock'
+  HEADER_RESTOCKABLE: 'restockableInDays'
+  HEADER_EXPECTED_DELIVERY: 'expectedDelivery'
+  HEADER_SUPPLY_CHANNEL: 'supplyChannel'
   HEADER_CUSTOM_TYPE: 'customType'
   HEADER_CUSTOM_SEPERATOR: '.'
   HEADER_CUSTOM_REGEX: new RegExp /^customField\./
@@ -36,6 +39,7 @@ constants =
   CHANNEL_REF_NAME: 'supplyChannel'
   CHANNEL_ROLES: ['InventorySupply', 'OrderExport', 'OrderImport']
   LOG_PREFIX: "[SphereStockImport] "
+  CHANNEL_REFERENCE_TYPE: 'channel'
 
   ATTRIBUTE_TYPE_SET: 'set'
   ATTRIBUTE_TYPE_LTEXT: 'ltext'

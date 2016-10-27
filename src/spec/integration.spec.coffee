@@ -5,6 +5,7 @@ Promise = require 'bluebird'
 package_json = require '../package.json'
 Config = require '../config'
 StockImport = require '../lib/stockimport'
+{customTypePayload1, customTypePayload2} = require './helper-customTypePayload.spec'
 
 cleanup = (logger, client) ->
   logger.debug 'Deleting old inventory entries...'
@@ -13,11 +14,25 @@ cleanup = (logger, client) ->
     Promise.all _.map result.body.results, (e) ->
       client.inventoryEntries.byId(e.id).delete(e.version)
   .then (results) ->
-    logger.debug "#{_.size results} deleted."
+    logger.debug "Inventory #{_.size results} deleted."
+    logger.debug 'Deleting old types entries...'
+    client.types.all().fetch()
+  .then (result) ->
+    Promise.all _.map result.body.results, (e) ->
+      client.types.byId(e.id).delete(e.version)
+  .then (results) ->
+    logger.debug "Types #{_.size results} deleted."
+    logger.debug 'Deleting old channels entries...'
+    client.channels.all().fetch()
+  .then (result) ->
+    Promise.all _.map result.body.results, (e) ->
+      client.channels.byId(e.id).delete(e.version)
+  .then (results) ->
+    logger.debug "Channels #{_.size results} deleted."
     Promise.resolve()
 
 describe 'integration test', ->
-
+  testChannel = undefined
   beforeEach (done) ->
     @logger = new ExtendedLogger
       additionalFields:
@@ -36,7 +51,14 @@ describe 'integration test', ->
 
     @logger.info 'About to setup...'
     cleanup(@logger, @client)
-    .then -> done()
+    .then =>
+      @client.types.create(customTypePayload1())
+    .then =>
+      @client.types.create(customTypePayload2())
+    .then (res) =>
+      @client.channels.create(key:'testchannel').then (result) ->
+        testChannel = result.body
+        done()
     .catch (err) -> done(_.prettify err)
   , 10000 # 10sec
 
@@ -319,4 +341,77 @@ describe 'integration test', ->
         expect(stocks[0].quantityOnStock).toBe 0
         done()
       .catch (err) -> done(_.prettify err)
+    , 10000 # 10sec
+
+  describe 'CSV file', =>
+    it 'CSV - one new stock', (done) ->
+      raw =
+        """
+        sku,quantityOnStock,restockableInDays,expectedDelivery,supplyChannel,customType,customField.quantityFactor,customField.color,customField.localizedString.de,customField.localizedString.en
+        another2,77,12,2001-09-11T14:00:00.000Z,#{testChannel.id},my-type,12,nac,Schneidder,Abi
+        """
+      @stockimport.run(raw, 'CSV')
+      .then =>
+        @stockimport.summaryReport()
+      .then (message) =>
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe 'another2'
+        expect(stocks[0].quantityOnStock).toBe 77
+        @stockimport.run(raw, 'CSV')
+      .then => @stockimport.summaryReport()
+      .then (message) =>
+        expect(message).toBe 'Summary: nothing to do, everything is fine'
+        @client.inventoryEntries.fetch()
+      .then (result) ->
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe 'another2'
+        expect(stocks[0].quantityOnStock).toBe 77
+        done()
+      .catch (err) ->
+        done(_.prettify err)
+    , 10000 # 10sec
+
+    it 'CSV - update stock', (done) ->
+      raw =
+        """
+        sku,quantityOnStock,restockableInDays,expectedDelivery,supplyChannel,customType,customField.quantityFactor,customField.color,customField.localizedString.de,customField.localizedString.en
+        another2,77,12,2001-09-11T14:00:00.000Z,#{testChannel.id},my-type1,12,nac,Schneidder,Abi
+        """
+      raw2 =
+        """
+        sku,quantityOnStock,restockableInDays,expectedDelivery,supplyChannel,customType,customField.quantityFactor,customField.color,customField.localizedString.de,customField.localizedString.en
+        another2,72,10,2001-08-11T14:00:00.000Z,#{testChannel.id},my-type1,12,blue,Schneidder,Josh
+        """
+      @stockimport.run(raw, 'CSV')
+      .then =>
+        @stockimport.summaryReport()
+      .then (message) =>
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe 'another2'
+        expect(stocks[0].quantityOnStock).toBe 77
+        @stockimport.run(raw2, 'CSV')
+      .then => @stockimport.summaryReport()
+      .then (message) =>
+        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+        @client.inventoryEntries.fetch()
+      .then (result) ->
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe 'another2'
+        expect(stocks[0].quantityOnStock).toBe 72
+        expect(stocks[0].custom.fields.localizedString.en).toBe 'Josh'
+        expect(stocks[0].custom.fields.color).toBe 'blue'
+        done()
+      .catch (err) ->
+        console.log JSON.stringify(err, null,2)
+        done(_.prettify err)
     , 10000 # 10sec

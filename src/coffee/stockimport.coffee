@@ -129,7 +129,6 @@ class StockImport
           .done()
 
   performCSV: (fileContent, next) ->
-    debugger
     new Promise (resolve, reject) =>
       csv.parse fileContent, {delimiter: @csvDelimiter, trim: true}, (error, data) =>
         if (error)
@@ -214,8 +213,14 @@ class StockImport
     data = data?.trim()
     switch on
       when CONS.HEADER_QUANTITY is headerName then parseInt(data, 10) or 0
-      # when CONS.HEADER_CUSTOM_TYPE is headerName then @_getCustomTypeDefinition(data)
+      when CONS.HEADER_RESTOCKABLE is headerName then parseInt(data, 10)
+      when CONS.HEADER_SUPPLY_CHANNEL is headerName then @_mapReference data,CONS.CHANNEL_REFERENCE_TYPE
       else data
+
+  _mapReference: (id, type) ->
+    if id and type
+      return typeId: type, id: id
+    return
 
   _mapCustomField: (data, cell, headerName, customTypeDefinition, rowIndex) ->
     fieldName = headerName.split(CONS.HEADER_CUSTOM_SEPERATOR)[1]
@@ -225,7 +230,7 @@ class StockImport
     if !data.custom
       data.custom = {
         "type": {
-          "key": customTypeDefinition.key
+          "id": customTypeDefinition.id
         },
         "fields": {}
       }
