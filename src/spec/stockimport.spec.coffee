@@ -232,6 +232,35 @@ describe 'StockImport', ->
         done()
       .catch (err) -> done(_.prettify err)
 
+  describe '::_mapChannelKeyToReference', ->
+    testChannel = undefined
+
+    cleanup = (endpoint) ->
+      endpoint.all().fetch()
+        .then (result) ->
+          Promise.all _.map result.body.results, (e) ->
+            endpoint.byId(e.id).delete(e.version)
+
+    beforeEach (done) ->
+      channelPayload = {
+        "key": "mah-channel"
+      }
+
+      cleanup(@import.client.channels)
+        .then =>
+          @import.client.channels.create(channelPayload)
+        .then((result) ->
+          testChannel = result
+          done()
+        )
+        .catch(done)
+
+    it 'should fetch reference from key', (done) ->
+      @import._mapChannelKeyToReference testChannel.body.key
+        .then (result) ->
+          expect(result).toEqual {typeId: 'channel', id: testChannel.body.id}
+          done()
+
   describe '::_getCustomTypeDefinition', ->
     types = undefined
     customType = undefined
@@ -300,7 +329,7 @@ describe 'StockImport', ->
     it 'should fetch customTypeDefinition', (done) ->
 
       @import._getCustomTypeDefinition(customType.key).then (data) ->
-        result = data.body.results[0]
+        result = data.body
         expect(result).toBeDefined()
         expect(result.key).toBe(customType.key)
         expect(result.fieldDefinitions).toBeDefined()

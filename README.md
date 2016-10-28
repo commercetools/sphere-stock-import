@@ -32,10 +32,10 @@ When using SFTP, you should not use the `--file` option, instead you need to pro
 
 A simple example:
 ```
-sku,quantityOnStock
-foo,9
-bar,-1
-SKU-123,42
+sku,quantityOnStock,restockableInDays,supplyChannel,expectedDelivery
+foo,9,3,channel-key,2016-10-27T14:36:04.487Z
+bar,-1,3,channel-key,2016-10-27T14:36:04.487Z
+SKU-123,42,3,other-channel,2016-10-27T14:36:04.487Z
 ```
 
 ### Custom fields

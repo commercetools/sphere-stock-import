@@ -33,6 +33,8 @@ cleanup = (logger, client) ->
 
 describe 'integration test', ->
   testChannel = undefined
+  testChannel2 = undefined
+
   beforeEach (done) ->
     @logger = new ExtendedLogger
       additionalFields:
@@ -58,6 +60,9 @@ describe 'integration test', ->
     .then (res) =>
       @client.channels.create(key: 'testchannel').then (result) ->
         testChannel = result.body
+    .then (res) =>
+      @client.channels.create(key: 'testchannel2').then (result) ->
+        testChannel2 = result.body
         done()
     .catch (err) -> done(_.prettify err)
   , 10000 # 10sec
@@ -348,7 +353,7 @@ describe 'integration test', ->
       raw =
         """
         sku,quantityOnStock,restockableInDays,expectedDelivery,supplyChannel,customType,customField.quantityFactor,customField.color,customField.localizedString.de,customField.localizedString.en
-        another2,77,12,2001-09-11T14:00:00.000Z,#{testChannel.id},my-type,12,nac,Schneidder,Abi
+        another2,77,12,2001-09-11T14:00:00.000Z,#{testChannel.key},my-type,12,nac,Schneidder,Abi
         """
       @stockimport.run(raw, 'CSV')
       .then =>
@@ -380,12 +385,12 @@ describe 'integration test', ->
       raw =
         """
         sku,quantityOnStock,restockableInDays,expectedDelivery,supplyChannel,customType,customField.quantityFactor,customField.color,customField.localizedString.de,customField.localizedString.en
-        another2,77,12,2001-09-11T14:00:00.000Z,#{testChannel.id},my-type1,12,nac,Schneidder,Abi
+        another2,77,12,2001-09-11T14:00:00.000Z,#{testChannel2.key},my-type1,12,nac,Schneidder,Abi
         """
       raw2 =
         """
         sku,quantityOnStock,restockableInDays,expectedDelivery,supplyChannel,customType,customField.quantityFactor,customField.color,customField.localizedString.de,customField.localizedString.en
-        another2,72,10,2001-08-11T14:00:00.000Z,#{testChannel.id},my-type1,12,blue,Schneidder,Josh
+        another2,72,10,2001-08-11T14:00:00.000Z,#{testChannel2.key},my-type1,12,blue,Schneidder,Josh
         """
       @stockimport.run(raw, 'CSV')
       .then =>
@@ -412,6 +417,5 @@ describe 'integration test', ->
         expect(stocks[0].custom.fields.color).toBe 'blue'
         done()
       .catch (err) ->
-        console.log JSON.stringify(err, null,2)
         done(_.prettify err)
     , 10000 # 10sec

@@ -54,7 +54,6 @@ class StockImport
               ElasticIo.returnSuccess message, next
         .catch (err) ->
           ElasticIo.returnFailure err, next
-          # debugger
         .done()
 
     else if _.size(msg.body) > 0
@@ -192,11 +191,12 @@ class StockImport
             customTypeKey = row[mappedHeaderIndexes.indexOf(CONS.HEADER_CUSTOM_TYPE)]
 
             @_getCustomTypeDefinition(customTypeKey).then (response) =>
-              customTypeDefinition = response.body.results[0]
+              customTypeDefinition = response.body
               @_mapCustomField(_data, cell, headerName, customTypeDefinition, rowIndex)
 
           else
-            _data[headerName] = @_mapCellData(cell, headerName)
+            Promise.resolve(@_mapCellData(cell, headerName)).then (cellData) =>
+              _data[headerName] = cellData
 
         ).then =>
           if _.size(@customFieldMappings.errors) isnt 0
@@ -214,13 +214,8 @@ class StockImport
     switch on
       when CONS.HEADER_QUANTITY is headerName then parseInt(data, 10) or 0
       when CONS.HEADER_RESTOCKABLE is headerName then parseInt(data, 10)
-      when CONS.HEADER_SUPPLY_CHANNEL is headerName then @_mapReference data,CONS.CHANNEL_REFERENCE_TYPE
+      when CONS.HEADER_SUPPLY_CHANNEL is headerName then @_mapChannelKeyToReference data
       else data
-
-  _mapReference: (id, type) ->
-    if id and type
-      return typeId: type, id: id
-    return
 
   _mapCustomField: (data, cell, headerName, customTypeDefinition, rowIndex) ->
     fieldName = headerName.split(CONS.HEADER_CUSTOM_SEPERATOR)[1]
@@ -248,7 +243,20 @@ class StockImport
 
   # Should not be called directly.
   __getCustomTypeDefinition: (customTypeKey) ->
-    @client.types.where("key = \"#{customTypeKey}\"").fetch()
+    @client.types.byKey(customTypeKey).fetch()
+
+  _mapChannelKeyToReference: _.memoize (key) ->
+    @__mapChannelKeyToReference key
+
+  # Should not be called directly.
+  __mapChannelKeyToReference: (key) ->
+    @client.channels.where("key=\"#{key}\"").fetch()
+      .then (response) =>
+        if (response.body.results[0] && response.body.results[0].id)
+          return typeId: CONS.CHANNEL_REFERENCE_TYPE, id: response.body.results[0].id
+
+        @customFieldMappings.errors.push("Couldn\'t find channel with #{key} as key.")
+      .catch (@customFieldMappings.errors.push)
 
   _createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
     entry =
