@@ -31,18 +31,7 @@ class CustomFieldMappings
       @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] The number '#{rawNumber}' isn't valid!"
       return
     parseInt matchedNumber[0],10
-  ###
-  custom,customField.name.de,customField.name.en
-  my-type,Hajo,Abi
-  //- {
-    custom: {
-      name: {
-        de: 'Hajo',
-        en: 'Abi'
-      }
-    }
-  }
-  ###
+
   mapLocalizedString: (value, typeDefinitionKey, rowIndex, langHeader, regEx = CONS.REGEX_LANGUAGE) ->
     if !regEx.test langHeader
       @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] localisedString  header '#{langHeader}' format is not valid!" unless regEx.test langHeader
@@ -77,10 +66,6 @@ class CustomFieldMappings
       @errors.push errorMsg
       return
 
-
-
-  # EUR 300
-  # USD 999
   mapMoney: (rawMoney, typeDefinitionKey, rowIndex) ->
     return unless @isValidValue(rawMoney)
     matchedMoney = CONS.REGEX_MONEY.exec rawMoney

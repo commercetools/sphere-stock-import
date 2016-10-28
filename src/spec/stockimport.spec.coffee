@@ -355,26 +355,27 @@ describe 'StockImport', ->
         abc,-3,my-type,blue,automat,sil
         '''
       csv.parse rawCSV, (err, data) =>
-        @import._mapStockFromCSV(_.rest(data), data[0]).then((stocks) ->
-          expect(_.size stocks).toBe 2
-          s = stocks[0]
-          expect(s.sku).toBe '123'
-          expect(s.quantityOnStock).toBe(77)
-          expect(s.custom.type.id).toBeDefined()
-          expect(s.custom.fields.localizedString.en).toBe 'english'
-          expect(s.custom.fields.localizedString.de).toBe 'deutsch'
-          expect(s.custom.fields.name.de).toBe 'abi'
-          s = stocks[1]
-          expect(s.sku).toBe 'abc'
-          expect(s.quantityOnStock).toBe -3
-          expect(s.custom.type.id).toBeDefined()
-          expect(s.custom.fields.localizedString.en).toBe 'blue'
-          expect(s.custom.fields.localizedString.de).toBe 'automat'
-          expect(s.custom.fields.name.de).toBe 'sil'
-          done()
-        ).catch (err)->
-          expect(err).not.toBeDefined()
-          done()
+        @import._mapStockFromCSV(_.rest(data), data[0])
+          .then((stocks) ->
+            expect(_.size stocks).toBe 2
+            s = stocks[0]
+            expect(s.sku).toBe '123'
+            expect(s.quantityOnStock).toBe(77)
+            expect(s.custom.type.id).toBeDefined()
+            expect(s.custom.fields.localizedString.en).toBe 'english'
+            expect(s.custom.fields.localizedString.de).toBe 'deutsch'
+            expect(s.custom.fields.name.de).toBe 'abi'
+            s = stocks[1]
+            expect(s.sku).toBe 'abc'
+            expect(s.quantityOnStock).toBe -3
+            expect(s.custom.type.id).toBeDefined()
+            expect(s.custom.fields.localizedString.en).toBe 'blue'
+            expect(s.custom.fields.localizedString.de).toBe 'automat'
+            expect(s.custom.fields.name.de).toBe 'sil'
+            done())
+          .catch (err) ->
+            expect(err).not.toBeDefined()
+            done()
 
     it 'should map custom fields with type Money', (done) ->
       rawCSV =
@@ -461,7 +462,7 @@ describe 'StockImport', ->
         bar,abc
         bar,123,77
         '''
-      csv.parse rawCSV, (err, data) =>
+      csv.parse rawCSV, (err, data) ->
         expect(err).toBeDefined()
         expect(err.message).toBe('Number of columns is inconsistent on line 2')
         expect(data).not.toBeDefined()
@@ -533,7 +534,7 @@ describe 'StockImport', ->
       .catch (err) -> done(_.prettify err)
 
 
-  describe '::_createOrUpdate', =>
+  describe '::_createOrUpdate', ->
 
     it 'should update and create inventory for same sku', (done) ->
       inventoryEntries = [

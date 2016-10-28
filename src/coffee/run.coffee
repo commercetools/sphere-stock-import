@@ -148,7 +148,7 @@ ensureCredentials(argv)
 
       # unsafeCleanup: recursively removes the created temporary directory, even when it's not empty
       tmp.dirAsync {unsafeCleanup: true}
-      .then (tmpPath) =>
+      .then (tmpPath) ->
         logger.debug "Tmp folder created at #{tmpPath}"
         sftpHelper.download(tmpPath)
         .then (files) ->

@@ -56,7 +56,7 @@ describe 'integration test', ->
     .then =>
       @client.types.create(customTypePayload2())
     .then (res) =>
-      @client.channels.create(key:'testchannel').then (result) ->
+      @client.channels.create(key: 'testchannel').then (result) ->
         testChannel = result.body
         done()
     .catch (err) -> done(_.prettify err)
@@ -343,7 +343,7 @@ describe 'integration test', ->
       .catch (err) -> done(_.prettify err)
     , 10000 # 10sec
 
-  describe 'CSV file', =>
+  describe 'CSV file', ->
     it 'CSV - one new stock', (done) ->
       raw =
         """

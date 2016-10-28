@@ -117,7 +117,6 @@ describe 'elasticio integration', ->
             content: enc
 
       spyOn(ElasticIo, 'returnSuccess').andCallThrough()
-      debugger
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
         if message is '[SphereStockImport] elastic.io messages sent.'

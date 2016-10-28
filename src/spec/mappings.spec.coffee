@@ -102,7 +102,7 @@ describe 'Mappings', ->
     expect(@map.mapBoolean).toBeDefined()
     expect(@map.mapFieldTypes).toBeDefined()
 
-  describe '::mapNumber', =>
+  describe '::mapNumber', ->
     it 'should convert strings to integer', ->
       result = @map.mapNumber '3',@customTypeDefinition.key,2
 
@@ -119,7 +119,7 @@ describe 'Mappings', ->
       expect(@map.errors[0]).toBe "[row 2:my-category] The number '123error' isn't valid!"
       expect(result).not.toBeDefined()
 
-  describe '::mapLocalizedString', =>
+  describe '::mapLocalizedString', ->
     it 'should convert to localizedString', ->
       result = @map.mapLocalizedString 'foo',@customTypeDefinition.key,2,'de'
 
@@ -130,7 +130,7 @@ describe 'Mappings', ->
       expect(result).not.toBeDefined()
       expect(@map.errors[0]).toBe "[row 2:my-category] localisedString  header 'invalid' format is not valid!"
 
-  describe '::mapBoolean', =>
+  describe '::mapBoolean', ->
     it 'should convert to boolean', ->
       result = @map.mapBoolean 'true',@customTypeDefinition.key,2
       expect(result).toBe true
@@ -140,7 +140,7 @@ describe 'Mappings', ->
       expect(result).not.toBeDefined()
       expect(@map.errors[0]).toBe "[row 2:my-category] The value \'invalid\' isn\'t a valid boolean!"
 
-  describe '::mapFieldTypes', =>
+  describe '::mapFieldTypes', ->
     it 'should map String type', ->
       result = @map.mapFieldTypes @customTypeDefinition.fieldDefinitions,@customTypeDefinition.key,2,'stringtype','okay'
       expect(result).toBe 'okay'
@@ -173,7 +173,7 @@ describe 'Mappings', ->
       expect(result).toEqual currencyCode: 'EUR', centAmount: 1400
       expect(@map.errors).toEqual []
 
-  describe '::mapSet', =>
+  describe '::mapSet', ->
     it 'should convert to set', ->
       elementType = name: 'Number'
       result = @map.mapSet '1,2,3,4',@customTypeDefinition.key,2,elementType
@@ -185,7 +185,7 @@ describe 'Mappings', ->
       expect(result).toEqual [1,2,4]
       expect(@map.errors[0]).toBe "[row 2:my-category] The number '\"3\"' isn't valid!"
 
-  describe '::mapMoney', =>
+  describe '::mapMoney', ->
     it 'should convert to Money object', ->
       result = @map.mapMoney 'EUR 140',@customTypeDefinition.key,2
       expect(result).toEqual {currencyCode: 'EUR', centAmount: 140}

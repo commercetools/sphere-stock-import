@@ -149,7 +149,7 @@ class StockImport
     @_processBatches(chunk).then -> cb()
 
   _getHeaderIndexes: (headers, csvHeaders) ->
-    Promise.all _.map csvHeaders.split(','), (h) =>
+    Promise.all _.map csvHeaders.split(','), (h) ->
       cleanHeader = h.trim()
       mappedHeader = _.find headers, (header) -> header.toLowerCase() is cleanHeader.toLowerCase()
       if mappedHeader
@@ -236,7 +236,9 @@ class StockImport
       }
     # Set localized object if present
     if lang
-      data.custom.fields[fieldName] = _.defaults (data.custom.fields[fieldName]||{}), @customFieldMappings.mapFieldTypes customTypeDefinition.fieldDefinitions,customTypeDefinition.key,rowIndex,fieldName,cell,lang
+      data.custom.fields[fieldName] =
+        _.defaults (data.custom.fields[fieldName] || {}),
+        @customFieldMappings.mapFieldTypes customTypeDefinition.fieldDefinitions,customTypeDefinition.key,rowIndex,fieldName,cell,lang
     else
       data.custom.fields[fieldName] = @customFieldMappings.mapFieldTypes customTypeDefinition.fieldDefinitions,customTypeDefinition.key,rowIndex,fieldName,cell
 
