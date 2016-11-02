@@ -5,7 +5,7 @@ Promise = require 'bluebird'
 package_json = require '../package.json'
 Config = require '../config'
 StockImport = require '../lib/stockimport'
-{customTypePayload1, customTypePayload2} = require './helper-customTypePayload.spec'
+{customTypePayload1, customTypePayload2, customTypePayload3} = require './helper-customTypePayload.spec'
 
 cleanup = (logger, client) ->
   logger.debug 'Deleting old inventory entries...'
@@ -343,12 +343,17 @@ describe 'integration test', ->
 
     beforeEach (done) ->
 
+      # Clear memoize cache
+      @stockimport._getCustomTypeDefinition.cache = {}
+
       @logger.info 'About to setup...'
       cleanup(@logger, @client)
       .then =>
         @client.types.create(customTypePayload1())
       .then =>
         @client.types.create(customTypePayload2())
+      .then =>
+        @client.types.create(customTypePayload3())
       .then (res) =>
         @client.channels.create(key: 'testchannel').then (result) ->
           testChannel = result.body
@@ -365,6 +370,7 @@ describe 'integration test', ->
       .then -> done()
       .catch (err) -> done(_.prettify err)
     , 10000 # 10sec
+
     it 'CSV - one new stock', (done) ->
       raw =
         """
@@ -394,6 +400,48 @@ describe 'integration test', ->
         expect(stocks[0].quantityOnStock).toBe 77
         done()
       .catch (err) ->
+        done(_.prettify err)
+    , 10000 # 10sec
+
+    it 'CSV - should ignore empty fields in customFields', (done) ->
+      raw =
+        """
+        sku,quantityOnStock,restockableInDays,expectedDelivery,customType,customField.quantityFactor,customField.color,customField.another,customField.localizedString.de,customField.localizedString.en
+        another3,77,12,2001-09-11T14:00:00.000Z,my-type,12,nac,,Schneidder,Abi
+        another10,77,12,2001-09-11T14:00:00.000Z,my-type2,12,,okay,Schneidder,Abi
+        """
+
+      @stockimport.run(raw, 'CSV')
+      .then =>
+        @stockimport.summaryReport()
+      .then (message) =>
+        expect(message).toBe 'Summary: there were 2 imported stocks (2 were new and 0 were updates)'
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(_.size stocks).toBe 2
+        stock1 = _.find stocks, (stock) -> stock.sku is 'another3'
+        stock2 = _.find stocks, (stock) -> stock.sku is 'another10'
+        expect(stock1).toBeDefined()
+        expect(stock1.quantityOnStock).toBe 77
+        expect(stock1.custom.fields.another).not.toBeDefined()
+        expect(stock2.custom.fields.another).toBeDefined()
+        expect(stock2.custom.fields.color).not.toBeDefined()
+        expect(stock2.custom.fields.another).toBe 'okay'
+        @stockimport.run(raw, 'CSV')
+      .then => @stockimport.summaryReport()
+      .then (message) =>
+        expect(message).toBe 'Summary: nothing to do, everything is fine'
+        @client.inventoryEntries.fetch()
+      .then (result) ->
+        stocks = result.body.results
+        expect(_.size stocks).toBe 2
+        stock1 = _.find stocks, (stock) -> stock.sku is 'another3'
+        expect(stock1.sku).toBe 'another3'
+        expect(stock1.quantityOnStock).toBe 77
+        done()
+      .catch (err) ->
+        console.log JSON.stringify(err, null,2)
         done(_.prettify err)
     , 10000 # 10sec
 

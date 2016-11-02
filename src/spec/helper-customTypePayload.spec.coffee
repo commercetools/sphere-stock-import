@@ -55,3 +55,13 @@ exports.customTypePayload2 = ->
   data = JSON.parse(JSON.stringify(baseObj))
   data.key = "my-type1"
   data
+exports.customTypePayload3 = ->
+  data = JSON.parse(JSON.stringify(baseObj))
+  data.key = "my-type2"
+  data.fieldDefinitions[1] =
+    "name": "another",
+    "type": { "name": "String" },
+    "required": false,
+    "label": { "en": "size" },
+    "inputHint": "SingleLine"
+  data
