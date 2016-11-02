@@ -32,8 +32,6 @@ cleanup = (logger, client) ->
     Promise.resolve()
 
 describe 'integration test', ->
-  testChannel = undefined
-  testChannel2 = undefined
 
   beforeEach (done) ->
     @logger = new ExtendedLogger
@@ -54,16 +52,7 @@ describe 'integration test', ->
     @logger.info 'About to setup...'
     cleanup(@logger, @client)
     .then =>
-      @client.types.create(customTypePayload1())
-    .then =>
-      @client.types.create(customTypePayload2())
-    .then (res) =>
-      @client.channels.create(key: 'testchannel').then (result) ->
-        testChannel = result.body
-    .then (res) =>
-      @client.channels.create(key: 'testchannel2').then (result) ->
-        testChannel2 = result.body
-        done()
+      done()
     .catch (err) -> done(_.prettify err)
   , 10000 # 10sec
 
@@ -348,7 +337,34 @@ describe 'integration test', ->
       .catch (err) -> done(_.prettify err)
     , 10000 # 10sec
 
-  describe 'CSV file', ->
+  describe 'CSV file', =>
+    testChannel = undefined
+    testChannel2 = undefined
+
+    beforeEach (done) ->
+
+      @logger.info 'About to setup...'
+      cleanup(@logger, @client)
+      .then =>
+        @client.types.create(customTypePayload1())
+      .then =>
+        @client.types.create(customTypePayload2())
+      .then (res) =>
+        @client.channels.create(key: 'testchannel').then (result) ->
+          testChannel = result.body
+      .then (res) =>
+        @client.channels.create(key: 'testchannel2').then (result) ->
+          testChannel2 = result.body
+          done()
+      .catch (err) -> done(_.prettify err)
+    , 10000 # 10sec
+
+    afterEach (done) ->
+      @logger.info 'About to cleanup...'
+      cleanup(@logger, @client)
+      .then -> done()
+      .catch (err) -> done(_.prettify err)
+    , 10000 # 10sec
     it 'CSV - one new stock', (done) ->
       raw =
         """
