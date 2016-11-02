@@ -9,7 +9,15 @@ Config = require '../config'
 xmlHelpers = require '../lib/xmlhelpers.js'
 StockImport = require '../lib/stockimport'
 
+{customTypePayload1} = require './helper-customTypePayload.spec'
+
 describe 'StockImport', ->
+  cleanup = (endpoint) ->
+    endpoint.all().fetch()
+      .then (result) ->
+        Promise.all _.map result.body.results, (e) ->
+          endpoint.byId(e.id).delete(e.version)
+
   beforeEach ->
     logger = new ExtendedLogger
       logConfig:
@@ -19,7 +27,6 @@ describe 'StockImport', ->
         ]
     @import = new StockImport logger,
       config: Config.config
-      csvHeaders: 'sku, quantityOnStock'
       csvDelimiter: ','
 
   it 'should initialize', ->
@@ -208,38 +215,8 @@ describe 'StockImport', ->
         expect(s.supplyChannel.id).toBe 'myChannelId'
         done()
 
-
-  describe '::_getHeaderIndexes', ->
-    it 'should reject if no sku header found', (done) ->
-      @import._getHeaderIndexes ['bla', 'foo', 'quantity', 'price'], 'sku, q'
-      .then (msg) -> done msg
-      .catch (err) ->
-        expect(err).toBe "Can't find header 'sku' in 'bla,foo,quantity,price'."
-        done()
-
-    it 'should reject if no quantity header found', (done) ->
-      @import._getHeaderIndexes ['sku', 'price', 'quality'], 'sku, quantity'
-      .catch (err) ->
-        expect(err).toBe "Can't find header 'quantity' in 'sku,price,quality'."
-        done()
-      .then (msg) -> done msg
-
-    it 'should return the indexes of the two named columns', (done) ->
-      @import._getHeaderIndexes ['foo', 'q', 'bar', 's'], 's, q'
-      .then (indexes) ->
-        expect(indexes[0]).toBe 3
-        expect(indexes[1]).toBe 1
-        done()
-      .catch (err) -> done(_.prettify err)
-
   describe '::_mapChannelKeyToReference', ->
     testChannel = undefined
-
-    cleanup = (endpoint) ->
-      endpoint.all().fetch()
-        .then (result) ->
-          Promise.all _.map result.body.results, (e) ->
-            endpoint.byId(e.id).delete(e.version)
 
     beforeEach (done) ->
       channelPayload = {
@@ -267,62 +244,15 @@ describe 'StockImport', ->
 
     beforeEach (done) ->
       types = @import.client.types
-      customTypePayload = {
-        "key": "my-type",
-        "name": { "en": "customized fields" },
-        "description": { "en": "customized fields definition" },
-        "resourceTypeIds": ["inventory-entry"],
-        "fieldDefinitions": [
-          {
-            "name": "description",
-            "type": { "name": "String" },
-            "required": true,
-            "label": { "en": "size" },
-            "inputHint": "SingleLine"
-          },
-          {
-            "name": "color",
-            "type": {"name": "String"},
-            "required": false,
-            "label": { "en": "color" },
-            "inputHint": "SingleLine"
-          },
-          {
-            "name": "quantityFactor",
-            "type": {"name": "Number"},
-            "required": false,
-            "label": { "en": "quantityFactor" },
-            "inputHint": "SingleLine"
-          },
-          {
-            "name": "price",
-            "type": {"name": "Money"},
-            "required": false,
-            "label": { "en": "price" },
-            "inputHint": "SingleLine"
-          },
-          {
-            "name": "localizedString",
-            "type": { "name": "LocalizedString" },
-            "required": true,
-            "label": { "en": "size" },
-            "inputHint": "SingleLine"
-          },
-          {
-            "name": "name",
-            "type": { "name": "LocalizedString" },
-            "required": true,
-            "label": { "en": "name" },
-            "inputHint": "SingleLine"
-          }
-        ]
-      }
-      types.create(customTypePayload).then (result) ->
-        customType = result.body
-        done()
+      cleanup(@import.client.inventoryEntries).then ->
+        cleanup(types).then ->
+          customTypePayload = customTypePayload1()
+          types.create(customTypePayload).then (result) ->
+            customType = result.body
+            done()
 
     afterEach (done) ->
-      types.byId(customType.id).delete(customType.version)
+      cleanup(@import.client.types)
         .then ->
           done()
 
@@ -520,10 +450,10 @@ describe 'StockImport', ->
         '''
       @import.csvDelimiter = ';'
       spyOn(@import, '_perform').andReturn Promise.resolve()
-      spyOn(@import, '_getHeaderIndexes').andCallThrough()
+      spyOn(@import, '_mapStockFromCSV').andCallThrough()
       @import.performCSV(rawCSV)
         .then (result) =>
-          expect(@import._getHeaderIndexes).toHaveBeenCalledWith ['sku', 'quantityOnStock'], 'sku, quantityOnStock'
+          expect(@import._mapStockFromCSV).toHaveBeenCalledWith [ [ '123', '77' ], [ 'abc', '-3' ] ], [ 'sku', 'quantityOnStock' ]
           done()
         .catch (err) -> done(_.prettify err)
 

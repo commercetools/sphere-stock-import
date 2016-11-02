@@ -134,29 +134,16 @@ class StockImport
           reject "#{CONS.LOG_PREFIX}Problem in parsing CSV: #{error}"
 
         headers = data[0]
-        @_getHeaderIndexes headers, @csvHeaders
-          .then (mappedHeaderIndexes) =>
-            @_mapStockFromCSV(_.rest(data), headers).then (stocks) =>
-              debug "Stock mapped from csv for headers #{mappedHeaderIndexes}: %j", stocks
+        @_mapStockFromCSV(_.rest(data), headers).then (stocks) =>
+          debug "Stock mapped from csv for headers #{headers}: %j", stocks
 
-              @_perform stocks, next
-                .then (result) -> resolve result
-            .catch (err) -> reject err
-            .done()
+          @_perform stocks, next
+            .then (result) -> resolve result
+        .catch (err) -> reject err
+        .done()
 
   performStream: (chunk, cb) ->
     @_processBatches(chunk).then -> cb()
-
-  _getHeaderIndexes: (headers, csvHeaders) ->
-    Promise.all _.map csvHeaders.split(','), (h) ->
-      cleanHeader = h.trim()
-      mappedHeader = _.find headers, (header) -> header.toLowerCase() is cleanHeader.toLowerCase()
-      if mappedHeader
-        headerIndex = _.indexOf headers, mappedHeader
-        debug "Found index #{headerIndex} for header #{cleanHeader}: %j", headers
-        Promise.resolve(headerIndex)
-      else
-        Promise.reject "Can't find header '#{cleanHeader}' in '#{headers}'."
 
   _mapStockFromXML: (xmljs, channelId) ->
     stocks = []

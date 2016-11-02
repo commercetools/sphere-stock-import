@@ -419,3 +419,20 @@ describe 'integration test', ->
       .catch (err) ->
         done(_.prettify err)
     , 10000 # 10sec
+
+    it 'CSV - API should return error if required header is missing', (done) ->
+      raw =
+        """
+        sku,invalidheader,restockableInDays,expectedDelivery,supplyChannel,customType,customField.quantityFactor,customField.color,customField.localizedString.de,customField.localizedString.en
+        another2,77,12,2001-09-11T14:00:00.000Z,#{testChannel2.key},my-type1,12,nac,Schneidder,Abi
+        """
+      @stockimport.run(raw, 'CSV')
+      .then (result)=>
+        expect(result).not.toBeDefined
+      .catch (err) ->
+        expect(err).toBeDefined()
+        expect(err.message).toBe 'Request body does not contain valid JSON.'
+        expect(err.body.errors.length).toBe 1
+        expect(err.body.errors[0].detailedErrorMessage).toBe 'quantityOnStock: Missing required value'
+        done()
+    , 10000 # 10sec
