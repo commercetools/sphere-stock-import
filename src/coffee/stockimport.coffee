@@ -188,7 +188,7 @@ class StockImport
               @_mapCustomField(_data, cell, headerName, customTypeDefinition, rowIndex)
 
           else
-            Promise.resolve(@_mapCellData(cell, headerName)).then (cellData) =>
+            Promise.resolve(@_mapCellData(cell, headerName)).then (cellData) ->
               _data[headerName] = cellData
 
         ).then =>
@@ -227,9 +227,22 @@ class StockImport
     if lang
       data.custom.fields[fieldName] =
         _.defaults (data.custom.fields[fieldName] || {}),
-        @customFieldMappings.mapFieldTypes customTypeDefinition.fieldDefinitions,customTypeDefinition.key,rowIndex,fieldName,cell,lang
+        @customFieldMappings.mapFieldTypes({
+          fieldDefinitions: customTypeDefinition.fieldDefinitions,
+          typeDefinitionKey: customTypeDefinition.key,
+          rowIndex: rowIndex,
+          key: fieldName,
+          value: cell,
+          langHeader: lang,
+        })
     else
-      data.custom.fields[fieldName] = @customFieldMappings.mapFieldTypes customTypeDefinition.fieldDefinitions,customTypeDefinition.key,rowIndex,fieldName,cell
+      data.custom.fields[fieldName] = @customFieldMappings.mapFieldTypes({
+        fieldDefinitions: customTypeDefinition.fieldDefinitions,
+        typeDefinitionKey: customTypeDefinition.key,
+        rowIndex: rowIndex,
+        key: fieldName,
+        value: cell,
+      })
 
   # Memoize to prevent unneeded API calls
   _getCustomTypeDefinition: _.memoize (customTypeKey) ->

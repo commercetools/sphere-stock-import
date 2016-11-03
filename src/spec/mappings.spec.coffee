@@ -142,34 +142,77 @@ describe 'Mappings', ->
 
   describe '::mapFieldTypes', ->
     it 'should map String type', ->
-      result = @map.mapFieldTypes @customTypeDefinition.fieldDefinitions,@customTypeDefinition.key,2,'stringtype','okay'
+      result = @map.mapFieldTypes({
+        fieldDefinitions: @customTypeDefinition.fieldDefinitions,
+        typeDefinitionKey: @customTypeDefinition.key,
+        rowIndex: 2,
+        key: 'stringtype',
+        value: 'okay',
+      })
       expect(result).toBe 'okay'
 
     it 'should map Number type', ->
-      result = @map.mapFieldTypes @customTypeDefinition.fieldDefinitions,@customTypeDefinition.key,2,'numbertype','123'
+      result = @map.mapFieldTypes({
+        fieldDefinitions: @customTypeDefinition.fieldDefinitions,
+        typeDefinitionKey: @customTypeDefinition.key,
+        rowIndex: 2,
+        key: 'numbertype',
+        value: '123',
+      })
       expect(@map.errors).toEqual []
       expect(result).toBe 123
 
     it 'should map Boolean type', ->
-      result = @map.mapFieldTypes @customTypeDefinition.fieldDefinitions,@customTypeDefinition.key,2,'booleantype','true'
+      result = @map.mapFieldTypes({
+        fieldDefinitions: @customTypeDefinition.fieldDefinitions,
+        typeDefinitionKey: @customTypeDefinition.key,
+        rowIndex: 2,
+        key: 'booleantype',
+        value: 'true',
+      })
       expect(result).toBe true
       expect(@map.errors).toEqual []
-      result = @map.mapFieldTypes @customTypeDefinition.fieldDefinitions,@customTypeDefinition.key,2,'booleantype','false'
+      result = @map.mapFieldTypes({
+        fieldDefinitions: @customTypeDefinition.fieldDefinitions,
+        typeDefinitionKey: @customTypeDefinition.key,
+        rowIndex: 2,
+        key: 'booleantype',
+        value: 'false',
+      })
       expect(result).toBe false
       expect(@map.errors).toEqual []
 
     it 'should map Enum type', ->
-      result = @map.mapFieldTypes @customTypeDefinition.fieldDefinitions,@customTypeDefinition.key,2,'enumtype','la'
+      result = @map.mapFieldTypes({
+        fieldDefinitions: @customTypeDefinition.fieldDefinitions,
+        typeDefinitionKey: @customTypeDefinition.key,
+        rowIndex: 2,
+        key: 'enumtype',
+        value: 'la',
+      })
       expect(result).toBe 'la'
       expect(@map.errors).toEqual []
 
     it 'should map localizedenumtype type', ->
-      result = @map.mapFieldTypes @customTypeDefinition.fieldDefinitions,@customTypeDefinition.key,2,'localizedstringtype','la','de'
+      result = @map.mapFieldTypes({
+        fieldDefinitions: @customTypeDefinition.fieldDefinitions,
+        typeDefinitionKey: @customTypeDefinition.key,
+        rowIndex: 2,
+        key: 'localizedstringtype',
+        value: 'la',
+        langHeader: 'de',
+      })
       expect(result).toEqual de: 'la'
       expect(@map.errors).toEqual []
 
     it 'should map money type', ->
-      result = @map.mapFieldTypes @customTypeDefinition.fieldDefinitions,@customTypeDefinition.key,2,'money','EUR 1400'
+      result = @map.mapFieldTypes({
+        fieldDefinitions: @customTypeDefinition.fieldDefinitions,
+        typeDefinitionKey: @customTypeDefinition.key,
+        rowIndex: 2,
+        key: 'money',
+        value: 'EUR 1400',
+      })
       expect(result).toEqual currencyCode: 'EUR', centAmount: 1400
       expect(@map.errors).toEqual []
 

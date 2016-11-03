@@ -8,7 +8,7 @@ class CustomFieldMappings
   constructor: (options = {}) ->
     @errors = []
 
-  mapFieldTypes: (fieldDefinitions, typeDefinitionKey, rowIndex, key, value,langHeader) ->
+  mapFieldTypes: ({fieldDefinitions, typeDefinitionKey, rowIndex, key, value, langHeader}) ->
     result = undefined
     _.each fieldDefinitions, (fieldDefinition) =>
       if fieldDefinition.name is key
