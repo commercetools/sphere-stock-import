@@ -174,6 +174,12 @@ class StockImport
         Promise.each(row, (cell, index) =>
           headerName = mappedHeaderIndexes[index]
 
+          # Change deprecated header 'quantity' to 'quantityOnStock' for backward compatibility
+          if headerName == CONS.DEPRECATED_HEADER_QUANTITY
+            @logger.warn "The header name #{CONS.DEPRECATED_HEADER_QUANTITY} has been deprecated!"
+            @logger.warn "Please change #{CONS.DEPRECATED_HEADER_QUANTITY} to #{CONS.HEADER_QUANTITY}"
+            headerName = CONS.HEADER_QUANTITY
+
           if CONS.HEADER_CUSTOM_REGEX.test headerName
             customTypeKey = row[mappedHeaderIndexes.indexOf(CONS.HEADER_CUSTOM_TYPE)]
 

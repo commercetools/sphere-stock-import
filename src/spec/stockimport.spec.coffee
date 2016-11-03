@@ -395,6 +395,18 @@ describe 'StockImport', ->
           expect(s.quantityOnStock).toBe -3
           done()
 
+    it 'should map deprecated header quantity', (done) ->
+      rawCSV =
+        '''
+        sku,quantity
+        123,77
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(stocks[0].sku).toBe '123'
+          expect(stocks[0].quantityOnStock).toBe 77
+          done()
+
     it 'should not crash when quantity is missing', (done) ->
       rawCSV =
         '''

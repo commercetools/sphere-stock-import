@@ -1,6 +1,7 @@
 constants =
   HEADER_SKU: 'sku'
   HEADER_QUANTITY: 'quantityOnStock'
+  DEPRECATED_HEADER_QUANTITY: 'quantity'
   HEADER_RESTOCKABLE: 'restockableInDays'
   HEADER_EXPECTED_DELIVERY: 'expectedDelivery'
   HEADER_SUPPLY_CHANNEL: 'supplyChannel'
