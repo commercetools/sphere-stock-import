@@ -231,26 +231,19 @@ class StockImport
     else
       data.custom.fields[fieldName] = @customFieldMappings.mapFieldTypes customTypeDefinition.fieldDefinitions,customTypeDefinition.key,rowIndex,fieldName,cell
 
-
+  # Memoize to prevent unneeded API calls
   _getCustomTypeDefinition: _.memoize (customTypeKey) ->
-    @__getCustomTypeDefinition customTypeKey
-
-  # Should not be called directly.
-  __getCustomTypeDefinition: (customTypeKey) ->
     @client.types.byKey(customTypeKey).fetch()
 
+  # Memoize to prevent unneeded API calls
   _mapChannelKeyToReference: _.memoize (key) ->
-    @__mapChannelKeyToReference key
-
-  # Should not be called directly.
-  __mapChannelKeyToReference: (key) ->
     @client.channels.where("key=\"#{key}\"").fetch()
-      .then (response) =>
-        if (response.body.results[0] && response.body.results[0].id)
-          return typeId: CONS.CHANNEL_REFERENCE_TYPE, id: response.body.results[0].id
+    .then (response) =>
+      if (response.body.results[0] && response.body.results[0].id)
+        return typeId: CONS.CHANNEL_REFERENCE_TYPE, id: response.body.results[0].id
 
         @customFieldMappings.errors.push("Couldn\'t find channel with #{key} as key.")
-      .catch (@customFieldMappings.errors.push)
+        .catch (@customFieldMappings.errors.push)
 
   _createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
     entry =

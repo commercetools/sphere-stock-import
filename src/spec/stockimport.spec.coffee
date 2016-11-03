@@ -266,9 +266,9 @@ describe 'StockImport', ->
         done()
 
     it 'should memoize customTypeDefinition result', (done) ->
-      stub = sinon.stub(@import, '__getCustomTypeDefinition')
-        .onFirstCall('first').returns(Promise.resolve('first call'))
-        .onSecondCall('second').returns(Promise.resolve('second call'))
+      stub = sinon.stub(@import.client.types, 'byKey')
+        .onFirstCall('first').returns(fetch: -> Promise.resolve('first call'))
+        .onSecondCall('second').returns(fetch: -> Promise.resolve('second call'))
       Promise.all([
         @import._getCustomTypeDefinition('first'),
         @import._getCustomTypeDefinition('first'),
