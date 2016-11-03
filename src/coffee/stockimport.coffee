@@ -3,7 +3,6 @@ _ = require 'underscore'
 _.mixin require('underscore-mixins')
 csv = require 'csv'
 Promise = require 'bluebird'
-{ElasticIo} = require 'sphere-node-utils'
 {SphereClient, InventorySync} = require 'sphere-node-sdk'
 package_json = require '../package.json'
 CONS = require './constants'
@@ -33,30 +32,7 @@ class StockImport
       when fileName.match /\.xml$/i then 'XML'
       else throw new Error "Unsupported mode (file extension) for file #{fileName} (use csv or xml)"
 
-  ###
-  Elastic.io calls this for each csv row, so each inventory entry will be processed at a time
-  ###
-  elasticio: (msg, cfg, next, snapshot) ->
-    debug 'Running elastic.io: %j', msg
-    if _.size(msg.attachments) > 0
-      for attachment of msg.attachments
-        content = msg.attachments[attachment].content
-        continue unless content
-        encoded = new Buffer(content, 'base64').toString()
-        mode = @getMode attachment
-        @run encoded, mode, next
-        .then (result) =>
-          if result
-            ElasticIo.returnSuccess result, next
-          else
-            @summaryReport()
-            .then (message) ->
-              ElasticIo.returnSuccess message, next
-        .catch (err) ->
-          ElasticIo.returnFailure err, next
-        .done()
-
-    else if _.size(msg.body) > 0
+    if _.size(msg.body) > 0
       _ensureChannel = =>
         if msg.body.CHANNEL_KEY?
           @client.channels.ensure(msg.body.CHANNEL_KEY, CONS.CHANNEL_ROLES)
@@ -82,14 +58,9 @@ class StockImport
               when 201 then @_summary.created++
               when 200 then @_summary.updated++
           @summaryReport()
-        .then (message) ->
-          ElasticIo.returnSuccess message, next
       .catch (err) ->
         debug 'Failed to process inventory: %j', err
-        ElasticIo.returnFailure err, next
       .done()
-    else
-      ElasticIo.returnFailure "#{CONS.LOG_PREFIX}No data found in elastic.io msg.", next
 
   run: (fileContent, mode, next) ->
     @_resetSummary()
@@ -281,8 +252,6 @@ class StockImport
           msg.body.EXPECTED_DELIVERY = entry.expectedDelivery
         if entry[CONS.CHANNEL_REF_NAME]?
           msg.body.CHANNEL_ID = entry[CONS.CHANNEL_REF_NAME].id
-        ElasticIo.returnSuccess msg, next
-      Promise.resolve "#{CONS.LOG_PREFIX}elastic.io messages sent."
     else
       @_processBatches(stocks)
 
