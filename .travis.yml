@@ -16,11 +16,6 @@ script:
   - ./bin/stock-import --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID} --clientSecret ${SPHERE_CLIENT_SECRET} --file data/example.xml
   - ./bin/stock-import --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID} --clientSecret ${SPHERE_CLIENT_SECRET} --file data/example.csv
   - docker build -t commercetools/stock-import .
-env:
-  global:
-    - secure: HYwKMrJ7h5Sz7E1OJf3jv0NOsgvYQ60Kl6qlZUjahoHgYDe//cVLpNJrMPZhAeyTGbpxeeqKxDXorQ6oMn9wqYbQGAXcAWYb0aw0oQH1q9XNteLiW+xVb+PDPRouSCh/cJTjtKdfa/C5L+rb8n6P3TuAI8qooBV9WY8f21IU7aM=
-    - secure: XKG5Icf8flDb4+A5t4pdAkLoQunlly/P6wVBnwhChGizgHaKC2oXrnLfPiQ1EryWdhYLjDSmU8jx7xxF84NPrHp5N8eJTpyW85tWAzpH6144VEyVpiti4OtMcbtq55ppsma6zb80IHxwcDKcg/mXg8r9F6tnUT7+7QmVah0Z7zQ=
-    - secure: qRiJqZFmqQNfjZwk5AV8+DkIbVpyo38qqv8ks255J2zqDcTiBb28ME0UWWs9VXBOXrfPEKet07FAnUWCfguGqMG3+S3yFVxsaGlrX+ZQu8pSbXXseVgUOPPlVKAXHCm6fjf0jpElPhrJJc8QbQth+DUzrTfBTzgQMvEwhLG7auc=
 notifications:
   hipchat:
     rooms:

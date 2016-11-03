@@ -28,7 +28,7 @@ exports.process = (msg, cfg, next, snapshot) ->
       project_key: cfg.sphereProjectKey
     timeout: 60000
     user_agent: "#{package_json.name} - elasticio - #{package_json.version}",
-    csvHeaders: 'sku, quantity'
+    csvHeaders: 'sku, quantityOnStock'
     csvDelimiter: ','
 
   stockimport = new StockImport logger, opts

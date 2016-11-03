@@ -1,25 +1,24 @@
 debug = require('debug')('sphere-stock-import')
 _ = require 'underscore'
 _.mixin require('underscore-mixins')
-Csv = require 'csv'
+csv = require 'csv'
 Promise = require 'bluebird'
 {ElasticIo} = require 'sphere-node-utils'
 {SphereClient, InventorySync} = require 'sphere-node-sdk'
 package_json = require '../package.json'
+CONS = require './constants'
+CustomFieldMappings = require './mappings'
 xmlHelpers = require './xmlhelpers'
-
-CHANNEL_KEY_FOR_XML_MAPPING = 'expectedStock'
-CHANNEL_REF_NAME = 'supplyChannel'
-CHANNEL_ROLES = ['InventorySupply', 'OrderExport', 'OrderImport']
-LOG_PREFIX = "[SphereStockImport] "
 
 class StockImport
 
   constructor: (@logger, options = {}) ->
+    options = _.defaults options, {user_agent: 'sphere-stock-import'}
     @sync = new InventorySync
     @client = new SphereClient options
     @csvHeaders = options.csvHeaders
     @csvDelimiter = options.csvDelimiter
+    @customFieldMappings = new CustomFieldMappings()
     @_resetSummary()
 
   _resetSummary: ->
@@ -60,7 +59,7 @@ class StockImport
     else if _.size(msg.body) > 0
       _ensureChannel = =>
         if msg.body.CHANNEL_KEY?
-          @client.channels.ensure(msg.body.CHANNEL_KEY, CHANNEL_ROLES)
+          @client.channels.ensure(msg.body.CHANNEL_KEY, CONS.CHANNEL_ROLES)
           .then (result) ->
             debug 'Channel ensured, about to create or update: %j', result
             Promise.resolve(result.body.id)
@@ -90,7 +89,7 @@ class StockImport
         ElasticIo.returnFailure err, next
       .done()
     else
-      ElasticIo.returnFailure "#{LOG_PREFIX}No data found in elastic.io msg.", next
+      ElasticIo.returnFailure "#{CONS.LOG_PREFIX}No data found in elastic.io msg.", next
 
   run: (fileContent, mode, next) ->
     @_resetSummary()
@@ -99,7 +98,7 @@ class StockImport
     else if mode is 'CSV'
       @performCSV fileContent, next
     else
-      Promise.reject "#{LOG_PREFIX}Unknown import mode '#{mode}'!"
+      Promise.reject "#{CONS.LOG_PREFIX}Unknown import mode '#{mode}'!"
 
   summaryReport: (filename) ->
     if @_summary.created is 0 and @_summary.updated is 0
@@ -118,9 +117,9 @@ class StockImport
     new Promise (resolve, reject) =>
       xmlHelpers.xmlTransform xmlHelpers.xmlFix(fileContent), (err, xml) =>
         if err?
-          reject "#{LOG_PREFIX}Error on parsing XML: #{err}"
+          reject "#{CONS.LOG_PREFIX}Error on parsing XML: #{err}"
         else
-          @client.channels.ensure(CHANNEL_KEY_FOR_XML_MAPPING, CHANNEL_ROLES)
+          @client.channels.ensure(CONS.CHANNEL_KEY_FOR_XML_MAPPING, CONS.CHANNEL_ROLES)
           .then (result) =>
             stocks = @_mapStockFromXML xml.root, result.body.id
             @_perform stocks, next
@@ -130,35 +129,21 @@ class StockImport
 
   performCSV: (fileContent, next) ->
     new Promise (resolve, reject) =>
-      Csv().from.string(fileContent, {delimiter: @csvDelimiter, trim: true})
-      .to.array (data, count) =>
-        headers = data[0]
-        @_getHeaderIndexes headers, @csvHeaders
-        .then (mappedHeaderIndexes) =>
-          stocks = @_mapStockFromCSV _.tail(data), mappedHeaderIndexes[0], mappedHeaderIndexes[1]
-          debug "Stock mapped from csv for headers #{mappedHeaderIndexes}: %j", stocks
+      csv.parse fileContent, {delimiter: @csvDelimiter, trim: true}, (error, data) =>
+        if (error)
+          reject "#{CONS.LOG_PREFIX}Problem in parsing CSV: #{error}"
 
-          # TODO: ensure channel ??
+        headers = data[0]
+        @_mapStockFromCSV(_.rest(data), headers).then (stocks) =>
+          debug "Stock mapped from csv for headers #{headers}: %j", stocks
+
           @_perform stocks, next
-          .then (result) -> resolve result
+            .then (result) -> resolve result
         .catch (err) -> reject err
         .done()
-      .on 'error', (error) ->
-        reject "#{LOG_PREFIX}Problem in parsing CSV: #{error}"
 
   performStream: (chunk, cb) ->
     @_processBatches(chunk).then -> cb()
-
-  _getHeaderIndexes: (headers, csvHeaders) ->
-    Promise.all _.map csvHeaders.split(','), (h) =>
-      cleanHeader = h.trim()
-      mappedHeader = _.find headers, (header) -> header.toLowerCase() is cleanHeader.toLowerCase()
-      if mappedHeader
-        headerIndex = _.indexOf headers, mappedHeader
-        debug "Found index #{headerIndex} for header #{cleanHeader}: %j", headers
-        Promise.resolve(headerIndex)
-      else
-        Promise.reject "Can't find header '#{cleanHeader}' in '#{headers}'."
 
   _mapStockFromXML: (xmljs, channelId) ->
     stocks = []
@@ -179,11 +164,99 @@ class StockImport
           stocks.push d
     stocks
 
-  _mapStockFromCSV: (rows, skuIndex = 0, quantityIndex = 1) ->
-    _.map rows, (row) =>
-      sku = row[skuIndex].trim()
-      quantity = row[quantityIndex]?.trim()
-      @_createInventoryEntry sku, quantity
+  _mapStockFromCSV: (rows, mappedHeaderIndexes) ->
+    return new Promise (resolve, reject) =>
+      rowIndex = 0 # very weird that csv does not support this internally
+      csv.transform(rows,(row, cb) =>
+        rowIndex++
+        _data = {}
+
+        Promise.each(row, (cell, index) =>
+          headerName = mappedHeaderIndexes[index]
+
+          # Change deprecated header 'quantity' to 'quantityOnStock' for backward compatibility
+          if headerName == CONS.DEPRECATED_HEADER_QUANTITY
+            @logger.warn "The header name #{CONS.DEPRECATED_HEADER_QUANTITY} has been deprecated!"
+            @logger.warn "Please change #{CONS.DEPRECATED_HEADER_QUANTITY} to #{CONS.HEADER_QUANTITY}"
+            headerName = CONS.HEADER_QUANTITY
+
+          if CONS.HEADER_CUSTOM_REGEX.test headerName
+            customTypeKey = row[mappedHeaderIndexes.indexOf(CONS.HEADER_CUSTOM_TYPE)]
+
+            @_getCustomTypeDefinition(customTypeKey).then (response) =>
+              customTypeDefinition = response.body
+              @_mapCustomField(_data, cell, headerName, customTypeDefinition, rowIndex)
+
+          else
+            Promise.resolve(@_mapCellData(cell, headerName)).then (cellData) ->
+              _data[headerName] = cellData
+
+        ).then =>
+          if _.size(@customFieldMappings.errors) isnt 0
+            return cb @customFieldMappings.errors
+          cb null, _data
+      , (err, data) ->
+        if err
+          reject(err)
+        else
+          resolve(data)
+      )
+
+
+  _mapCellData: (data, headerName) ->
+    data = data?.trim()
+    switch on
+      when CONS.HEADER_QUANTITY is headerName then parseInt(data, 10) or 0
+      when CONS.HEADER_RESTOCKABLE is headerName then parseInt(data, 10)
+      when CONS.HEADER_SUPPLY_CHANNEL is headerName then @_mapChannelKeyToReference data
+      else data
+
+  _mapCustomField: (data, cell, headerName, customTypeDefinition, rowIndex) ->
+    fieldName = headerName.split(CONS.HEADER_CUSTOM_SEPERATOR)[1]
+    lang = headerName.split(CONS.HEADER_CUSTOM_SEPERATOR)[2]
+
+    # set data.custom once per row with the type defined
+    if !data.custom
+      data.custom = {
+        "type": {
+          "id": customTypeDefinition.id
+        },
+        "fields": {}
+      }
+    # Set localized object if present
+    if lang
+      data.custom.fields[fieldName] =
+        _.defaults (data.custom.fields[fieldName] || {}),
+        @customFieldMappings.mapFieldTypes({
+          fieldDefinitions: customTypeDefinition.fieldDefinitions,
+          typeDefinitionKey: customTypeDefinition.key,
+          rowIndex: rowIndex,
+          key: fieldName,
+          value: cell,
+          langHeader: lang,
+        })
+    else
+      data.custom.fields[fieldName] = @customFieldMappings.mapFieldTypes({
+        fieldDefinitions: customTypeDefinition.fieldDefinitions,
+        typeDefinitionKey: customTypeDefinition.key,
+        rowIndex: rowIndex,
+        key: fieldName,
+        value: cell,
+      })
+
+  # Memoize to prevent unneeded API calls
+  _getCustomTypeDefinition: _.memoize (customTypeKey) ->
+    @client.types.byKey(customTypeKey).fetch()
+
+  # Memoize to prevent unneeded API calls
+  _mapChannelKeyToReference: _.memoize (key) ->
+    @client.channels.where("key=\"#{key}\"").fetch()
+    .then (response) =>
+      if (response.body.results[0] && response.body.results[0].id)
+        return typeId: CONS.CHANNEL_REFERENCE_TYPE, id: response.body.results[0].id
+
+        @customFieldMappings.errors.push("Couldn\'t find channel with #{key} as key.")
+        .catch (@customFieldMappings.errors.push)
 
   _createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
     entry =
@@ -191,7 +264,7 @@ class StockImport
       quantityOnStock: parseInt(quantity, 10) or 0 # avoid NaN
     entry.expectedDelivery = expectedDelivery if expectedDelivery?
     if channelId?
-      entry[CHANNEL_REF_NAME] =
+      entry[CONS.CHANNEL_REF_NAME] =
         typeId: 'channel'
         id: channelId
     entry
@@ -206,10 +279,10 @@ class StockImport
             QUANTITY: entry.quantityOnStock
         if entry.expectedDelivery?
           msg.body.EXPECTED_DELIVERY = entry.expectedDelivery
-        if entry[CHANNEL_REF_NAME]?
-          msg.body.CHANNEL_ID = entry[CHANNEL_REF_NAME].id
+        if entry[CONS.CHANNEL_REF_NAME]?
+          msg.body.CHANNEL_ID = entry[CONS.CHANNEL_REF_NAME].id
         ElasticIo.returnSuccess msg, next
-      Promise.resolve "#{LOG_PREFIX}elastic.io messages sent."
+      Promise.resolve "#{CONS.LOG_PREFIX}elastic.io messages sent."
     else
       @_processBatches(stocks)
 
@@ -254,10 +327,10 @@ class StockImport
         # check channel
         # - if they have the same channel, it's the same entry
         # - if they have different channels or one of them has no channel, it's not
-        if _.has(entry, CHANNEL_REF_NAME) and _.has(existingEntry, CHANNEL_REF_NAME)
-          entry[CHANNEL_REF_NAME].id is existingEntry[CHANNEL_REF_NAME].id
+        if _.has(entry, CONS.CHANNEL_REF_NAME) and _.has(existingEntry, CONS.CHANNEL_REF_NAME)
+          entry[CONS.CHANNEL_REF_NAME].id is existingEntry[CONS.CHANNEL_REF_NAME].id
         else
-          if _.has(entry, CHANNEL_REF_NAME) or _.has(existingEntry, CHANNEL_REF_NAME)
+          if _.has(entry, CONS.CHANNEL_REF_NAME) or _.has(existingEntry, CONS.CHANNEL_REF_NAME)
             false # one of them has a channel, the other not
           else
             true # no channel, but same sku

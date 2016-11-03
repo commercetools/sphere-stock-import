@@ -30,16 +30,20 @@ When using SFTP, you should not use the `--file` option, instead you need to pro
 
 ### CSV Format
 
-Column 1 will be used as `SKU` identifier, whereas column 2 will be used as `quantity`.
-An example:
+A simple example:
 ```
-sku,quantity
-foo,9
-bar,-1
-SKU-123,42
+sku,quantityOnStock,restockableInDays,supplyChannel,expectedDelivery
+foo,9,3,channel-key,2016-10-27T14:36:04.487Z
+bar,-1,3,channel-key,2016-10-27T14:36:04.487Z
+SKU-123,42,3,other-channel,2016-10-27T14:36:04.487Z
 ```
 
-> Please note that the header names are currently ignored.
+### Custom fields
+```
+sku,quantityOnStock,customType,customField.foo,customField.bar
+123,77,my-type,12,nac
+abc,-3,my-type,5,ho
+```
 
 ### XML Format
 
@@ -48,11 +52,11 @@ SKU-123,42
 <root>
   <row>
     <code>foo</code>
-    <quantity>7</quantity>
+    <quantityOnStock>7</quantityOnStock>
   </row>
   <row>
     <code>bar</code>
-    <quantity>1</quantity>
+    <quantityOnStock>1</quantityOnStock>
   </row>
 </root>
 ```

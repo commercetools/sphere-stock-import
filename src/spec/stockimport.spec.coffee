@@ -1,14 +1,23 @@
 _ = require 'underscore'
 _.mixin require('underscore-mixins')
 Promise = require 'bluebird'
-Csv = require 'csv'
+csv = require 'csv'
+sinon = require 'sinon'
 {ExtendedLogger} = require 'sphere-node-utils'
 package_json = require '../package.json'
 Config = require '../config'
 xmlHelpers = require '../lib/xmlhelpers.js'
 StockImport = require '../lib/stockimport'
 
+{customTypePayload1} = require './helper-customTypePayload.spec'
+
 describe 'StockImport', ->
+  cleanup = (endpoint) ->
+    endpoint.all().fetch()
+      .then (result) ->
+        Promise.all _.map result.body.results, (e) ->
+          endpoint.byId(e.id).delete(e.version)
+
   beforeEach ->
     logger = new ExtendedLogger
       logConfig:
@@ -18,7 +27,6 @@ describe 'StockImport', ->
         ]
     @import = new StockImport logger,
       config: Config.config
-      csvHeaders: 'id, amount'
       csvDelimiter: ','
 
   it 'should initialize', ->
@@ -26,6 +34,8 @@ describe 'StockImport', ->
     expect(@import.client).toBeDefined()
     expect(@import.client.constructor.name).toBe 'SphereClient'
     expect(@import.sync).toBeDefined()
+    expect(@import.client?._rest?._options?.headers?['User-Agent'])
+      .toBe('sphere-stock-import')
     expect(@import.sync.constructor.name).toBe 'InventorySync'
 
 
@@ -205,79 +215,240 @@ describe 'StockImport', ->
         expect(s.supplyChannel.id).toBe 'myChannelId'
         done()
 
+  describe '::_mapChannelKeyToReference', ->
+    testChannel = undefined
 
-  describe '::_getHeaderIndexes', ->
-    it 'should reject if no sku header found', (done) ->
-      @import._getHeaderIndexes ['bla', 'foo', 'quantity', 'price'], 'sku, q'
-      .then (msg) -> done msg
-      .catch (err) ->
-        expect(err).toBe "Can't find header 'sku' in 'bla,foo,quantity,price'."
+    beforeEach (done) ->
+      channelPayload = {
+        "key": "mah-channel"
+      }
+
+      cleanup(@import.client.channels)
+        .then =>
+          @import.client.channels.create(channelPayload)
+        .then((result) ->
+          testChannel = result
+          done()
+        )
+        .catch(done)
+
+    it 'should fetch reference from key', (done) ->
+      @import._mapChannelKeyToReference testChannel.body.key
+        .then (result) ->
+          expect(result).toEqual {typeId: 'channel', id: testChannel.body.id}
+          done()
+
+  describe '::_getCustomTypeDefinition', ->
+    types = undefined
+    customType = undefined
+
+    beforeEach (done) ->
+      types = @import.client.types
+      cleanup(@import.client.inventoryEntries).then ->
+        cleanup(types).then ->
+          customTypePayload = customTypePayload1()
+          types.create(customTypePayload).then (result) ->
+            customType = result.body
+            done()
+
+    afterEach (done) ->
+      cleanup(@import.client.types)
+        .then ->
+          done()
+
+    it 'should fetch customTypeDefinition', (done) ->
+
+      @import._getCustomTypeDefinition(customType.key).then (data) ->
+        result = data.body
+        expect(result).toBeDefined()
+        expect(result.key).toBe(customType.key)
+        expect(result.fieldDefinitions).toBeDefined()
         done()
 
-    it 'should reject if no quantity header found', (done) ->
-      @import._getHeaderIndexes ['sku', 'price', 'quality'], 'sku, quantity'
-      .catch (err) ->
-        expect(err).toBe "Can't find header 'quantity' in 'sku,price,quality'."
+    it 'should memoize customTypeDefinition result', (done) ->
+      stub = sinon.stub(@import.client.types, 'byKey')
+        .onFirstCall('first').returns(fetch: -> Promise.resolve('first call'))
+        .onSecondCall('second').returns(fetch: -> Promise.resolve('second call'))
+      Promise.all([
+        @import._getCustomTypeDefinition('first'),
+        @import._getCustomTypeDefinition('first'),
+        @import._getCustomTypeDefinition('second'),
+        @import._getCustomTypeDefinition('second'),
+        @import._getCustomTypeDefinition('first'),
+      ]).then (result) ->
+        expect(result.length).toBe(5)
+        expect(stub.stub.calledTwice).toBeTruthy(
+          'Only two calls are made, cached result is returned for other calls'
+        )
         done()
-      .then (msg) -> done msg
 
-    it 'should return the indexes of the two named columns', (done) ->
-      @import._getHeaderIndexes ['foo', 'q', 'bar', 's'], 's, q'
-      .then (indexes) ->
-        expect(indexes[0]).toBe 3
-        expect(indexes[1]).toBe 1
-        done()
-      .catch (err) -> done(_.prettify err)
+    it 'should map custom fields with type String', (done) ->
+      rawCSV =
+        '''
+        sku,quantityOnStock,customType,customField.quantityFactor,customField.color
+        123,77,my-type,12,nac
+        abc,-3,my-type,5,ho
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(_.size stocks).toBe 2
+          s = stocks[0]
+          expect(s.sku).toBe '123'
+          expect(s.quantityOnStock).toBe(77)
+          expect(s.custom.type.id).toBeDefined()
+          expect(s.custom.fields.quantityFactor).toBe(12)
+          expect(s.custom.fields.color).toBe 'nac'
+          s = stocks[1]
+          expect(s.sku).toBe 'abc'
+          expect(s.quantityOnStock).toBe -3
+          expect(s.custom.type.id).toBeDefined()
+          expect(s.custom.fields.quantityFactor).toBe 5
+          expect(s.custom.fields.color).toBe 'ho'
+          done()
+
+    it 'should map custom fields with type LocalizedString', (done) ->
+      rawCSV =
+        '''
+        sku,quantityOnStock,customType,customField.localizedString.en,customField.localizedString.de,customField.name.de
+        123,77,my-type,english,deutsch,abi
+        abc,-3,my-type,blue,automat,sil
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0])
+          .then((stocks) ->
+            expect(_.size stocks).toBe 2
+            s = stocks[0]
+            expect(s.sku).toBe '123'
+            expect(s.quantityOnStock).toBe(77)
+            expect(s.custom.type.id).toBeDefined()
+            expect(s.custom.fields.localizedString.en).toBe 'english'
+            expect(s.custom.fields.localizedString.de).toBe 'deutsch'
+            expect(s.custom.fields.name.de).toBe 'abi'
+            s = stocks[1]
+            expect(s.sku).toBe 'abc'
+            expect(s.quantityOnStock).toBe -3
+            expect(s.custom.type.id).toBeDefined()
+            expect(s.custom.fields.localizedString.en).toBe 'blue'
+            expect(s.custom.fields.localizedString.de).toBe 'automat'
+            expect(s.custom.fields.name.de).toBe 'sil'
+            done())
+          .catch (err) ->
+            expect(err).not.toBeDefined()
+            done()
+
+    it 'should map custom fields with type Money', (done) ->
+      rawCSV =
+        '''
+        sku,quantityOnStock,customType,customField.price,customField.color
+        123,77,my-type,EUR 120,nac
+        abc,-3,my-type,EUR 230,ho
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(_.size stocks).toBe 2
+          s = stocks[0]
+          expect(s.sku).toBe '123'
+          expect(s.quantityOnStock).toBe(77)
+          expect(s.custom.type.id).toBeDefined()
+          expect(s.custom.fields.price).toEqual {currencyCode: 'EUR', centAmount: 120}
+          expect(s.custom.fields.color).toBe 'nac'
+          s = stocks[1]
+          expect(s.sku).toBe 'abc'
+          expect(s.quantityOnStock).toBe -3
+          expect(s.custom.type.id).toBeDefined()
+          expect(s.custom.fields.price).toEqual {currencyCode: 'EUR', centAmount: 230}
+          expect(s.custom.fields.color).toBe 'ho'
+          done()
+
+    it 'should report errors on data', (done) ->
+      rawCSV =
+        '''
+        sku,quantityOnStock,customType,customField.price,customField.color
+        123,77,my-type,EUR 120,nac
+        abc,-3,my-type,EUR,ho
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then((stocks) ->
+          expect(stocks).not.toBeDefined()
+        ).catch (err) ->
+          expect(err.length).toBe 1
+          expect(err.join()).toContain('Can not parse money')
+          done()
 
 
   describe '::_mapStockFromCSV', ->
-
     it 'should map a simple entry', (done) ->
       rawCSV =
         '''
-        id,amount
+        sku,quantityOnStock
         123,77
         abc,-3
         '''
-      Csv().from.string(rawCSV).to.array (data, count) =>
-        stocks = @import._mapStockFromCSV _.rest(data)
-        expect(_.size stocks).toBe 2
-        s = stocks[0]
-        expect(s.sku).toBe '123'
-        expect(s.quantityOnStock).toBe 77
-        s = stocks[1]
-        expect(s.sku).toBe 'abc'
-        expect(s.quantityOnStock).toBe -3
-        done()
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(_.size stocks).toBe 2
+          s = stocks[0]
+          expect(s.sku).toBe '123'
+          expect(s.quantityOnStock).toBe 77
+          s = stocks[1]
+          expect(s.sku).toBe 'abc'
+          expect(s.quantityOnStock).toBe -3
+          done()
 
-    it 'shoud not crash when quantity is missing', (done) ->
+    it 'should map deprecated header quantity', (done) ->
       rawCSV =
         '''
-        foo,id,amount
+        sku,quantity
+        123,77
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(stocks[0].sku).toBe '123'
+          expect(stocks[0].quantityOnStock).toBe 77
+          done()
+
+    it 'should not crash when quantity is missing', (done) ->
+      rawCSV =
+        '''
+        foo,sku,quantityOnStock
+        bar,abc,
+        bar,123,77
+        '''
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(_.size stocks).toBe 2
+          s = stocks[0]
+          expect(s.sku).toBe 'abc'
+          expect(s.quantityOnStock).toBe 0
+          s = stocks[1]
+          expect(s.sku).toBe '123'
+          expect(s.quantityOnStock).toBe 77
+          done()
+
+    it 'should crash when csv columns is inconsistent', (done) ->
+      # Empty columns should be represented with empty delimiter
+      rawCSV =
+        '''
+        foo,sku,quantityOnStock
         bar,abc
         bar,123,77
         '''
-      Csv().from.string(rawCSV).to.array (data, count) =>
-        stocks = @import._mapStockFromCSV _.rest(data), 1, 2
-        expect(_.size stocks).toBe 2
-        s = stocks[0]
-        expect(s.sku).toBe 'abc'
-        expect(s.quantityOnStock).toBe 0
-        s = stocks[1]
-        expect(s.sku).toBe '123'
-        expect(s.quantityOnStock).toBe 77
+      csv.parse rawCSV, (err, data) ->
+        expect(err).toBeDefined()
+        expect(err.message).toBe('Number of columns is inconsistent on line 2')
+        expect(data).not.toBeDefined()
         done()
 
     xit 'shoud not crash when quantity is missing', (done) ->
       rawCSV =
         '''
-        foo,id,amount
+        foo,sku,quantityOnStock
         bar
         '''
-      Csv().from.string(rawCSV).to.array (data, count) =>
-        stocks = @import._mapStockFromCSV _.rest(data), 1, 2
-        expect(_.size stocks).toBe 0
-        done()
+      csv.parse rawCSV, (err, data) =>
+        @import._mapStockFromCSV(_.rest(data), data[0]).then (stocks) ->
+          expect(_.size stocks).toBe 0
+          done()
 
 
   describe '::performCSV', ->
@@ -285,18 +456,18 @@ describe 'StockImport', ->
     it 'should parse with a custom delimiter', (done) ->
       rawCSV =
         '''
-        id;amount
+        sku;quantityOnStock
         123;77
         abc;-3
         '''
       @import.csvDelimiter = ';'
       spyOn(@import, '_perform').andReturn Promise.resolve()
-      spyOn(@import, '_getHeaderIndexes').andCallThrough()
+      spyOn(@import, '_mapStockFromCSV').andCallThrough()
       @import.performCSV(rawCSV)
-      .then (result) =>
-        expect(@import._getHeaderIndexes).toHaveBeenCalledWith ['id', 'amount'], 'id, amount'
-        done()
-      .catch (err) -> done(_.prettify err)
+        .then (result) =>
+          expect(@import._mapStockFromCSV).toHaveBeenCalledWith [ [ '123', '77' ], [ 'abc', '-3' ] ], [ 'sku', 'quantityOnStock' ]
+          done()
+        .catch (err) -> done(_.prettify err)
 
 
   describe '::performStream', ->

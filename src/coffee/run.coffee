@@ -19,7 +19,6 @@ argv = require('optimist')
   .describe('sphereAuthHost', 'SPHERE.IO OAuth host to connect to')
   .describe('sphereAuthProtocol', 'SPHERE.IO OAuth protocol to connect to')
   .describe('file', 'XML or CSV file containing inventory information to import')
-  .describe('csvHeaders', 'a list of column names to use as mapping, comma separated')
   .describe('csvDelimiter', 'the delimiter type used in the csv')
   .describe('sftpCredentials', 'the path to a JSON file where to read the credentials from')
   .describe('sftpHost', 'the SFTP host (overwrite value in sftpCredentials JSON, if given)')
@@ -35,7 +34,6 @@ argv = require('optimist')
   .describe('logDir', 'directory to store logs')
   .describe('logSilent', 'use console to print messages')
   .describe('timeout', 'Set timeout for requests')
-  .default('csvHeaders', 'sku, quantity')
   .default('csvDelimiter', ',')
   .default('logLevel', 'info')
   .default('logDir', '.')
@@ -102,7 +100,6 @@ ensureCredentials(argv)
   options = _.extend credentials,
     timeout: argv.timeout
     user_agent: "#{package_json.name} - #{package_json.version}"
-    csvHeaders: argv.csvHeaders
     csvDelimiter: argv.csvDelimiter
 
   options.host = argv.sphereHost if argv.sphereHost
@@ -148,7 +145,7 @@ ensureCredentials(argv)
 
       # unsafeCleanup: recursively removes the created temporary directory, even when it's not empty
       tmp.dirAsync {unsafeCleanup: true}
-      .then (tmpPath) =>
+      .then (tmpPath) ->
         logger.debug "Tmp folder created at #{tmpPath}"
         sftpHelper.download(tmpPath)
         .then (files) ->

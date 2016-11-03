@@ -105,7 +105,7 @@ describe 'elasticio integration', ->
         sphereProjectKey: Config.config.project_key
       csv =
         '''
-        sku,quantity
+        sku,quantityOnStock
         c1,1
         c2,2
         c3,3
