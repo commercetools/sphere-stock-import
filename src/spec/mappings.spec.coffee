@@ -237,7 +237,3 @@ describe 'Mappings', ->
       result = @map.mapMoney 'invalid',@customTypeDefinition.key,2
       expect(result).not.toBeDefined()
       expect(@map.errors[0]).toBe "[row 2:my-category] Can not parse money 'invalid'!"
-    it 'should add error if currency in money is not a valid currency', ->
-      result = @map.mapMoney 'ABI 140',@customTypeDefinition.key,2
-      expect(result).not.toBeDefined()
-      expect(@map.errors[0]).toBe "[row 2:my-category] Parsed currency is not valid 'ABI 140'!"

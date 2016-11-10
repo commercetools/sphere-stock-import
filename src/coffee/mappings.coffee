@@ -88,11 +88,6 @@ class CustomFieldMappings
       @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] Can not parse money '#{rawMoney}'!"
       return
 
-    validCurr = CONS.REGEX_CUR.exec matchedMoney[1]
-    unless validCurr
-      @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] Parsed currency is not valid '#{rawMoney}'!"
-      return
-
     money =
       currencyCode: matchedMoney[1].toUpperCase()
       centAmount: parseInt matchedMoney[2],10
