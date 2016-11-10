@@ -12,14 +12,30 @@ class CustomFieldMappings
     result = undefined
     _.each fieldDefinitions, (fieldDefinition) =>
       if fieldDefinition.name is key
-        switch fieldDefinition.type.name
-          when 'Number' then result = @mapNumber value,typeDefinitionKey,rowIndex
-          when 'Boolean' then result = @mapBoolean value,typeDefinitionKey,rowIndex
-          when 'Money' then result = @mapMoney value,typeDefinitionKey,rowIndex
-          when 'LocalizedString' then result = @mapLocalizedString value, typeDefinitionKey, rowIndex,langHeader
-          when 'Set' then result = @mapSet value,typeDefinitionKey,rowIndex,fieldDefinition.type.elementType
-          else result = value
+        # Try to map the value type by getting the appropriate function
+        try
+          if fieldDefinition.type.name == 'LocalizedString'
+            result = @['map' + fieldDefinition.type.name] value, typeDefinitionKey, rowIndex, langHeader
+          else
+            result = @['map' + fieldDefinition.type.name] value, typeDefinitionKey, rowIndex
+        catch
+          @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] The type '#{fieldDefinition.type.name}' is not valid."
+          return
     result
+
+  mapSet: (values, typeDefinitionKey, rowIndex, elementType) ->
+    result = undefined
+    values = values.split(',')
+
+    result = _.map values, (value) =>
+      # Try to map the value type by getting the appropiate function
+      try
+        @['map' + elementType.name] value, typeDefinitionKey, rowIndex
+      catch
+        @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] The type '#{elementType.name}' is not valid."
+        return
+
+    _.reject(result, _.isUndefined)
 
   isValidValue: (rawValue) ->
     return _.isString(rawValue) and rawValue.length > 0
@@ -43,24 +59,19 @@ class CustomFieldMappings
     }
   }
   ###
+
   mapLocalizedString: (value, typeDefinitionKey, rowIndex, langHeader, regEx = CONS.REGEX_LANGUAGE) ->
     if !regEx.test langHeader
-      @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] localisedString  header '#{langHeader}' format is not valid!" unless regEx.test langHeader
+      @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] localizedString  header '#{langHeader}' format is not valid!" unless regEx.test langHeader
       return
     else
       "#{langHeader}": value
 
-  mapSet: (values, typeDefinitionKey, rowIndex, elementType) ->
-    result = undefined
-    values = values.split(',')
-    result = _.map values, (value) =>
-      switch elementType.name
-        when 'Number' then @mapNumber value,typeDefinitionKey,rowIndex
-        when 'Boolean' then @mapBoolean value,typeDefinitionKey,rowIndex
-        when 'Money' then @mapMoney value,typeDefinitionKey,rowIndex
-        when 'LocalizedString' then @mapLocalizedString value, typeDefinitionKey, rowIndex
-        else value
-    _.reject(result, _.isUndefined)
+  mapString: (rawString) -> rawString
+  mapEnum: (rawEnum) -> rawEnum
+  mapDate: (rawDate) -> rawDate
+  mapTime: (rawTime) -> rawTime
+  mapDateTime: (rawDateTime) -> rawDateTime
 
   mapBoolean: (rawBoolean, typeDefinitionKey, rowIndex) ->
     result = undefined
@@ -76,8 +87,6 @@ class CustomFieldMappings
     catch
       @errors.push errorMsg
       return
-
-
 
   # EUR 300
   # USD 999
