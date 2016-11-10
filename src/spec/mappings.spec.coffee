@@ -128,7 +128,7 @@ describe 'Mappings', ->
     it 'should add error if value is not valid', ->
       result = @map.mapLocalizedString 'blue',@customTypeDefinition.key,2,'invalid'
       expect(result).not.toBeDefined()
-      expect(@map.errors[0]).toBe "[row 2:my-category] localisedString  header 'invalid' format is not valid!"
+      expect(@map.errors[0]).toBe "[row 2:my-category] localizedString  header 'invalid' format is not valid!"
 
   describe '::mapBoolean', ->
     it 'should convert to boolean', ->
@@ -217,15 +217,59 @@ describe 'Mappings', ->
       expect(@map.errors).toEqual []
 
   describe '::mapSet', ->
-    it 'should convert to set', ->
+    it 'should convert string set', ->
+      elementType = name: 'String'
+      result = @map.mapSet 'some,things', @customTypeDefinition.key, 2, elementType
+      expect(result).toEqual ['some', 'things']
+
+    it 'should convert boolean set', ->
+      elementType = name: 'Boolean'
+      result = @map.mapSet 'true,false,true', @customTypeDefinition.key, 2, elementType
+      expect(result).toEqual [true, false, true]
+
+    it 'should convert to number set', ->
       elementType = name: 'Number'
-      result = @map.mapSet '1,2,3,4',@customTypeDefinition.key,2,elementType
-      expect(result).toEqual [1,2,3,4]
+      result = @map.mapSet '1,2,3,4', @customTypeDefinition.key, 2, elementType
+      expect(result).toEqual [1, 2, 3, 4]
+
+    it 'should convert to money set', ->
+      elementType = name: 'Money'
+      result = @map.mapSet 'EUR 1400,JPY 9001', @customTypeDefinition.key, 2, elementType
+      expect(result).toEqual [
+        {'currencyCode': 'EUR', 'centAmount': 1400},
+        {'currencyCode': 'JPY', 'centAmount': 9001}
+      ]
+
+    it 'should convert to enum set', ->
+      elementType = name: 'Enum'
+      result = @map.mapSet 'in,live', @customTypeDefinition.key, 2, elementType
+      expect(result).toEqual ['in', 'live']
+
+    it 'should convert to date set', ->
+      elementType = name: 'Date'
+      result = @map.mapSet '2016-09-11,2016-09-12', @customTypeDefinition.key, 2, elementType
+      expect(result).toEqual ['2016-09-11', '2016-09-12']
+
+    it 'should convert to time set', ->
+      elementType = name: 'Time'
+      result = @map.mapSet '14:00:00.000,15:00:00.000', @customTypeDefinition.key, 2, elementType
+      expect(result).toEqual ['14:00:00.000', '15:00:00.000']
+
+    it 'should convert to datetime set', ->
+      elementType = name: 'DateTime'
+      result = @map.mapSet '2001-09-11T14:00:00.000Z,2089-09-11T14:00:00.000Z', @customTypeDefinition.key, 2, elementType
+      expect(result).toEqual ['2001-09-11T14:00:00.000Z', '2089-09-11T14:00:00.000Z']
+
+    it 'should add error if type is not supported', ->
+      elementType = name: 'Emoij'
+      result = @map.mapSet '/O.O/,^_^', @customTypeDefinition.key, 2, elementType
+      expect(result).toEqual []
+      expect(@map.errors[0]).toBe '[row 2:my-category] The type \'Emoij\' is not valid.'
 
     it 'should add error if value valid and remove invalid values', ->
       elementType = name: 'Number'
-      result = @map.mapSet '1,2,"3",4',@customTypeDefinition.key,2,elementType
-      expect(result).toEqual [1,2,4]
+      result = @map.mapSet '1,2,"3",4', @customTypeDefinition.key, 2, elementType
+      expect(result).toEqual [1, 2, 4]
       expect(@map.errors[0]).toBe "[row 2:my-category] The number '\"3\"' isn't valid!"
 
   describe '::mapMoney', ->
