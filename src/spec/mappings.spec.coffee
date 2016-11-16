@@ -91,6 +91,12 @@ describe 'Mappings', ->
             "name": "Time"
           },
         }
+        {
+          "name": "emoji",
+          "type": {
+            "name": "Emoji"
+          },
+        },
       ]
 
   it 'should initialize', ->
@@ -172,14 +178,17 @@ describe 'Mappings', ->
       })
       expect(result).toBe true
       expect(@map.errors).toEqual []
+      
+    it 'should map LocalizedString type', ->
       result = @map.mapFieldTypes({
         fieldDefinitions: @customTypeDefinition.fieldDefinitions,
         typeDefinitionKey: @customTypeDefinition.key,
         rowIndex: 2,
-        key: 'booleantype',
-        value: 'false',
+        key: 'localizedstringtype',
+        value: 'hallo',
+        langHeader: 'nl',
       })
-      expect(result).toBe false
+      expect(result).toEqual {nl: 'hallo'}
       expect(@map.errors).toEqual []
 
     it 'should map Enum type', ->
@@ -193,16 +202,16 @@ describe 'Mappings', ->
       expect(result).toBe 'la'
       expect(@map.errors).toEqual []
 
-    it 'should map localizedenumtype type', ->
+    it 'should map LocalizedEnum type', ->
       result = @map.mapFieldTypes({
         fieldDefinitions: @customTypeDefinition.fieldDefinitions,
         typeDefinitionKey: @customTypeDefinition.key,
         rowIndex: 2,
-        key: 'localizedstringtype',
+        key: 'localizedenumtype',
         value: 'la',
         langHeader: 'de',
       })
-      expect(result).toEqual de: 'la'
+      expect(result).toEqual 'la'
       expect(@map.errors).toEqual []
 
     it 'should map money type', ->
@@ -215,6 +224,17 @@ describe 'Mappings', ->
       })
       expect(result).toEqual currencyCode: 'EUR', centAmount: 1400
       expect(@map.errors).toEqual []
+      
+    it 'should add error if type is not supported', ->
+      result = @map.mapFieldTypes({
+        fieldDefinitions: @customTypeDefinition.fieldDefinitions,
+        typeDefinitionKey: @customTypeDefinition.key,
+        rowIndex: 2,
+        key: 'emoji',
+        value: 'noop',
+      })
+      expect(result).toBe undefined
+      expect(@map.errors).toEqual ['[row 2:my-category] The type \'Emoji\' is not supported.']
 
   describe '::mapSet', ->
     it 'should convert string set', ->
@@ -261,10 +281,10 @@ describe 'Mappings', ->
       expect(result).toEqual ['2001-09-11T14:00:00.000Z', '2089-09-11T14:00:00.000Z']
 
     it 'should add error if type is not supported', ->
-      elementType = name: 'Emoij'
+      elementType = name: 'Emoji'
       result = @map.mapSet '/O.O/,^_^', @customTypeDefinition.key, 2, elementType
       expect(result).toEqual []
-      expect(@map.errors[0]).toBe '[row 2:my-category] The type \'Emoij\' is not valid.'
+      expect(@map.errors[0]).toBe '[row 2:my-category] The type \'Emoji\' is not supported.'
 
     it 'should add error if value valid and remove invalid values', ->
       elementType = name: 'Number'
