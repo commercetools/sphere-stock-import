@@ -17,7 +17,7 @@ class CustomFieldMappings
           when 'Boolean' then result = @mapBoolean value, typeDefinitionKey, rowIndex
           when 'Money' then result = @mapMoney value, typeDefinitionKey, rowIndex
           when 'LocalizedString' then result = @mapLocalizedString value, typeDefinitionKey, rowIndex, langHeader
-          when 'Set' then result = @mapSet value, typeDefinitionKey, rowIndex
+          when 'Set' then result = @mapSet value, typeDefinitionKey, rowIndex, fieldDefinition.type.elementType
           when 'String', 'Enum', 'LocalizedEnum', 'Date', 'Time', 'DateTime', 'Reference'
             if (!_.isUndefined(value))
               result = value
