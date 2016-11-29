@@ -13,13 +13,37 @@ class CustomFieldMappings
     _.each fieldDefinitions, (fieldDefinition) =>
       if fieldDefinition.name is key
         switch fieldDefinition.type.name
-          when 'Number' then result = @mapNumber value,typeDefinitionKey,rowIndex
-          when 'Boolean' then result = @mapBoolean value,typeDefinitionKey,rowIndex
-          when 'Money' then result = @mapMoney value,typeDefinitionKey,rowIndex
-          when 'LocalizedString' then result = @mapLocalizedString value, typeDefinitionKey, rowIndex,langHeader
-          when 'Set' then result = @mapSet value,typeDefinitionKey,rowIndex,fieldDefinition.type.elementType
-          else result = value
+          when 'Number' then result = @mapNumber value, typeDefinitionKey, rowIndex
+          when 'Boolean' then result = @mapBoolean value, typeDefinitionKey, rowIndex
+          when 'Money' then result = @mapMoney value, typeDefinitionKey, rowIndex
+          when 'LocalizedString' then result = @mapLocalizedString value, typeDefinitionKey, rowIndex, langHeader
+          when 'Set' then result = @mapSet value, typeDefinitionKey, rowIndex, fieldDefinition.type.elementType
+          when 'String', 'Enum', 'LocalizedEnum', 'Date', 'Time', 'DateTime', 'Reference'
+            if (!_.isUndefined(value))
+              result = value
+          else
+            @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] The type '#{fieldDefinition.type.name}' is not supported."
+            return
+
     result
+
+  mapSet: (values, typeDefinitionKey, rowIndex, elementType) ->
+    result = undefined
+    values = values.split(',')
+
+    result = _.map values, (value) =>
+      switch elementType.name
+        when 'Number' then @mapNumber value, typeDefinitionKey, rowIndex
+        when 'Boolean' then @mapBoolean value, typeDefinitionKey, rowIndex
+        when 'Money' then @mapMoney value, typeDefinitionKey, rowIndex
+        when 'String', 'Enum', 'LocalizedEnum', 'Date', 'Time', 'DateTime', 'Reference'
+          if (!_.isUndefined(value))
+            value
+        else
+          @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] The type '#{elementType.name}' is not supported."
+          return
+
+    _.reject(result, _.isUndefined)
 
   isValidValue: (rawValue) ->
     return _.isString(rawValue) and rawValue.length > 0
@@ -43,24 +67,13 @@ class CustomFieldMappings
     }
   }
   ###
+
   mapLocalizedString: (value, typeDefinitionKey, rowIndex, langHeader, regEx = CONS.REGEX_LANGUAGE) ->
     if !regEx.test langHeader
-      @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] localisedString  header '#{langHeader}' format is not valid!" unless regEx.test langHeader
+      @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] localizedString  header '#{langHeader}' format is not valid!" unless regEx.test langHeader
       return
     else
       "#{langHeader}": value
-
-  mapSet: (values, typeDefinitionKey, rowIndex, elementType) ->
-    result = undefined
-    values = values.split(',')
-    result = _.map values, (value) =>
-      switch elementType.name
-        when 'Number' then @mapNumber value,typeDefinitionKey,rowIndex
-        when 'Boolean' then @mapBoolean value,typeDefinitionKey,rowIndex
-        when 'Money' then @mapMoney value,typeDefinitionKey,rowIndex
-        when 'LocalizedString' then @mapLocalizedString value, typeDefinitionKey, rowIndex
-        else value
-    _.reject(result, _.isUndefined)
 
   mapBoolean: (rawBoolean, typeDefinitionKey, rowIndex) ->
     result = undefined
@@ -77,8 +90,6 @@ class CustomFieldMappings
       @errors.push errorMsg
       return
 
-
-
   # EUR 300
   # USD 999
   mapMoney: (rawMoney, typeDefinitionKey, rowIndex) ->
@@ -86,11 +97,6 @@ class CustomFieldMappings
     matchedMoney = CONS.REGEX_MONEY.exec rawMoney
     unless matchedMoney
       @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] Can not parse money '#{rawMoney}'!"
-      return
-
-    validCurr = CONS.REGEX_CUR.exec matchedMoney[1]
-    unless validCurr
-      @errors.push "[row #{rowIndex}:#{typeDefinitionKey}] Parsed currency is not valid '#{rawMoney}'!"
       return
 
     money =

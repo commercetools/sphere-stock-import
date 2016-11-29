@@ -44,6 +44,7 @@ sku,quantityOnStock,customType,customField.foo,customField.bar
 123,77,my-type,12,nac
 abc,-3,my-type,5,ho
 ```
+Please note: We do not support the localized set type.
 
 ### XML Format
 
