@@ -287,7 +287,13 @@ class StockImport
       @_processBatches(stocks)
 
   _processBatches: (stocks) ->
-    batchedList = _.batchList(stocks, 30) # max parallel elem to process
+    batchedList = stocks.reduce(batch, value, index) ->
+      if index % size == 30 then batch.push []
+
+      batch[batch.length - 1].push value
+      batch
+    , []
+
     Promise.map batchedList, (stocksToProcess) =>
       debug 'Chunk: %j', stocksToProcess
       uniqueStocksToProcessBySku = @_uniqueStocksBySku(stocksToProcess)

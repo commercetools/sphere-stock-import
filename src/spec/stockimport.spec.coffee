@@ -1,5 +1,4 @@
 _ = require 'underscore'
-_.mixin require('underscore-mixins')
 Promise = require 'bluebird'
 csv = require 'csv'
 sinon = require 'sinon'
@@ -467,7 +466,7 @@ describe 'StockImport', ->
         .then (result) =>
           expect(@import._mapStockFromCSV).toHaveBeenCalledWith [ [ '123', '77' ], [ 'abc', '-3' ] ], [ 'sku', 'quantityOnStock' ]
           done()
-        .catch (err) -> done(_.prettify err)
+        .catch (err) -> done(err)
 
 
   describe '::performStream', ->
@@ -475,7 +474,7 @@ describe 'StockImport', ->
     it 'should execute callback after finished processing batches', (done) ->
       spyOn(@import, '_processBatches').andCallFake -> Promise.resolve()
       @import.performStream [1, 2, 3], done
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
 
 
   describe '::_processBatches', ->
@@ -502,7 +501,7 @@ describe 'StockImport', ->
           created: 1
           updated: 1
         done()
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
 
 
   describe '::_createOrUpdate', ->
@@ -533,7 +532,7 @@ describe 'StockImport', ->
         expect(@import.client._rest.POST.calls[0].args[1]).toEqual expectedUpdate
         expect(@import.client._rest.POST.calls[1].args[1]).toEqual expectedCreate
         done()
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
 
 
   describe '::_match', ->
