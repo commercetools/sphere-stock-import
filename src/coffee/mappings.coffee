@@ -1,5 +1,4 @@
 _ = require 'underscore'
-_.mixin require('underscore-mixins')
 csv = require 'csv'
 CONS = require './constants'
 

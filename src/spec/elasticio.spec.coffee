@@ -1,5 +1,4 @@
 _ = require 'underscore'
-_.mixin require('underscore-mixins')
 Promise = require 'bluebird'
 {SphereClient} = require 'sphere-node-sdk'
 {ExtendedLogger, ElasticIo} = require 'sphere-node-utils'
@@ -33,14 +32,14 @@ describe 'elasticio integration', ->
     @logger.info 'About to setup...'
     cleanup(@logger, @client)
     .then -> done()
-    .catch (err) -> done(_.prettify err)
+    .catch (err) -> done(err)
   , 10000 # 10sec
 
   afterEach (done) ->
     @logger.info 'About to cleanup...'
     cleanup(@logger, @client)
     .then -> done()
-    .catch (err) -> done(_.prettify err)
+    .catch (err) -> done(err)
   , 10000 # 10sec
 
   it 'should work with no attachments nor body', (done) ->
