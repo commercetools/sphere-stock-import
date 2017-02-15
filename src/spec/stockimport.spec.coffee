@@ -512,11 +512,10 @@ describe 'StockImport', ->
         {sku: 'foo', quantityOnStock: 3, supplyChannel: {typeId: 'channel', id: '111'}}
       ]
       existingEntries = [{id: '123', version: 1, sku: 'foo', quantityOnStock: 1}]
-      expectedUpdate =
-        version: 1
-        actions: [
-          {action: 'addQuantity', quantity: 1}
-        ]
+      expectedUpdate = {
+        actions : [ { action : 'changeQuantity', quantity : 2 } ],
+        version : 1
+      }
       expectedCreate =
         sku: 'foo'
         quantityOnStock: 3
