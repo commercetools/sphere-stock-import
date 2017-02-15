@@ -287,8 +287,8 @@ class StockImport
       @_processBatches(stocks)
 
   _processBatches: (stocks) ->
-    batchedList = stocks.reduce(batch, value, index) ->
-      if index % size == 30 then batch.push []
+    batchedList = stocks.reduce (batch, value, index) ->
+      if index % 30 == 0 then batch.push []
 
       batch[batch.length - 1].push value
       batch
