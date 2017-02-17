@@ -1,6 +1,5 @@
 debug = require('debug')('sphere-stock-import')
 _ = require 'underscore'
-_.mixin require('underscore-mixins')
 csv = require 'csv'
 Promise = require 'bluebird'
 {ElasticIo} = require 'sphere-node-utils'
