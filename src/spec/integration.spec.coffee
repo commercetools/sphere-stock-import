@@ -1,5 +1,4 @@
 _ = require 'underscore'
-_.mixin require('underscore-mixins')
 Promise = require 'bluebird'
 {ExtendedLogger} = require 'sphere-node-utils'
 package_json = require '../package.json'
@@ -53,14 +52,14 @@ describe 'integration test', ->
     cleanup(@logger, @client)
     .then =>
       done()
-    .catch (err) -> done(_.prettify err)
+    .catch (err) -> done(err)
   , 10000 # 10sec
 
   afterEach (done) ->
     @logger.info 'About to cleanup...'
     cleanup(@logger, @client)
     .then -> done()
-    .catch (err) -> done(_.prettify err)
+    .catch (err) -> done(err)
   , 10000 # 10sec
 
   describe 'XML file', ->
@@ -71,7 +70,7 @@ describe 'integration test', ->
       .then (message) ->
         expect(message).toBe 'Summary: nothing to do, everything is fine'
         done()
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
     , 10000 # 10sec
 
     it 'one new stock', (done) ->
@@ -105,7 +104,7 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe '123'
         expect(stocks[0].quantityOnStock).toBe 2
         done()
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
     , 10000 # 10sec
 
     it 'add more stock', (done) ->
@@ -140,7 +139,7 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe '234'
         expect(stocks[0].quantityOnStock).toBe 19
         done()
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
     , 10000 # 10sec
 
     it 'remove some stock', (done) ->
@@ -175,7 +174,7 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe '1234567890'
         expect(stocks[0].quantityOnStock).toBe -13
         done()
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
     , 10000 # 10sec
 
     it 'should create and update 2 stock entries when appointed quantity is given', (done) ->
@@ -301,7 +300,7 @@ describe 'integration test', ->
         expect(stockB.expectedDelivery).toBeUndefined()
 
         done()
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
     , 20000 # 20sec
 
   describe 'CSV file', ->
@@ -334,7 +333,7 @@ describe 'integration test', ->
         expect(stocks[0].sku).toBe 'abcd'
         expect(stocks[0].quantityOnStock).toBe 0
         done()
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
     , 10000 # 10sec
 
   describe 'CSV file', =>
@@ -361,14 +360,14 @@ describe 'integration test', ->
         @client.channels.create(key: 'testchannel2').then (result) ->
           testChannel2 = result.body
           done()
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
     , 10000 # 10sec
 
     afterEach (done) ->
       @logger.info 'About to cleanup...'
       cleanup(@logger, @client)
       .then -> done()
-      .catch (err) -> done(_.prettify err)
+      .catch (err) -> done(err)
     , 10000 # 10sec
 
     it 'CSV - one new stock', (done) ->
@@ -400,7 +399,7 @@ describe 'integration test', ->
         expect(stocks[0].quantityOnStock).toBe 77
         done()
       .catch (err) ->
-        done(_.prettify err)
+        done(err)
     , 10000 # 10sec
 
     it 'CSV - should ignore empty fields in customFields', (done) ->
@@ -442,7 +441,7 @@ describe 'integration test', ->
         done()
       .catch (err) ->
         console.log JSON.stringify(err, null,2)
-        done(_.prettify err)
+        done(err)
     , 10000 # 10sec
 
     it 'CSV - update stock', (done) ->
@@ -481,7 +480,7 @@ describe 'integration test', ->
         expect(stocks[0].custom.fields.color).toBe 'blue'
         done()
       .catch (err) ->
-        done(_.prettify err)
+        done(err)
     , 10000 # 10sec
 
     it 'CSV - API should return error if required header is missing', (done) ->

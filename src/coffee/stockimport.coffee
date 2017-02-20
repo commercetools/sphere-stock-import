@@ -1,6 +1,5 @@
 debug = require('debug')('sphere-stock-import')
 _ = require 'underscore'
-_.mixin require('underscore-mixins')
 csv = require 'csv'
 Promise = require 'bluebird'
 {ElasticIo} = require 'sphere-node-utils'
@@ -287,7 +286,13 @@ class StockImport
       @_processBatches(stocks)
 
   _processBatches: (stocks) ->
-    batchedList = _.batchList(stocks, 30) # max parallel elem to process
+    batchedList = stocks.reduce (batch, value, index) ->
+      if index % 30 == 0 then batch.push []
+
+      batch[batch.length - 1].push value
+      batch
+    , []
+
     Promise.map batchedList, (stocksToProcess) =>
       debug 'Chunk: %j', stocksToProcess
       uniqueStocksToProcessBySku = @_uniqueStocksBySku(stocksToProcess)
