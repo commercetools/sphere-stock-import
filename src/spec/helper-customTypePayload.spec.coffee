@@ -45,6 +45,16 @@ baseObj = {
       "required": false,
       "label": { "en": "name" },
       "inputHint": "SingleLine"
+    },
+    {
+      "name": "sizes",
+      "type": {
+        "name": "Set",
+        "elementType": { "name": "String" }
+      },
+      "required": false,
+      "label": { "en": "sizes" },
+      "inputHint": "SingleLine"
     }
   ]
 }

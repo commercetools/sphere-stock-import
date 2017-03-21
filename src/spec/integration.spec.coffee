@@ -483,6 +483,28 @@ describe 'integration test', ->
         done(err)
     , 10000 # 10sec
 
+    it 'CSV - should accept set types', (done) ->
+      raw =
+        """
+        sku,quantityOnStock,restockableInDays,expectedDelivery,customType,customField.quantityFactor,customField.color,customField.localizedString.de,customField.localizedString.en,customField.sizes
+        another2,77,12,2001-09-11T14:00:00.000Z,my-type,9,nac,Schneidder,Abi,"Medium,Extra Large"
+        """
+      @stockimport.run(raw, 'CSV')
+      .then =>
+        @stockimport.summaryReport()
+      .then (message) =>
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0]).toBeDefined()
+        expect(stocks[0].custom.fields.sizes.constructor).toEqual Array
+        expect(stocks[0].custom.fields.sizes).toEqual [ 'Medium', 'Extra Large' ]
+        done()
+      .catch (err) -> done(err)
+    , 10000 # 10sec
+
     it 'CSV - API should return error if required header is missing', (done) ->
       raw =
         """
