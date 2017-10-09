@@ -12,12 +12,13 @@ xmlHelpers = require './xmlhelpers'
 class StockImport
 
   constructor: (@logger, options = {}) ->
-    options = _.defaults options, {user_agent: 'sphere-stock-import'}
+    options = _.defaults options, {user_agent: 'sphere-stock-import', max409Retries: 10}
     @sync = new InventorySync
     @client = new SphereClient options
     @csvHeaders = options.csvHeaders
     @csvDelimiter = options.csvDelimiter
     @customFieldMappings = new CustomFieldMappings()
+    @max409Retries = options.max409Retries
     @_resetSummary()
 
   _resetSummary: ->
@@ -349,15 +350,32 @@ class StockImport
     posts = _.map inventoryEntries, (entry) =>
       existingEntry = @_match(entry, existingEntries)
       if existingEntry?
-        synced = @sync.buildActions(entry, existingEntry)
-        if synced.shouldUpdate()
-          @client.inventoryEntries.byId(synced.getUpdateId()).update(synced.getUpdatePayload())
-        else
-          Promise.resolve statusCode: 304
+        @_updateInventory(entry, existingEntry)
       else
         @client.inventoryEntries.create(entry)
 
     debug 'About to send %s requests', _.size(posts)
-    Promise.all(posts)
+    Promise.map(posts, (p) -> p)
+
+  _updateInventory: (entry, existingEntry, tryCount = 1) =>
+    synced = @sync.buildActions(entry, existingEntry)
+    if synced.shouldUpdate()
+      @client.inventoryEntries.byId(synced.getUpdateId()).update(synced.getUpdatePayload())
+      .catch (err) =>
+        if (err.statusCode == 409)
+          debug "Got 409 error for entry #{JSON.stringify(entry)}, repeat the request "
+          + "for #{tryCount} times."
+          if (tryCount <= @max409Retries)
+            @client.inventoryEntries
+            .byId(synced.getUpdateId())
+            .fetch()
+            .then (result) =>
+              @_updateInventory(entry, result.body, tryCount + 1)
+          else
+            Promise.reject "Retry limit #{max409Retries} reached for stock #{JSON.stringify(entry)}"
+        else
+          Promise.reject "Unexpected error when updating stock #{JSON.stringify(entry)}: #{JSON.stringify(err)}"
+    else
+      Promise.resolve statusCode: 304
 
 module.exports = StockImport

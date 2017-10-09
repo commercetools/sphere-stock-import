@@ -533,6 +533,28 @@ describe 'StockImport', ->
         done()
       .catch (err) -> done(err)
 
+    it 'should repeat on 409 error', (done) ->
+      methodCalledCounter = 0
+      inventoryEntries = [
+        {sku: 'foo', quantityOnStock: 2},
+        {sku: 'foo', quantityOnStock: 3, supplyChannel: {typeId: 'channel', id: '111'}}
+      ]
+      existingEntries = [{id: '123', version: 1, sku: 'foo', quantityOnStock: 1}]
+
+      spyOn(@import.client.inventoryEntries, 'update').andCallFake () ->
+        methodCalledCounter++
+        return Promise.reject({ statusCode: 409 })
+
+      spyOn(@import.client.inventoryEntries, 'fetch').andCallFake ->
+        new Promise (resolve, reject) -> resolve({body: existingEntries[0]})
+
+      @import._createOrUpdate inventoryEntries, existingEntries
+      .then =>
+        done('Test should fail')
+      .catch () ->
+        methodCalledCounter == 9
+        done()
+
 
   describe '::_match', ->
 
