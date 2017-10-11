@@ -372,9 +372,9 @@ class StockImport
             .then (result) =>
               @_updateInventory(entry, result.body, tryCount + 1)
           else
-            Promise.reject "Retry limit #{max409Retries} reached for stock #{JSON.stringify(entry)}"
+            Promise.reject new Error("Retry limit #{max409Retries} reached for stock #{JSON.stringify(entry)}")
         else
-          Promise.reject "Unexpected error when updating stock #{JSON.stringify(entry)}: #{JSON.stringify(err)}"
+          Promise.reject err
     else
       Promise.resolve statusCode: 304
 
