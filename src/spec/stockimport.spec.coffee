@@ -552,7 +552,7 @@ describe 'StockImport', ->
       .then =>
         done('Test should fail')
       .catch () ->
-        methodCalledCounter == 9
+        expect(methodCalledCounter).toEqual(11)
         done()
 
 
