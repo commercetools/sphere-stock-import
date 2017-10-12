@@ -355,7 +355,7 @@ class StockImport
         @client.inventoryEntries.create(entry)
 
     debug 'About to send %s requests', _.size(posts)
-    Promise.map(posts, (p) -> p)
+    Promise.all(posts)
 
   _updateInventory: (entry, existingEntry, tryCount = 1) =>
     synced = @sync.buildActions(entry, existingEntry)
