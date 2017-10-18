@@ -536,8 +536,7 @@ describe 'StockImport', ->
     it 'should repeat on 409 error', (done) ->
       methodCalledCounter = 0
       inventoryEntries = [
-        {sku: 'foo', quantityOnStock: 2},
-        {sku: 'foo', quantityOnStock: 3, supplyChannel: {typeId: 'channel', id: '111'}}
+        {sku: 'foo', quantityOnStock: 2}
       ]
       existingEntries = [{id: '123', version: 1, sku: 'foo', quantityOnStock: 1}]
 
@@ -554,6 +553,60 @@ describe 'StockImport', ->
       .catch () ->
         expect(methodCalledCounter).toEqual(11)
         done()
+
+    it 'should repeat and create on 404 error', (done) ->
+      inventoryUpdateCalledCounter = 0
+      inventoryCreateCalledCounter = 0
+      inventoryEntries = [
+        {sku: 'foo', quantityOnStock: 2}
+      ]
+      existingEntries = [{id: '123', version: 1, sku: 'foo', quantityOnStock: 1}]
+
+      spyOn(@import.client.inventoryEntries, 'update').andCallFake () ->
+        inventoryUpdateCalledCounter++
+        return Promise.reject({ statusCode: 404 })
+
+      spyOn(@import.client.inventoryEntries, 'create').andCallFake () ->
+        inventoryCreateCalledCounter++
+        return Promise.resolve()
+
+      spyOn(@import.client.inventoryEntries, 'fetch').andCallFake ->
+        new Promise (resolve, reject) -> resolve({body: existingEntries[0]})
+
+      @import._createOrUpdate inventoryEntries, existingEntries
+        .then () ->
+          expect(inventoryUpdateCalledCounter).toEqual(1)
+          expect(inventoryCreateCalledCounter).toEqual(1)
+          done()
+        .catch (err) ->
+          done(err)
+
+    it 'should repeat and create on 409 error and inventory has been deleted', (done) ->
+      inventoryUpdateCalledCounter = 0
+      inventoryCreateCalledCounter = 0
+      inventoryEntries = [
+        {sku: 'foo', quantityOnStock: 2}
+      ]
+      existingEntries = [{id: '123', version: 1, sku: 'foo', quantityOnStock: 1}]
+
+      spyOn(@import.client.inventoryEntries, 'update').andCallFake () ->
+        inventoryUpdateCalledCounter++
+        return Promise.reject({ statusCode: 409 })
+
+      spyOn(@import.client.inventoryEntries, 'create').andCallFake () ->
+        inventoryCreateCalledCounter++
+        return Promise.resolve()
+
+      spyOn(@import.client.inventoryEntries, 'fetch').andCallFake ->
+        new Promise (resolve, reject) -> reject({ statusCode: 404 })
+
+      @import._createOrUpdate inventoryEntries, existingEntries
+        .then () ->
+          expect(inventoryUpdateCalledCounter).toEqual(1)
+          expect(inventoryCreateCalledCounter).toEqual(1)
+          done()
+        .catch (err) ->
+          done(err)
 
 
   describe '::_match', ->
