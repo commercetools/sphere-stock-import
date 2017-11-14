@@ -371,8 +371,20 @@ class StockImport
             .fetch()
             .then (result) =>
               @_updateInventory(entry, result.body, tryCount + 1)
+            .catch (err) =>
+              if (err.statusCode == 404)
+                debug "It seems that stock update has conflicted with parallel stock deletion "
+                + "and can no longer be updated. A new stock will be created instead."
+                @client.inventoryEntries.create(entry)
+              else
+                debug "Error on handling 409 stock update error. Details: #{JSON.stringify(err)}"
+                Promise.reject err
           else
-            Promise.reject new Error("Retry limit #{max409Retries} reached for stock #{JSON.stringify(entry)}")
+            Promise.reject new Error("Failed to retry the task after #{@max409Retries} attempts for stock #{JSON.stringify(entry)}")
+        else if (err.statusCode == 404)
+          debug "It seems that stock update has conflicted with parallel stock deletion "
+          + "and can no longer be updated. A new stock will be created instead."
+          @client.inventoryEntries.create(entry)
         else
           Promise.reject err
     else
