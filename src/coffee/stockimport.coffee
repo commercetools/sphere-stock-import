@@ -33,6 +33,9 @@ class StockImport
       when fileName.match /\.xml$/i then 'XML'
       else throw new Error "Unsupported mode (file extension) for file #{fileName} (use csv or xml)"
 
+  _escapeSku: (sku) ->
+    sku.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+
   ###
   Elastic.io calls this for each csv row, so each inventory entry will be processed at a time
   ###
@@ -66,7 +69,7 @@ class StockImport
         else
           Promise.resolve(msg.body.CHANNEL_ID)
 
-      @client.inventoryEntries.where("sku=\"#{msg.body.SKU}\"").perPage(1).fetch()
+      @client.inventoryEntries.where("sku=\"#{@_escapeSku(msg.body.SKU)}\"").perPage(1).fetch()
       .then (results) =>
         debug 'Existing entries: %j', results
         existingEntries = results.body.results
@@ -302,7 +305,7 @@ class StockImport
       skus = _.map uniqueStocksToProcessBySku, (s) =>
         @_summary.emptySKU++ if _.isEmpty s.sku
         # TODO: query also for channel?
-        "\"#{s.sku}\""
+        "\"#{@_escapeSku(s.sku)}\""
       predicate = "sku in (#{skus.join(', ')})"
 
       @client.inventoryEntries.all()
