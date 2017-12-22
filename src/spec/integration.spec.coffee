@@ -336,6 +336,39 @@ describe 'integration test', ->
       .catch (err) -> done(err)
     , 10000 # 10sec
 
+    it 'CSV - one new stock with quotes in SKU', (done) ->
+      csv =
+        '''
+        sku,quantityOnStock
+        "ab\\""cd",5
+        '''
+
+      @stockimport.run(csv, 'CSV')
+      .then =>
+        @client.inventoryEntries.fetch()
+      .then (result) =>
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe 'ab\\"cd'
+        expect(stocks[0].quantityOnStock).toBe 5
+
+        csv =
+          '''
+          sku,quantityOnStock
+          ab\\""cd,10
+          '''
+        @stockimport.run(csv, 'CSV')
+      .then =>
+        @client.inventoryEntries.fetch()
+      .then (result) ->
+        stocks = result.body.results
+        expect(_.size stocks).toBe 1
+        expect(stocks[0].sku).toBe 'ab\\"cd'
+        expect(stocks[0].quantityOnStock).toBe 10
+        done()
+      .catch (err) -> done(err)
+    , 10000 # 10sec
+
   describe 'CSV file', =>
     testChannel = undefined
     testChannel2 = undefined
