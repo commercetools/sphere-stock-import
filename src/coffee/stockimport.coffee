@@ -383,7 +383,8 @@ class StockImport
                 debug "Error on handling 409 stock update error. Details: #{JSON.stringify(err)}"
                 Promise.reject err
           else
-            Promise.reject new Error("Failed to retry the task after #{@max409Retries} attempts for stock #{JSON.stringify(entry)}")
+            debug "Failed to retry the task after #{@max409Retries} attempts for stock #{JSON.stringify(entry)}"
+            Promise.reject err
         else if (err.statusCode == 404)
           debug "It seems that stock update has conflicted with parallel stock deletion "
           + "and can no longer be updated. A new stock will be created instead."
