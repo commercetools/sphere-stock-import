@@ -383,7 +383,9 @@ class StockImport
                 debug "Error on handling 409 stock update error. Details: #{JSON.stringify(err)}"
                 Promise.reject err
           else
-            debug "Failed to retry the task after #{@max409Retries} attempts for stock #{JSON.stringify(entry)}"
+            customMessage = "Failed to retry the task after #{@max409Retries} attempts for stock #{JSON.stringify(entry)}"
+            debug customMessage
+            err.sphereStockImportErrMessage = customMessage
             Promise.reject err
         else if (err.statusCode == 404)
           debug "It seems that stock update has conflicted with parallel stock deletion "
