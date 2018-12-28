@@ -608,6 +608,34 @@ describe 'StockImport', ->
         .catch (err) ->
           done(err)
 
+    it 'should update and create inventory restockableInDays with same sku', (done) ->
+      inventoryEntries = [
+        {sku: 'bar', quantityOnStock: 3, restockableInDays: 10},
+        {sku: 'bar', quantityOnStock: 3, restockableInDays: 7, supplyChannel: {typeId: 'channel', id: '222'}}
+      ]
+      existingEntries = [{id: '1234', version: 1, sku: 'bar', quantityOnStock: 3, restockableInDays: 14}]
+      expectedUpdate = {
+        actions : [ { action : 'setRestockableInDays', restockableInDays : 10 } ],
+        version : 1
+      }
+      expectedCreate =
+        sku: 'bar'
+        quantityOnStock: 3
+        restockableInDays: 7
+        supplyChannel:
+          typeId: 'channel'
+          id: '222'
+      spyOn(@import.client._rest, 'POST').andCallFake (endpoint, payload, callback) ->
+        callback(null, {statusCode: 200}, {})
+      @import._createOrUpdate inventoryEntries, existingEntries
+      .then =>
+        # This test for an update (no channels)
+        expect(@import.client._rest.POST.calls[0].args[1]).toEqual expectedUpdate
+        # This test for a new entry
+        expect(@import.client._rest.POST.calls[1].args[1]).toEqual expectedCreate
+        done()
+      .catch (err) -> done(err)
+
 
   describe '::_match', ->
 
