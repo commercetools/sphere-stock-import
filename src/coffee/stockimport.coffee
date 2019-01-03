@@ -45,7 +45,7 @@ class StockImport
       for attachment of msg.attachments
         content = msg.attachments[attachment].content
         continue unless content
-        encoded = new Buffer(content, 'base64').toString()
+        encoded = Buffer.from(content, 'base64').toString()
         mode = @getMode attachment
         @run encoded, mode, next
         .then (result) =>
@@ -76,7 +76,7 @@ class StockImport
         _ensureChannel()
         .then (channelId) =>
           stocksToProcess = [
-            @_createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, channelId)
+            @_createInventoryEntry(msg.body.SKU, msg.body.QUANTITY, msg.body.EXPECTED_DELIVERY, msg.body.RESTOCKABLE_IN_DAYS, channelId)
           ]
           @_createOrUpdate stocksToProcess, existingEntries
         .then (results) =>
@@ -163,7 +163,8 @@ class StockImport
               expectedDelivery = new Date(committedDeliveryDate).toISOString()
             catch error
               @logger.warn "Can't parse date '#{committedDeliveryDate}'. Creating entry without date..."
-          d = @_createInventoryEntry(sku, appointedQuantity, expectedDelivery, channelId)
+          restockableInDays = undefined
+          d = @_createInventoryEntry(sku, appointedQuantity, expectedDelivery, restockableInDays, channelId)
           stocks.push d
     stocks
 
@@ -261,11 +262,12 @@ class StockImport
         @customFieldMappings.errors.push("Couldn\'t find channel with #{key} as key.")
         .catch (@customFieldMappings.errors.push)
 
-  _createInventoryEntry: (sku, quantity, expectedDelivery, channelId) ->
+  _createInventoryEntry: (sku, quantity, expectedDelivery, restockableInDays, channelId) ->
     entry =
       sku: sku
       quantityOnStock: parseInt(quantity, 10) or 0 # avoid NaN
     entry.expectedDelivery = expectedDelivery if expectedDelivery?
+    entry.restockableInDays = restockableInDays if restockableInDays?
     if channelId?
       entry[CONS.CHANNEL_REF_NAME] =
         typeId: 'channel'
@@ -282,6 +284,8 @@ class StockImport
             QUANTITY: entry.quantityOnStock
         if entry.expectedDelivery?
           msg.body.EXPECTED_DELIVERY = entry.expectedDelivery
+        if entry.restockableInDays?
+          msg.body.RESTOCKABLE_IN_DAYS = entry.restockableInDays
         if entry[CONS.CHANNEL_REF_NAME]?
           msg.body.CHANNEL_ID = entry[CONS.CHANNEL_REF_NAME].id
         ElasticIo.returnSuccess msg, next
