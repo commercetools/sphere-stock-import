@@ -45,7 +45,7 @@ class StockImport
       for attachment of msg.attachments
         content = msg.attachments[attachment].content
         continue unless content
-        encoded = new Buffer(content, 'base64').toString()
+        encoded = Buffer.from(content, 'base64').toString()
         mode = @getMode attachment
         @run encoded, mode, next
         .then (result) =>

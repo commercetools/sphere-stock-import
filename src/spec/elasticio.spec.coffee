@@ -72,7 +72,7 @@ describe 'elasticio integration', ->
           </row>
         </root>
         '''
-      enc = new Buffer(xml).toString('base64')
+      enc = Buffer.from(xml).toString('base64')
       msg =
         attachments:
           'stock.xml':
@@ -109,7 +109,7 @@ describe 'elasticio integration', ->
         c2,2
         c3,3
         '''
-      enc = new Buffer(csv).toString('base64')
+      enc = Buffer.from(csv).toString('base64')
       msg =
         attachments:
           'stock.csv':
