@@ -163,7 +163,8 @@ class StockImport
               expectedDelivery = new Date(committedDeliveryDate).toISOString()
             catch error
               @logger.warn "Can't parse date '#{committedDeliveryDate}'. Creating entry without date..."
-          d = @_createInventoryEntry(sku, appointedQuantity, expectedDelivery, channelId)
+          restockableInDays = undefined
+          d = @_createInventoryEntry(sku, appointedQuantity, expectedDelivery, restockableInDays, channelId)
           stocks.push d
     stocks
 
