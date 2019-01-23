@@ -1,34 +1,10 @@
 _ = require 'underscore'
-Promise = require 'bluebird'
 {ExtendedLogger} = require 'sphere-node-utils'
 package_json = require '../package.json'
 Config = require '../config'
 StockImport = require '../lib/stockimport'
 {customTypePayload1, customTypePayload2, customTypePayload3} = require './helper-customTypePayload.spec'
-
-cleanup = (logger, client) ->
-  logger.debug 'Deleting old inventory entries...'
-  client.inventoryEntries.all().fetch()
-  .then (result) ->
-    Promise.all _.map result.body.results, (e) ->
-      client.inventoryEntries.byId(e.id).delete(e.version)
-  .then (results) ->
-    logger.debug "Inventory #{_.size results} deleted."
-    logger.debug 'Deleting old types entries...'
-    client.types.all().fetch()
-  .then (result) ->
-    Promise.all _.map result.body.results, (e) ->
-      client.types.byId(e.id).delete(e.version)
-  .then (results) ->
-    logger.debug "Types #{_.size results} deleted."
-    logger.debug 'Deleting old channels entries...'
-    client.channels.all().fetch()
-  .then (result) ->
-    Promise.all _.map result.body.results, (e) ->
-      client.channels.byId(e.id).delete(e.version)
-  .then (results) ->
-    logger.debug "Channels #{_.size results} deleted."
-    Promise.resolve()
+{ cleanup } = require './utils.spec'
 
 describe 'integration test', ->
 
@@ -86,7 +62,7 @@ describe 'integration test', ->
       @stockimport.run(rawXml, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new, 0 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -121,7 +97,7 @@ describe 'integration test', ->
       @stockimport.run(rawXml, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new, 0 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -131,7 +107,7 @@ describe 'integration test', ->
         @stockimport.run(rawXmlChanged, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new, 1 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) ->
         stocks = result.body.results
@@ -156,7 +132,7 @@ describe 'integration test', ->
       @stockimport.run(rawXml, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new, 0 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -166,7 +142,7 @@ describe 'integration test', ->
         @stockimport.run(rawXmlChanged, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new, 1 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) ->
         stocks = result.body.results
@@ -196,7 +172,7 @@ describe 'integration test', ->
       @stockimport.run(rawXml, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 2 imported stocks (2 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 2 imported stocks (2 were new, 0 were updates)'
         @client.inventoryEntries.sort('id').fetch()
       .then (result) =>
         stocks = result.body.results
@@ -218,7 +194,7 @@ describe 'integration test', ->
         @stockimport.run(rawXmlChangedAppointedQuantity, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new, 1 were updates)'
         @client.inventoryEntries.sort('id').fetch()
       .then (result) =>
         stocks = result.body.results
@@ -239,7 +215,7 @@ describe 'integration test', ->
         @stockimport.run(rawXmlChangedCommittedDeliveryDate, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new, 1 were updates)'
         @client.inventoryEntries.sort('id').fetch()
       .then (result) =>
         stocks = result.body.results
@@ -281,7 +257,7 @@ describe 'integration test', ->
         @stockimport.run(rawXmlEmptyValues, 'XML')
       .then => @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new, 1 were updates)'
         @client.inventoryEntries.sort('id').fetch()
       .then (result) ->
         stocks = result.body.results
@@ -315,7 +291,7 @@ describe 'integration test', ->
       .then =>
         @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new, 0 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -413,7 +389,7 @@ describe 'integration test', ->
       .then =>
         @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new, 0 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -447,7 +423,7 @@ describe 'integration test', ->
       .then =>
         @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 2 imported stocks (2 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 2 imported stocks (2 were new, 0 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -492,7 +468,7 @@ describe 'integration test', ->
       .then =>
         @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new, 0 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results
@@ -502,7 +478,7 @@ describe 'integration test', ->
         @stockimport.run(raw2, 'CSV')
       .then => @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (0 were new, 1 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) ->
         stocks = result.body.results
@@ -526,7 +502,7 @@ describe 'integration test', ->
       .then =>
         @stockimport.summaryReport()
       .then (message) =>
-        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new, 0 were updates)'
         @client.inventoryEntries.fetch()
       .then (result) =>
         stocks = result.body.results

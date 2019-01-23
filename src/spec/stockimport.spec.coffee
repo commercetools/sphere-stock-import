@@ -48,7 +48,7 @@ describe 'StockImport', ->
         emptySKU: 2
         created: 5
         updated: 10
-      message = 'Summary: there were 15 imported stocks (5 were new and 10 were updates)' +
+      message = 'Summary: there were 15 imported stocks (5 were new, 10 were updates)' +
        '\nFound 2 empty SKUs from file input \'./foo.json\''
       expect(@import.summaryReport('./foo.json')).toEqual message
 
