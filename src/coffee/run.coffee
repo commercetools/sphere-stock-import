@@ -65,10 +65,10 @@ process.on 'SIGUSR2', -> logger.reopenFileStreams()
 process.on 'exit', => process.exit(@exitCode)
 
 removeZeroInventories = (importer, logger) ->
-  logger.info("Deleting zero inventories")
+  logger.info("Deleting inventories with zero quantity on stock")
   importer.removeZeroInventories()
     .then (removedInventoriesCount) ->
-      logger.info "Removed #{removedInventoriesCount} zero inventories"
+      logger.info "Removed #{removedInventoriesCount} inventories with zero quantity on stock"
 
 importFn = (importer, fileName) ->
   throw new Error 'You must provide a file to be processed' unless fileName
