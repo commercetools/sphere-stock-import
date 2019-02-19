@@ -20,6 +20,7 @@ argv = require('optimist')
   .describe('sphereAuthProtocol', 'SPHERE.IO OAuth protocol to connect to')
   .describe('file', 'XML or CSV file containing inventory information to import')
   .describe('csvDelimiter', 'the delimiter type used in the csv')
+  .describe('removeZeroInventories', 'Remove inventory entries where the quantityOnStock equals to zero')
   .describe('sftpCredentials', 'the path to a JSON file where to read the credentials from')
   .describe('sftpHost', 'the SFTP host (overwrite value in sftpCredentials JSON, if given)')
   .describe('sftpUsername', 'the SFTP username (overwrite value in sftpCredentials JSON, if given)')
@@ -35,6 +36,7 @@ argv = require('optimist')
   .describe('logSilent', 'use console to print messages')
   .describe('timeout', 'Set timeout for requests')
   .default('csvDelimiter', ',')
+  .default('removeZeroInventories', false)
   .default('logLevel', 'info')
   .default('logDir', '.')
   .default('logSilent', false)
@@ -61,6 +63,12 @@ if argv.logSilent
 
 process.on 'SIGUSR2', -> logger.reopenFileStreams()
 process.on 'exit', => process.exit(@exitCode)
+
+removeZeroInventories = (importer, logger) ->
+  logger.info("Deleting inventories with zero quantity on stock")
+  importer.removeZeroInventories()
+    .then (removedInventoriesCount) ->
+      logger.info "Removed #{removedInventoriesCount} inventories with zero quantity on stock"
 
 importFn = (importer, fileName) ->
   throw new Error 'You must provide a file to be processed' unless fileName
@@ -98,6 +106,7 @@ ensureCredentials = (argv) ->
 ensureCredentials(argv)
 .then (credentials) =>
   options = _.extend credentials,
+    removeZeroInventories: argv.removeZeroInventories
     timeout: argv.timeout
     user_agent: "#{package_json.name} - #{package_json.version}"
     csvDelimiter: argv.csvDelimiter
@@ -115,6 +124,9 @@ ensureCredentials(argv)
 
   if file
     importFn(stockimport, file)
+    .then =>
+      if argv.removeZeroInventories
+        removeZeroInventories(stockimport, logger)
     .then => @exitCode = 0
     .catch (error) =>
       logger.error error, 'Oops, something went wrong when processing file (no SFTP)!'
@@ -168,7 +180,6 @@ ensureCredentials(argv)
                   else file
               else
                 filename = file
-
               logger.debug "Finishing processing file #{file}"
               sftpHelper.finish(file, filename)
               .then ->
@@ -182,6 +193,9 @@ ensureCredentials(argv)
               else
                 Promise.reject err
           , {concurrency: 1}
+          .then =>
+            if argv.removeZeroInventories
+              removeZeroInventories(stockimport, logger)
           .then =>
             totFiles = _.size(filesToProcess)
             if totFiles > 0

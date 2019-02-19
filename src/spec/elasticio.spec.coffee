@@ -153,11 +153,11 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new, 0 were updates)'
         msg.body.QUANTITY = '3'
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+          expect(message).toBe 'Summary: there were 1 imported stocks (0 were new, 1 were updates)'
           elasticio.process msg, cfg, (error, message) ->
             expect(error).toBe null
             expect(message).toBe 'Summary: nothing to do, everything is fine'
@@ -179,11 +179,11 @@ describe 'elasticio integration', ->
 
       elasticio.process msg, cfg, (error, message) ->
         expect(error).toBe null
-        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+        expect(message).toBe 'Summary: there were 1 imported stocks (1 were new, 0 were updates)'
         msg.body.QUANTITY = '3'
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+          expect(message).toBe 'Summary: there were 1 imported stocks (0 were new, 1 were updates)'
           done()
     , 10000 # 10sec
 
@@ -204,10 +204,10 @@ describe 'elasticio integration', ->
 
         elasticio.process msg, cfg, (error, message) ->
           expect(error).toBe null
-          expect(message).toBe 'Summary: there were 1 imported stocks (1 were new and 0 were updates)'
+          expect(message).toBe 'Summary: there were 1 imported stocks (1 were new, 0 were updates)'
           msg.body.QUANTITY = '3'
           elasticio.process msg, cfg, (error, message) ->
             expect(error).toBe null
-            expect(message).toBe 'Summary: there were 1 imported stocks (0 were new and 1 were updates)'
+            expect(message).toBe 'Summary: there were 1 imported stocks (0 were new, 1 were updates)'
             done()
     , 10000 # 10sec

@@ -16,6 +16,7 @@ class StockImport
     @sync = new InventorySync
     @client = new SphereClient options
     @csvHeaders = options.csvHeaders
+    @shouldRemoveZeroInventories = options.removeZeroInventories
     @csvDelimiter = options.csvDelimiter
     @customFieldMappings = new CustomFieldMappings()
     @max409Retries = options.max409Retries
@@ -26,6 +27,9 @@ class StockImport
       emptySKU: 0
       created: 0
       updated: 0
+
+    if @shouldRemoveZeroInventories
+      @_summary.removed = 0
 
   getMode: (fileName) ->
     switch
@@ -104,11 +108,15 @@ class StockImport
       Promise.reject "#{CONS.LOG_PREFIX}Unknown import mode '#{mode}'!"
 
   summaryReport: (filename) ->
-    if @_summary.created is 0 and @_summary.updated is 0
+    if @_summary.created is 0 and @_summary.updated is 0 and (not @shouldRemoveZeroInventories or @_summary.removed is 0)
       message = 'Summary: nothing to do, everything is fine'
     else
+      deletedStocksMessage = ""
+      if @shouldRemoveZeroInventories
+        deletedStocksMessage = " and #{@_summary.removed} were deletions"
+
       message = "Summary: there were #{@_summary.created + @_summary.updated} imported stocks " +
-        "(#{@_summary.created} were new and #{@_summary.updated} were updates)"
+        "(#{@_summary.created} were new, #{@_summary.updated} were updates#{deletedStocksMessage})"
 
     if @_summary.emptySKU > 0
       message += "\nFound #{@_summary.emptySKU} empty SKUs from file input"
@@ -147,6 +155,19 @@ class StockImport
 
   performStream: (chunk, cb) ->
     @_processBatches(chunk).then -> cb()
+
+  removeZeroInventories: () ->
+    removedCount = 0
+    @client.inventoryEntries
+      .perPage 500
+      .where 'quantityOnStock = 0'
+      .process (res) =>
+        Promise.map res.body.results, @_removeInventory
+          .then (removedResponses) ->
+            removedCount += removedResponses.length
+      , { accumulate: false }
+      .then ->
+        removedCount
 
   _mapStockFromXML: (xmljs, channelId) ->
     stocks = []
@@ -205,7 +226,6 @@ class StockImport
         else
           resolve(data)
       )
-
 
   _mapCellData: (data, headerName) ->
     data = data?.trim()
@@ -325,6 +345,7 @@ class StockImport
           switch r.statusCode
             when 201 then @_summary.created++
             when 200 then @_summary.updated++
+            when 204 then @_summary.removed++
         Promise.resolve()
     , {concurrency: 1} # run 1 batch at a time
 
@@ -358,14 +379,32 @@ class StockImport
       existingEntry = @_match(entry, existingEntries)
       if existingEntry?
         @_updateInventory(entry, existingEntry)
+      else if @shouldRemoveZeroInventories and entry.quantityOnStock == 0
+        Promise.resolve statusCode: 304
       else
         @client.inventoryEntries.create(entry)
 
     debug 'About to send %s requests', _.size(posts)
     Promise.all(posts)
 
+  _removeInventory: (existingEntry) =>
+    @client.inventoryEntries
+      .byId(existingEntry.id)
+      .delete(existingEntry.version)
+      .then ->
+        Promise.resolve statusCode: 204
+      .catch (err) ->
+        if err.statusCode is 404
+          Promise.resolve statusCode: 204
+        else
+          Promise.reject err
+
   _updateInventory: (entry, existingEntry, tryCount = 1) =>
     synced = @sync.buildActions(entry, existingEntry)
+
+    if @shouldRemoveZeroInventories and entry.quantityOnStock == 0
+      return @_removeInventory(existingEntry)
+
     if synced.shouldUpdate()
       @client.inventoryEntries.byId(synced.getUpdateId()).update(synced.getUpdatePayload())
       .catch (err) =>
