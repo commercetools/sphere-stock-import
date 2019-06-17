@@ -46,8 +46,8 @@
     "csv": "^1.1.0",
     "debug": "^4.1.0",
     "optimist": "^0.6.1",
-    "sphere-node-sdk": "^2.3.0",
-    "sphere-node-utils": "^1.0.0",
+    "sphere-node-sdk": "^2.4.2",
+    "sphere-node-utils": "^1.0.2",
     "tmp": "0.0.33",
     "underscore": "^1.8.3",
     "xml2js": "^0.4.9"
