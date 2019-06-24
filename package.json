@@ -41,7 +41,7 @@
     "watchChanges": "grunt watch:test"
   },
   "dependencies": {
-    "bluebird": "^2.9.33",
+    "bluebird": "^3.0.0",
     "bunyan-logentries": "^0.1.0",
     "csv": "^1.1.0",
     "debug": "^4.1.0",
