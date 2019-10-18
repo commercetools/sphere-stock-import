@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "bluebird": "^3.0.0",
-    "bunyan-logentries": "^0.1.0",
+    "bunyan-logentries": "^1.0.0",
     "csv": "^1.1.0",
     "debug": "^4.1.0",
     "optimist": "^0.6.1",
