@@ -143,15 +143,15 @@ class StockImport
       csv.parse fileContent, {delimiter: @csvDelimiter, trim: true}, (error, data) =>
         if (error)
           reject "#{CONS.LOG_PREFIX}Problem in parsing CSV: #{error}"
+        else
+          headers = data[0]
+          @_mapStockFromCSV(_.rest(data), headers).then (stocks) =>
+            debug "Stock mapped from csv for headers #{headers}: %j", stocks
 
-        headers = data[0]
-        @_mapStockFromCSV(_.rest(data), headers).then (stocks) =>
-          debug "Stock mapped from csv for headers #{headers}: %j", stocks
-
-          @_perform stocks, next
-            .then (result) -> resolve result
-        .catch (err) -> reject err
-        .done()
+            @_perform stocks, next
+              .then (result) -> resolve result
+          .catch (err) -> reject err
+          .done()
 
   performStream: (chunk, cb) ->
     @_processBatches(chunk).then -> cb()
