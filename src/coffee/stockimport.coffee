@@ -211,6 +211,8 @@ class StockImport
             @_getCustomTypeDefinition(customTypeKey).then (response) =>
               customTypeDefinition = response.body
               @_mapCustomField(_data, cell, headerName, customTypeDefinition, rowIndex)
+            .catch (error) =>
+              return reject(error)
 
           else
             Promise.resolve(@_mapCellData(cell, headerName)).then (cellData) ->
