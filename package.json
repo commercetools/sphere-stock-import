@@ -35,6 +35,7 @@
     "node": ">= 8.0.0"
   },
   "scripts": {
+    "preinstall": "npx npm-force-resolutions",
     "build": "grunt build",
     "test": "grunt test",
     "coverage": "grunt coverage",
@@ -43,7 +44,7 @@
   "dependencies": {
     "bluebird": "^3.0.0",
     "bunyan-logentries": "^1.0.0",
-    "csv": "^1.1.0",
+    "csv": "^1.2.0",
     "debug": "^4.1.0",
     "optimist": "^0.6.1",
     "sphere-node-sdk": "^3.0.1",
@@ -52,7 +53,11 @@
     "underscore": "^1.8.3",
     "xml2js": "^0.4.9"
   },
+  "resolutions": {
+    "lodash": "^4.17.15"
+  },
   "devDependencies": {
+    "npm-force-resolutions": "0.0.3",
     "coffee-script": "^1.12.7",
     "coveralls": "^3.0.2",
     "grunt": "^1.0.3",
