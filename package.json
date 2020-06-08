@@ -49,7 +49,7 @@
     "optimist": "^0.6.1",
     "sphere-node-sdk": "^3.0.1",
     "sphere-node-utils": "^2.0.1",
-    "tmp": "0.1.0",
+    "tmp": "0.2.1",
     "underscore": "^1.8.3",
     "xml2js": "^0.4.9"
   },
