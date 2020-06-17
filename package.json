@@ -35,7 +35,7 @@
     "node": ">= 8.0.0"
   },
   "scripts": {
-    "preinstall": "npx npm-force-resolutions",
+    "preinstall": "node safe-resolution-check.js",
     "build": "grunt build",
     "test": "grunt test",
     "coverage": "grunt coverage",
