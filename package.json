@@ -57,7 +57,7 @@
     "lodash": "^4.17.15"
   },
   "devDependencies": {
-    "npm-force-resolutions": "0.0.3",
+    "npm-force-resolutions": "0.0.10",
     "coffee-script": "^1.12.7",
     "coveralls": "^3.0.2",
     "grunt": "^1.0.3",
