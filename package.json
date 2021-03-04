@@ -44,7 +44,7 @@
   "dependencies": {
     "bluebird": "^3.0.0",
     "bunyan-logentries": "^1.0.0",
-    "csv": "^1.2.0",
+    "csv": "^5.0.0",
     "debug": "^4.1.0",
     "optimist": "^0.6.1",
     "sphere-node-sdk": "^3.0.1",
