@@ -1,7 +1,7 @@
 {
   "name": "sphere-stock-import",
   "description": "Import stock information into commercetools' inventory from CSV or XML, with SFTP support!",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "homepage": "https://github.com/sphereio/sphere-stock-import",
   "private": false,
   "author": {
@@ -44,6 +44,7 @@
   "dependencies": {
     "bluebird": "^3.0.0",
     "bunyan-logentries": "^1.0.0",
+    "coffeescript": "^2.6.1",
     "csv": "^6.0.5",
     "debug": "^4.1.0",
     "optimist": "^0.6.1",
