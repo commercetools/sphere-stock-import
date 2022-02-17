@@ -70,7 +70,7 @@
     "grunt-contrib-concat": "1.0.1",
     "grunt-contrib-watch": "^1.1.0",
     "grunt-shell": "3.0.1",
-    "istanbul": "^0.4.5",
+    "nyc": "^15.1.0",
     "jasmine-node": "github:daern91/jasmine-node",
     "npm-force-resolutions": "0.0.10",
     "sinon": "^1.17.6",
