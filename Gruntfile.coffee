@@ -66,7 +66,7 @@ module.exports = (grunt) ->
         stderr: true
         failOnError: true
       coverage:
-        command: "nyc npm run test && nyc report --reporter=text-lcov | coveralls"
+        command: "./node_modules/.bin/istanbul cover ./node_modules/.bin/jasmine-node --captureExceptions test"
       jasmine:
         command: "./node_modules/.bin/jasmine-node --verbose --captureExceptions test"
       run:

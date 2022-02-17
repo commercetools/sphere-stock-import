@@ -3,7 +3,8 @@ services:
   - docker
 language: node_js
 node_js:
-  - 14
+  - 8
+  - 10
 branches:
   except:
     - latest
@@ -13,6 +14,8 @@ before_script:
   - ./create_config.sh
 script:
   - grunt coverage
+  - ./bin/stock-import --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID} --clientSecret ${SPHERE_CLIENT_SECRET} --file data/example.xml
+  - ./bin/stock-import --projectKey ${SPHERE_PROJECT_KEY} --clientId ${SPHERE_CLIENT_ID} --clientSecret ${SPHERE_CLIENT_SECRET} --file data/example.csv
   - docker build -t commercetools/stock-import .
 notifications:
   hipchat:
