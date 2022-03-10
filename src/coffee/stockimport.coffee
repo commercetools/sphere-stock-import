@@ -359,7 +359,7 @@ class StockImport
     , []
 
   _match: (entry, existingEntries) ->
-    _.find existingEntries, (existingEntry) ->
+    _.find _.compact(existingEntries), (existingEntry) ->
       if entry.sku is existingEntry.sku
         # check channel
         # - if they have the same channel, it's the same entry
