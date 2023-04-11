@@ -52,7 +52,7 @@
     "sphere-node-utils": "^2.0.1",
     "tmp": "0.2.1",
     "underscore": "^1.13.2",
-    "xml2js": "^0.4.9"
+    "xml2js": "^0.5.0"
   },
   "resolutions": {
     "lodash": "^4.17.19",
